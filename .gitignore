@@ -148,3 +148,4 @@ node/vc2010/Debug/node_adx_d_manifest.rc
 *.suo
 release/node_adx.dll
 debug/node_adx_d.dll
+*.opensdf
