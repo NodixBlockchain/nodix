@@ -27,5 +27,8 @@
     <ClCompile Include="..\script.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\store.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
