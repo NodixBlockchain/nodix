@@ -126,7 +126,6 @@ export/wallet.dll
 *.res
 export/nodix.dll
 export/node_adx.dll
-*.filters
 *.manifest
 *.lastbuildstate
 *.ilk
