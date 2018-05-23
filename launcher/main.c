@@ -92,8 +92,7 @@ int main(int argc, const char **argv)
 		tree_manager_init		(32 * 1024 * 1024, 0x10);
 	else
 		tree_manager_init		(32 * 1024 * 1024, 0x0);
-
-
+	
 	
 	if (!load_script("nodix.node", "nodix.node", &script_vars, 3))
 	{
@@ -124,9 +123,8 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 	
-	get_script_var_value_ptr(&script_vars, "nodix.mod_ptr"	, (mem_ptr *)&nodix_mod);
-	
-	resolve_script_var(&script_vars, PTR_NULL, "init_node", 0xFFFFFFFF, &init_node_proc, PTR_NULL);
+	get_script_var_value_ptr(&script_vars, "nodix.mod_ptr"			, (mem_ptr *)&nodix_mod);
+	resolve_script_var		(&script_vars, PTR_NULL, "init_node"	, 0xFFFFFFFF, &init_node_proc, PTR_NULL);
 
 	app_init = (app_func_ptr)get_tpo_mod_exp_addr_name(nodix_mod, "app_init", 0);
 	app_start = (app_func_ptr)get_tpo_mod_exp_addr_name(nodix_mod, "app_start", 0);
@@ -157,7 +155,6 @@ int main(int argc, const char **argv)
 	
 	while (isRunning())
 	{
-	
 		app_loop		(PTR_NULL);
 	}
 

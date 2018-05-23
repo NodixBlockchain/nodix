@@ -729,22 +729,18 @@ find_fn_entry_hash:
 		jne next_find_fn_entry_hash_found
 			
 			mov [tpo_fn_entry_ptr]	,esi
-		
-				
-			
+
 			mov eax					,1
 			ret
+
 		next_find_fn_entry_hash_found:
+
 		add esi			,16
 		inc ecx
-		
 
 	jmp loop_find_fn_entry_hash
 	end_loop_find_fn_entry_hash:
 
-
-
-	
 	;not found
 	xor eax					,eax
 	mov [tpo_fn_entry_ptr]	,eax

@@ -117,6 +117,8 @@ OS_API_C_FUNC(  int		)		tree_mamanger_get_node_word(mem_zone_ref_const_ptr node_
 OS_API_C_FUNC(  int		)		tree_mamanger_get_node_signed_word(mem_zone_ref_const_ptr node_ref, mem_size ofset, short *val){return 0;}
 OS_API_C_FUNC(  int		)		tree_mamanger_get_node_byte(mem_zone_ref_const_ptr node_ref, mem_size ofset, unsigned char *val){return 0;}
 OS_API_C_FUNC(  mem_ptr	)		tree_mamanger_get_node_data_ptr(mem_zone_ref_const_ptr node_ref, mem_size ofset){return 0;}
+OS_API_C_FUNC(size_t) tree_mamanger_get_node_data_size(mem_zone_ref_const_ptr node_ref) { return 0; }
+OS_API_C_FUNC(int) tree_manager_set_child_value_mat3x3(mem_zone_ref	*p_node_ref, const char *name, float *mat3x3) { return 0; }
 OS_API_C_FUNC(  unsigned int)		tree_manager_compare_node_crc(mem_zone_ref_ptr node_ref, unsigned int crc){return 0;}
 OS_API_C_FUNC(  int		)		tree_mamanger_compare_node_dword(mem_zone_ref_ptr node_ref, mem_size ofset, unsigned int val){return 0;}
 OS_API_C_FUNC(int)				tree_node_keval_i64(mem_zone_ref_const_ptr p_node_ref, const struct key_val *key){ return 0; }

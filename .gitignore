@@ -148,3 +148,5 @@ node/vc2010/Debug/node_adx_d_manifest.rc
 release/node_adx.dll
 debug/node_adx_d.dll
 *.opensdf
+export/vec3_d.dll
+export/vec3.dll

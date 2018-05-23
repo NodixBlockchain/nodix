@@ -68,25 +68,6 @@ typedef find_blk_staking_tx_func			*find_blk_staking_tx_func_ptr;
 typedef find_last_stake_modifier_func		*find_last_stake_modifier_func_ptr;
 
 
-#ifdef _DEBUG
-
-C_IMPORT int			C_API_FUNC		init_pos(mem_zone_ref_ptr stake_conf);
-C_IMPORT int			C_API_FUNC		store_blk_tx_staking(mem_zone_ref_ptr tx_list);
-C_IMPORT int			C_API_FUNC		store_blk_staking(mem_zone_ref_ptr header);
-C_IMPORT int			C_API_FUNC		get_stake_reward(uint64_t height, uint64_t *reward);
-C_IMPORT int			C_API_FUNC		check_tx_pos(mem_zone_ref_ptr hdr, mem_zone_ref_ptr tx);
-C_IMPORT int			C_API_FUNC		compute_last_pos_diff(mem_zone_ref_ptr lastPOS, mem_zone_ref_ptr nBits);
-C_IMPORT int			C_API_FUNC		store_tx_staking(mem_zone_ref_ptr tx, hash_t tx_hash, btc_addr_t stake_addr, uint64_t	stake_in);
-C_IMPORT unsigned int	C_API_FUNC		get_current_pos_difficulty();
-C_IMPORT int			C_API_FUNC		load_last_pos_blk(mem_zone_ref_ptr header);
-C_IMPORT int			C_API_FUNC		node_store_last_pos_hash(mem_zone_ref_ptr hdr);
-C_IMPORT int			C_API_FUNC		find_last_pos_block(mem_zone_ref_ptr pindex);
-C_IMPORT int			C_API_FUNC		find_blk_staking_tx(mem_zone_ref_ptr tx_list, mem_zone_ref_ptr tx);
-C_IMPORT int			C_API_FUNC		check_blk_sig(mem_zone_ref_ptr hdr, struct string *vpubK);
-C_IMPORT int			C_API_FUNC		find_blk_staking_tx(mem_zone_ref_ptr tx_list, mem_zone_ref_ptr tx);
-C_IMPORT int			C_API_FUNC		find_last_stake_modifier(char * chash, hash_t nStakeModifier);
-#else
-
 init_pos_func_ptr							init_pos = PTR_INVALID;
 store_blk_staking_func_ptr					store_blk_staking = PTR_INVALID;
 store_blk_tx_staking_func_ptr				store_blk_tx_staking = PTR_INVALID;
@@ -100,7 +81,6 @@ find_last_pos_block_func_ptr				find_last_pos_block = PTR_INVALID;
 find_blk_staking_tx_func_ptr				find_blk_staking_tx	= PTR_INVALID;
 check_blk_sig_func_ptr						check_blk_sig = PTR_INVALID;
 find_last_stake_modifier_func_ptr			find_last_stake_modifier = PTR_INVALID;
-#endif
 
 //protocol module
 C_IMPORT int			C_API_FUNC node_process_event_handler(const char *msg_list_name, mem_zone_ref_ptr node, mem_zone_ref_ptr msg);
@@ -1743,22 +1723,8 @@ OS_API_C_FUNC(int) app_loop(mem_zone_ref_ptr params)
 	
 
 
-	empty_trash();
-	do_mark_sweep(get_tree_mem_area_id(),5000);
-	/*
-	{
-		mem_zone_ref		log = { PTR_NULL };
-		size_t				nz1, nz2;
-		nz1 = find_zones_used(get_mem_area_id());
-		nz2 = find_zones_used(get_tree_mem_area_id());
-
-		tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
-		tree_manager_set_child_value_i32(&log, "z1", nz1);
-		tree_manager_set_child_value_i32(&log, "z2", nz2);
-		log_message("area1 : %z1% area1 : %z2% ", &log);
-		release_zone_ref(&log);
-	}
-	*/
+	empty_trash					();
+	do_mark_sweep				(get_tree_mem_area_id(),5000);
 
 	node_check_new_connections	();
 	node_check_services			();
