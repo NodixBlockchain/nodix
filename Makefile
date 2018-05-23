@@ -4,7 +4,7 @@ ZLIBSRC=libcon/zlib-1.2.8/zutil.c libcon/zlib-1.2.8/uncompr.c libcon/zlib-1.2.8/
 
 CFLAGS=-m32 -msse #-O2 -std=c99 -pedantic -D_DEFAULT_SOURCE
 COMMON_INCS =  -Ilibcon -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8
-MOD_LDFLAGS = -nodefaultlibs -nostdlib -Wl--export-dynamic,-melf_i386
+MOD_LDFLAGS = -nodefaultlibs -nostdlib -Wl,--export-dynamic,-melf_i386
 
 default: export/libcon.a export/launcher
 	@echo 'done'
@@ -22,7 +22,7 @@ export/libstake_pos3.so:export/libbase.so export/libcon.so stake_pos3/kernel.c
 	gcc $(CFLAGS)  -Lexport -lcon -lbase -lblock_adx $(COMMON_INCS) stake_pos3/kernel.c $(MOD_LDFLAGS),-soname,libstake_pos3.so -shared -o export/libstake_pos3.so
 
 export/libecdsa.so:ecdsa/uECC.c export/libbase.so export/libcon.so 
-	gcc $(CFLAGS)  -Lexport -lcon -lbase -lblock_adx $(COMMON_INCS) ecdsa/uECC.c $(MOD_LDFLAGS),-soname,libecdsa.so -shared -o export/libecdsa.so
+	gcc $(CFLAGS)  -Lexport -lcon -lbase $(COMMON_INCS) ecdsa/uECC.c $(MOD_LDFLAGS),-soname,libecdsa.so -shared -o export/libecdsa.so
 
 export/libblock_explorer.so:export/libblock_adx.so export/libbase.so export/libcon.so block_explorer/block_explorer.c
 	gcc $(CFLAGS)  -Lexport -lcon -lbase -lblock_adx $(COMMON_INCS) block_explorer/block_explorer.c $(MOD_LDFLAGS),-soname,libstake_pos3.so -shared -o export/libblock_explorer.so
