@@ -3,22 +3,14 @@
     <section>
         <div class="row">
             <section id="node_div"></section>
-            <div class="row">
-                <div class="col-md-2"><label>last block</label></div><div class="col-md-2"><a onclick="selectBlock(SelfNode.last_block); return false;" id="lastblock"></a></div>
-            </div>
-            <div class="row">
-                <div class="col-md-2"><span id="node_block_lag"></span></div>
-            </div>
-            <div class="row">
-                <div class="col-md-2"><span id="node_time_lag"></span>&nbsp;behind</div>
-            </div>
-            
+            <div id="node_block_lag"></div>
+            <div><span id="node_time_lag"></span>&nbsp;behind</div>
         </div>
         <div class="row">
             <section>
                 <h1>mining info</h1>
                 <div class="row">
-                    <div class="col-md-2"><label>last POW block</label></div><div class="col-md-2"><a onclick="selectBlock(SelfNode.lastPOWBlk); return false;" id="lastpowblock"></a></div>
+                    <div class="col-md-2"><label>last POW block</label></div><div class="col-md-2"><a onclick="MyBlocks.selectBlock(SelfNode.lastPOWBlk); return false;" id="lastpowblock"></a></div>
                 </div>
                 <div class="row">
                     <div class="col-md-2"><label>current POW difficulty</label></div><div class="col-md-2"><span id="currentpowdiff"></span></div>
@@ -32,7 +24,7 @@
             <section>
                 <h1>staking info</h1>
                 <div class="row">
-                    <div class="col-md-2"><label>last POS block</label></div><div class="col-md-2"><a onclick="selectBlock(SelfNode.lastPOSBlk); return false;" id="lastposblock"></a></div>
+                    <div class="col-md-2"><label>last POS block</label></div><div class="col-md-2"><a onclick="MyBlocks.selectBlock(SelfNode.lastPOSBlk); return false;" id="lastposblock"></a></div>
                 </div>
                 <div class="row">
                     <div class="col-md-2"><label>current POS difficulty</label></div><div class="col-md-2"><span id="currentposdiff"></span></div>
@@ -62,46 +54,20 @@
                 <section style="padding-left:24px;" id="node_modules"></section>
             </section>
         </div>
-
     </section>
+
+
     <section>
     <div class="modal fade" id="blockmodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content" >
-         <section>
-         <div class="modal-header"><h3 style="display: inline;">block&nbsp;<button type="button" class="close" data-dismiss="modal" style="vertical-align:top;" aria-hidden="true">×</button><br/><span id="blockhash"></span></h3> </div>
-          <div class="modal-body">
-              <div class="row" style="margin-left:0px;">
-              <div class="col">
-                <div id="lastblock">
-                     <table id="tblblock" >
-                         <tr><td class="lbl">height :</td> <td id="height"></td></tr>
-                         <tr><td class="lbl">time :</td> <td id="time"></td></tr>
-                         <tr><td class="lbl">hash :</td> <td id="hash"></td></tr>
-                         <tr><td class="lbl">previousblockhash :</td> <td onmouseup="selectBlockTxs(this.innerHTML);" class="iblock_hash" id="previousblockhash"></td></tr>
-                         <tr><td class="lbl">nextblockhash :</td> <td onmouseup="selectBlockTxs(this.innerHTML);" class="iblock_hash" id="nextblockhash"></td></tr>
-                         <tr><td class="lbl">confirmations :</td> <td id="confirmations"></td></tr>
-                         <tr><td class="lbl">difficulty :</td> <td id="difficulty"></td></tr>
-                         <tr><td class="lbl">merkleroot :</td> <td id="merkleroot"></td></tr>
-                         <tr><td class="lbl">nonce :</td> <td id="nonce"></td></tr>
-                         <tr><td class="lbl">bits : </td><td id="bits"></td></tr>
-                         <tr><td class="lbl">difficulty hash :</td> <td id="diffhash"></td></tr>
-                         <tr><td class="lbl">proofhash :</td> <td id="proofhash"></td></tr>
-                         <tr><td class="lbl">size :</td> <td id="size"></td></tr>
-                         <tr><td class="lbl">stakemodifier2 :</td> <td id="stakemodifier2"></td></tr>
-                         <tr><td class="lbl">version :</td> <td id="version"></td></tr>
-                         <tr><td class="lbl">txs :</td> <td id="txs"></td></tr>
-                     </table>
-                </div>
-              </div>
-            </div>
-           </div>
-          </section>
+            <div class="modal-header"><h3 style="display: inline;">block&nbsp;<button type="button" class="close" data-dismiss="modal" style="vertical-align:top;" aria-hidden="true">×</button><br/><span id="blockhash"></span></h3> </div>
+            <div class="modal-body"><section id="lastblock"></section></div>
          </div>
         </div>
       </div>
     </section>
     </div>
-<!--=== End Block Explorer ===-->
+<!--=== End Node Infos ===-->
 </div>
 <!--/wrapper-->

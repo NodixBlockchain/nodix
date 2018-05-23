@@ -84,3 +84,23 @@ a:hover {
 select::-ms-expand {
   display: none;
 }
+
+
+.hash-lnk {
+    font-size: 14px;
+    font-family: Consolas;
+}
+
+
+@media screen and (max-width: 640px) {
+
+    .hash-lnk {
+        font-size: 10px;
+        font-family: Consolas;
+    }
+
+    label
+    {
+        font-size:12px;
+    }
+}

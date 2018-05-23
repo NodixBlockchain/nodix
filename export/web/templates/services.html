@@ -1,4 +1,4 @@
-<!--=== Block Explorer ===-->
+<!--=== Node Services ===-->
 <style>
     .script_proc{
         font-size:12px;
@@ -82,15 +82,13 @@
                 <div class="row"><div class="col-md-2">method</div><div class="col-md-1"><input name="api_method" id="api_method" value="" />&nbsp;<span id="api_type"></span></div></div>
                 <div class="row"><div class="col-md-2">params</div><div class="col-md-1"><input name="api_params" id="api_params" value="" /></div></div>
                 <input type="button" value="execute" onclick="if ($('#api_type').val() == 'rpc') { do_rpc_request($('#api_method').val(), $('#api_request').val()); } else { do_cgi_request($('#api_method').val(), $('#api_request').val()); }" />
-                <div class="row">
-                    answser:<br/>
-                    <div class="col-md-4"><div name="responseCode"  id="responseCode"></div></div>
+                <div class="row">answser:<br/><div class="col-md-4"><div name="responseCode"  id="responseCode"></div></div>
                 </div>
             </div>
          </div>
     </section>
 </div>
-<!--=== End Block Explorer ===-->
+<!--=== End Node Services ===-->
 </div>
 <!--/wrapper-->
 

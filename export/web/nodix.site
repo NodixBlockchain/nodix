@@ -1,6 +1,7 @@
 let NODE_JSON_ARRAY stylesheets = `[
-	"//fonts.googleapis.com/css?family=Open+Sans:400,300,600&amp;subset=cyrillic,latin",
+	"/assets/fonts/fontawesome-webfont.woff2",
 	"/assets/plugins/bootstrap/css/bootstrap.min.css",
+	"/assets/css/app.css",
 	"/assets/css/style.css",
 	"/assets/css/headers/header-default.css",
 	"/assets/css/blocks.css",
@@ -45,8 +46,6 @@ let NODE_JSON_ARRAY node_modules  = `[]`
 
 let NODE_JSON_ARRAY node_accounts = `[]`
 
-let NODE_JSON_ARRAY node_addrs = `[]`
-
 let NODE_JSON_ARRAY nodeTypes = `[]`
 
 let NODE_BITCORE_TX_LIST node_apps = `[]`
@@ -70,24 +69,22 @@ let NODE_JSON_ARRAY app_types = `[]`
 page index = `
 	
 	 push scripts,"/assets/js/blocks.js"
+	 push scripts,"/assets/js/node.js"
 
 	
-	 node_adx.node_get_script_modules(node_modules);
-	
-	 node_adx.node_get_mem_pool		(SelfNode.mempool);
+	 node_adx.node_get_script_modules (node_modules);
+	 node_adx.node_get_mem_pool		  (SelfNode.mempool);
 	
 	
 	 html_head "NodiX INFOS" 
-	html_block "templates/menu.html"
-	
+
+	 html_block "templates/menu.html"
 	 html_block "templates/node.html"
 	
 	 html_scripts
 	
 	 html_var SelfNode;
-	
 	 html_var node_modules;
-	
 	 html_var SelfNode.mempool;
 	
 	 html_js
@@ -98,48 +95,25 @@ page index = `
 		api_base_url ='';
 		lang		= 'en';
 
-		$('#node_name').html(SelfNode.user_agent);
-		$('#node_version').html(SelfNode.version);
-		$('#node_bheight').html(SelfNode.block_height);
+		MyNode   = new Node();
+		MyBlocks = new BlockExplorer();
 
-		$('#node_port').html(SelfNode.p2p_addr.port);
-		$('#node_addr').html(SelfNode.p2p_addr.addr);
+		MyBlocks.create_block_infos ('lastblock');
 
-		$('#lastblock').html(SelfNode.last_block);
-		$('#lastblock').attr('href','nodix.site/block/'+SelfNode.last_block);
-		$('#lastblock').attr('data-target','#blockmodal');
-		$('#lastblock').attr('data-toggle','modal');
-
-		$('#lastpowblock').html(SelfNode.lastPOWBlk);
-		$('#lastpowblock').attr('href','nodix.site/block/'+SelfNode.lastPOWBlk);
-		$('#lastpowblock').attr('data-target','#blockmodal');
-		$('#lastpowblock').attr('data-toggle','modal');
-
-		$('#lastposblock').html(SelfNode.lastPOSBlk);
-		$('#lastposblock').attr('href','nodix.site/block/'+SelfNode.lastPOSBlk);
-		$('#lastposblock').attr('data-target','#blockmodal');
-		$('#lastposblock').attr('data-toggle','modal');
-
-		$('#currentpowdiff').html(SelfNode.current_pow_diff);
-		$('#currentposdiff').html(SelfNode.current_pos_diff);
-
-		$('#powreward').html(SelfNode.pow_reward);
-		$('#posreward').html(SelfNode.pos_reward);
-
-		make_node_html		('node_div',SelfNode);
+		MyNode.setInfos				(SelfNode);
+		MyNode.make_node_html		('node_div',SelfNode);
 
 		for(var n=0;n<SelfNode.peer_nodes.length;n++)
 		{
-			make_node_html		('peer_nodes_div',SelfNode.peer_nodes[n]);
+			MyNode.make_node_html	('peer_nodes_div',SelfNode.peer_nodes[n]);
 		}
 
-		make_modules_html("node_modules",node_modules);
-		update_mempool_txs(mempool,'mempool');
-		get_node_lag(SelfNode)
+		MyNode.make_modules_html	("node_modules",node_modules);
+		MyNode.update_mempool_txs	(mempool,'mempool');
+		MyNode.get_node_lag			(SelfNode)
 			
 	});
 	end_js
-
 	
 	html_block "templates/footer.html"
 	
@@ -150,23 +124,26 @@ page index = `
 
 	
 page services = `
+
+	push scripts, "/assets/js/node.js"
 	
-	html_head "NodiX SERVICE INFO ( SERVICES )" 
+	html_head  "NodiX SERVICE INFO ( SERVICES )" 
 	
 	html_block "templates/menu.html"
-	
 	html_block "templates/services.html"
 	
 	html_scripts
+
 	html_var SelfNode.http_service;
 
-	
 	html_js
 		$(document).ready(function () 
 		{
 			site_base_url = '/nodix.site';
-			api_base_url ='';
-			lang		= 'en';
+			api_base_url  = '';
+			lang		  = 'en';
+
+			MyNode = new Node();
 
 			$('#serv_port').html(http_service.port);
 			$('#serv_name').html(http_service.name);
@@ -174,64 +151,69 @@ page services = `
 			$('#index').html(http_service.indexpage);
 			$('#defaultmime').html(http_service.defaultmime);
 
-			make_mime_table('mimes',http_service.mimes);
+			MyNode.make_mime_table('mimes',http_service.mimes);
 
 			if(http_service.http_status==1)
 				$('#status').html	('running');
 			else
 				$('#status').html	('stopped');
 						
-			mods = http_service.modules;
-			make_modules_html	('service_modz_div',http_service.modules);
-			make_scripts_html	('service_scriptz_div',http_service.nodescripts);
+			MyNode.mods = http_service.modules;
+
+			MyNode.make_modules_html	('service_modz_div'    ,http_service.modules);
+			MyNode.make_scripts_html	('service_scriptz_div' ,http_service.nodescripts);
 		});
 	end_js
 
 	
 	html_block "templates/footer.html"
-
 `
 
 
-	
 page blocks = `
 
-	
 	push stylesheets,"/assets/css/plugins/blocks.css"
-	
 	push scripts,"/assets/js/plugins/datepicker.js"
-	
 	push scripts,"/assets/js/blocks.js"
 	
 	
 	html_head "NodiX BLOCK EXPLORER" 
 	
 	html_block "templates/menu.html"
-	
 	html_block "templates/blocks.html"
 	
 	html_scripts
-
 	
 	html_js
 	 
 	jQuery(document).ready(function () 
-	 {
-        
-        
-        Datepicker.initDatepicker(function (selectedDate) { blk_page_idx = 0; tx_page_idx = 0; txs = null; blocks = null; list_blocks(selectedDate, blk_page_idx, 0); list_txs(selectedDate, tx_page_idx); });
+	{
+	    lang			= 'en';
+        api_base_url	= '';
+		site_base_url	= '/nodix.site';
 
-        lang = 'en';
-        api_base_url = '';
-		site_base_url = '/nodix.site';
-        blk_page_idx = 0;
-        tx_page_idx = 0;
-        txs = null;
-        blocks = null;
-        selectedDate = $('#inline').datepicker({ dateFormat: 'yy-mm-dd' }).val();
+		MyBlocks = new BlockExplorer();
 
-        list_blocks(selectedDate, blk_page_idx, 0);
-        list_txs(selectedDate, tx_page_idx);
+		MyBlocks.create_day_nav		('navday', Math.round(new Date().getTime() / 1000));
+		MyBlocks.create_block_list	('blocks');
+		MyBlocks.create_block_infos ('blockInfos');
+
+        Datepicker.initDatepicker(function (selectedDate) 
+		{ 
+			MyBlocks.blk_page_idx = 0; 
+			MyBlocks.tx_page_idx = 0; 
+			MyBlocks.txs = null; 
+			MyBlocks.blocks = null;
+			MyBlocks.selectedhash = null;
+
+			MyBlocks.list_blocks(selectedDate, 0); 
+			MyBlocks.list_txs	(selectedDate); 
+		});
+
+        var selectedDate = $('#inline').datepicker({ dateFormat: 'yy-mm-dd' }).val();
+
+        MyBlocks.list_blocks	(selectedDate, 0);
+        MyBlocks.list_txs		(selectedDate);
 
     });
 	
@@ -242,21 +224,54 @@ page blocks = `
 
 `
 
+	
+page block(block_hash) = `
+
+	push stylesheets,"/assets/css/plugins/blocks.css"
+	push scripts,"/assets/js/blocks.js"
+	
+	html_head "NodiX BLOCK EXPLORER ( BLOCK )" 
+	
+	html_block "templates/menu.html"
+	html_block "templates/block.html"
+	
+	html_scripts
+	
+	html_js
+        
+	$(document).ready(function () 
+	{
+		lang			= 'en';
+		site_base_url	= '/nodix.site';
+		api_base_url	= '';
+         
+		var hash = '%block_hash%';
+
+		MyBlocks = new BlockExplorer();
+		MyBlocks.create_block_infos ('lastblock');
+
+		if (hash.length >= 64)
+			MyBlocks.selectBlockTxs(hash);
+		else
+			MyBlocks.get_lastblock();
+    });
+	end_js
+
+	html_block "templates/footer.html"
+`
+
+
 
     
 page address(addr,page_idx) = `
-
-
     
     push stylesheets,"/assets/css/plugins/blocks.css"
-	
     push scripts,"/assets/js/blocks.js"
 	
 	
     html_head "NodiX BLOCK EXPLORER ( ADDRESS )" 
 	
     html_block "templates/menu.html"
-	
     html_block "templates/address.html"
 	
     html_scripts
@@ -265,17 +280,25 @@ page address(addr,page_idx) = `
 		
     $(document).ready(function () 
 		{
+			var pagen;
 			site_base_url = '/nodix.site';
-			api_base_url ='';
-			currentAddr = '%addr%';
-			page_idx    = parseInt('%page_idx%');
-			lang		= 'en';
+			api_base_url  ='';
+			lang		  = 'en';
 
-			$('#imp_addr').val(currentAddr);
-			list_addr_txs(currentAddr, page_idx);
+			MyBlocks			  = new BlockExplorer();
+			MyBlocks.create_addr_panel('addrs','%addr%');
+
+			pagen				 =	parseInt('%page_idx%');
+
+			if(pagen>0)
+				MyBlocks.tx_page_idx  = pagen;
+			else
+				MyBlocks.tx_page_idx  = 0;
+			
+			MyBlocks.get_addr_balance	();
+			MyBlocks.list_addr_txs		();
 		});
 	end_js
-
 	
 	html_block "templates/footer.html"
 
@@ -285,16 +308,12 @@ page address(addr,page_idx) = `
 	
 page tx(txid) = `
 
-	
 	push stylesheets,"/assets/css/plugins/blocks.css"
-	
 	push scripts,"/assets/js/blocks.js"
-	
 	
 	html_head "NodiX BLOCK EXPLORER ( TRANSACTION )" 
 	
 	html_block "templates/menu.html"
-	
 	html_block "templates/tx.html"
 	
 	html_scripts
@@ -306,205 +325,68 @@ page tx(txid) = `
 			lang			= 'en';
 			site_base_url = '/nodix.site';
 	        api_base_url	= '';
-		    var txid		= '%txid%';
-			if (txid.length==64) {
-				$('#imp_tx').val(txid);
-                get_tx(txid);
-			}
+
+			MyBlocks			  = new BlockExplorer();
+			MyBlocks.create_tx_panel('txPanel','%txid%');
+
 		});
 	end_js
 
-	
 	html_block "templates/footer.html"
-
 `
-
-
-	
-page block(block_hash) = `
-
-	
-
-	push stylesheets,"/assets/css/plugins/blocks.css"
-	push scripts,"/assets/js/blocks.js"
-	
-	html_head "NodiX BLOCK EXPLORER ( BLOCK )" 
-	
-	html_block "templates/menu.html"
-	
-	html_block "templates/block.html"
-	
-	html_scripts
-	
-	
-	html_js
-        
-	$(document).ready(function () 
-	{
-		lang			= 'en';
-		site_base_url = '/nodix.site';
-		api_base_url	= '';
-         
-		var hash = '%block_hash%';
-		if (hash.length >= 64)
-		{
-			$('#imp_hash').val(hash);
-			selectBlockTxs(hash);
-		}
-		else
-			get_lastblock();
-    });
-	end_js
-
-	
-	html_block "templates/footer.html"
-
-`
-
 
 	
 page wallet(account_name) = `
 
 	
 	node_adx.node_list_accounts	(node_accounts)
-
-	
-	set logged = 0;
-	
-	set has_site_api = 0;
-
-	
-	if(cookies.sessionid ! "" )
-		
-		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
-	
-	endif
-
-	
-	
-	node_adx.node_list_addrs	(account_name,node_addrs)
-		
-	
-	node_adx.node_has_service_module("site_cgi") ? 
-		set has_site_api = 1;
-	endor
-	
 	
 	push stylesheets,"/assets/css/plugins/blocks.css"
 	
-	push scripts,"/assets/js/blocks.js"
-	
+	push scripts,"/assets/js/blocks.js"	
 	push scripts,"/assets/js/ecdsa_bundle.js"
-    
 	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
-    
 	push scripts,"/assets/js/keys.js"
-    
 	push scripts,"/assets/js/md5.min.js"
-
-
 	
 	html_head "NodiX WALLET" 
 	
 	html_block "templates/menu.html"
-	
 	html_block "templates/wallet.html"
 	
 	html_scripts
-	html_var node_accounts;
-	
-	html_var node_addrs;
-	
-	html_var logged;
-	
-	html_var has_site_api;
-	
-	html_var cookies.sessionid;
-	
+
 	html_js
-    
+		jQuery(document).ready(function() {
+		
+			lang			='en';
+			api_base_url	='';
+			site_base_url	='/nodix.site';
+			ec				= new EC('secp256k1');
+
+			MyAccount		= new AccountList	('account_list','my_wallet',{'withSecret':false,'staking':false,'newAccnt':true});
+			MyAccount.setAccounts				(%node_accounts%,'%account_name%');
 	
-	jQuery(document).ready(function() {
+			$('#addrlabel').val('new address');
 		
-	
-		
-	lang			='en';
-		
-	api_base_url	='';
-		
-	site_base_url	='/nodix.site';
-		
-	ec				= new EC('secp256k1');
-
-		
-	accountName		= '%account_name%';
-
-		
-	$('#account_name').val(accountName);  
-		
-	$('#addrlabel').val('new address');
-
-		
-	my_accounts		= node_accounts;
-		
-	my_addrs		= node_addrs;
-
-		
-	update_accounts ('new account');
-		
-	select_account  (accountName);
-		
-	update_my_addrs ('my_address_list_table');
-
-		
-	$('#account_name').val(accountName);  
-
-		
-	if(has_site_api)
-		
-	{
-			
-		if(accountName == '')
-$('#signin').css('display', 'none'); 
-		
-	}
-		
-	else
-		
-	{
-			
-		$('#signin').css('display', 'none'); 
-		
-	}
-
-	check_anon_access	();
+			check_anon_access	();
    
-	});
+		});
 	end_js
 
 	html_block "templates/footer.html"
 `
 
-
-
-	
-	
 page staking(account_name) = `	
 	push stylesheets,"/assets/css/plugins/blocks.css"
 	
 	push scripts,"/assets/js/blocks.js"
-	
 	push scripts,"/assets/js/ecdsa_bundle.js"
-    
 	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
-    
 	push scripts,"/assets/js/keys.js"
-    
 	push scripts,"/assets/js/md5.min.js"
-
 	
 	node_adx.node_list_accounts	(node_accounts)
-	node_adx.node_list_addrs	(account_name,node_addrs)
 
 	set has_site_api = 0;
 	
@@ -515,14 +397,9 @@ page staking(account_name) = `
 	html_head "NodiX WALLET" 
 	
 	html_block "templates/menu.html"
-	
 	html_block "templates/staking.html"
 	
 	html_scripts
-	
-	html_var node_accounts;
-	
-	html_var node_addrs;
 	
 	html_var has_site_api;
 	
@@ -530,25 +407,20 @@ page staking(account_name) = `
     
 	jQuery(document).ready(function() {
 		
-	lang			='en';
-	api_base_url	='';
-	site_base_url	='/nodix.site';
+		lang			='en';
+		api_base_url	='';
+		site_base_url	='/nodix.site';
 		
-	ec				= new EC('secp256k1');
-	accountName		= '%account_name%';
-	my_accounts		= node_accounts;
-		
-	update_accounts		('select an account');
-		
-	get_staking_addrs	('%account_name%',node_addrs);
+		ec				= new EC('secp256k1');
 
-	
+		MyAccount		= new AccountList	('account_list','my_wallet',{'withSecret':true,'staking':true, 'newAccnt':false});
+
+		MyAccount.setAccounts				(%node_accounts%,'%account_name%');
 
     
-	});
+		});
 	end_js
 
-	
 	html_block "templates/footer.html"
 `
 
@@ -560,6 +432,7 @@ page application(app_name,account_name) = `
 	push scripts,"/assets/js/ecdsa_bundle.js"
 	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
 	push scripts,"/assets/js/keys.js"
+	push scripts,"/assets/js/apps.js"
 
 	set logged = 0;
 	set has_app_root = 0;
@@ -570,7 +443,6 @@ page application(app_name,account_name) = `
 		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
 	endif
 
-	node_adx.node_list_addrs	(account_name,node_addrs)
 	node_adx.node_get_types_def (nodeTypes)
 
 	node_adx.node_get_root_app	(root_app_hash) ? set has_app_root = 1; endor
@@ -618,8 +490,6 @@ page application(app_name,account_name) = `
 	html_var formvars.myfile;
 	html_var formvars.mylayout;
 	html_var formvars.mymod;
-	html_var node_accounts;
-	html_var node_addrs;
 	html_var has_site_api;
 	html_var logged;
 	html_var cookies.sessionid;
@@ -629,11 +499,7 @@ page application(app_name,account_name) = `
 	html_var root_app_addr;
 	html_var root_app_fees;
 	html_var app_found;
-	html_var my_app;
 	html_var app_name;
-	html_var app_types;
-	html_var nodeTypes;
-	
 
 
 	html_js
@@ -645,74 +511,18 @@ page application(app_name,account_name) = `
 		site_base_url	='/nodix.site';
 		
 		ec				= new EC('secp256k1');
-		accountName		= '%account_name%';
 		paytxfee		=  %SelfNode.paytxfee%;
-		my_accounts		= node_accounts;
 
-		
 		$('#paytxfee').val(paytxfee / unit);
 
-		update_accounts		('select an account');
-		select_account		(accountName);
-
 		
+		MyAccount		= new AccountList	('addresses','list_container',{'withSecret':true,'newAccnt':false});
+		MyAccount.addAccountSelect			('obj_addr');
+		MyAccount.addAccountSelect			('fileKey');
+		MyAccount.setAccounts				(%node_accounts%,'%account_name%');
 
-		if(accountName == '')
-		{
-			$('#accnt_pw').css('display', 'none');
-			$('#account_name').val('');  
-			$('#account_name').css('display', 'none');
-		}
-
-		if(has_app_root == 1)
-		{
-			$('#app_root_error').css('display','none');
-			$('#app_root_infos').css('display','block');
-			$('#root_app_txh').html(root_app_hash);
-			$('#root_app_addr').html(root_app_addr);
-
-			if(app_found == 1)
-			{
-				var n;
-				$('#app_infos').css('display','block');
-				$('#app_error').css('display','none');
-				$('#app').html(get_app_html(my_app));
-
-				update_types_select	(nodeTypes,app_types,'new_type_key');
-				update_app_types	(my_app.txid,app_types);
-				
-				
-				for(n=0;n<app_types.length;n++)
-				{
-					get_app_type_objs(app_name,app_types[n].id);
-				}
-				
-				get_app_files(app_name);
-				
-
-				if(myfile)
-				  update_app_upl(myfile);
-
-				if(mylayout)
-				  update_app_upl_layout(mylayout);
-
-				if(mymod)
-				  update_app_upl_module(mymod);
-				
-			}
-			else
-			{
-				$('#app_infos').css('display','none');
-				$('#app_error').css('display','block');
-				$('#app_name').html(app_name);
-			}
-		}
-		else
-		{
-			$('#app_root_error').css('display','block');
-			$('#app_root_infos').css('display','none');
-		}
-
+		MyApps			=	new Applications();
+		MyApps.setApp		(%my_app%,%nodeTypes%,%app_types%);
 
 	});
 	end_js
@@ -728,6 +538,8 @@ page applications(account_name) = `
 	push scripts,"/assets/js/ecdsa_bundle.js"
 	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
 	push scripts,"/assets/js/keys.js"
+	push scripts,"/assets/js/apps.js"
+
 
 	set logged = 0;
 	set has_app_root = 0;
@@ -739,9 +551,6 @@ page applications(account_name) = `
 	if(cookies.sessionid ! "" )
 		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
 	endif
-
-	node_adx.node_list_addrs	(account_name,node_addrs)
-
 
 	node_adx.node_get_root_app	(root_app_hash) ? set has_app_root = 1; endor
 
@@ -756,15 +565,12 @@ page applications(account_name) = `
 		set has_site_api = 1;
 	endor
 
-	
-
 	html_head "NodiX Applications" 
 	html_block "templates/menu.html"
 	html_block "templates/applications.html"
 	html_scripts
 
-	html_var node_accounts;
-	html_var node_addrs;
+	
 	html_var has_site_api;
 	html_var logged;
 	html_var cookies.sessionid;
@@ -773,7 +579,6 @@ page applications(account_name) = `
 	html_var root_app_hash;
 	html_var root_app_addr;
 	html_var root_app_fees;
-	html_var node_apps;
 
 	html_js
 	jQuery(document).ready(function() 
@@ -784,39 +589,18 @@ page applications(account_name) = `
 		site_base_url	='/nodix.site';
 		
 		ec				= new EC('secp256k1');
-		accountName		= '%account_name%';
 		paytxfee		=  %SelfNode.paytxfee%;
-		my_accounts		= node_accounts;
 
-		
 		$('#paytxfee').val(paytxfee / unit);
 
-		update_accounts		('select an account');
-		select_account		(accountName);
+		
+		MyAccount		=	new AccountList	('addresses','list_container',{'withSecret':true,'newAccnt':false});
+		MyAccount.addAccountSelect			('app_addr');
+		MyAccount.addAccountSelect			('new_app_addr');
+		MyAccount.setAccounts				(%node_accounts%,'%account_name%');
 
-		if(accountName == '')
-		{
-			$('#accnt_pw').css('display', 'none');
-			$('#account_name').val('');  
-			$('#account_name').css('display', 'none');
-		}
-
-		if(has_app_root == 1)
-		{
-			$('#app_root_new').css('display','none');
-			$('#app_root_infos').css('display','block');
-			$('#root_app_txh').html(root_app_hash);
-			$('#root_app_addr').html(root_app_addr);
-			$('#root_app_fees').html(root_app_fees / unit);
-			$('#totalfee').html((paytxfee+root_app_fees ) / unit);
-
-			$('#apps').html(get_apps_html(node_apps));
-		}
-		else
-		{
-			$('#app_root_new').css('display','block');
-			$('#app_root_infos').css('display','none');
-		}
+		MyApps			=	new Applications();
+		MyApps.setApps						(%node_apps%);
 
 	});
 	end_js
@@ -841,19 +625,14 @@ page transaction(account_name) = `
 		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
 	endif
 
-	node_adx.node_list_addrs	(account_name,node_addrs)
 	
 	html_head "NodiX WALLET transaction" 
 	
 	html_block "templates/menu.html"
-	
 	html_block "templates/transaction.html"
-	
 	
 	html_scripts
 	
-	html_var node_accounts;
-	html_var node_addrs;
 	html_var logged;
 	html_var cookies.sessionid;
 	
@@ -862,44 +641,23 @@ page transaction(account_name) = `
 	{
 		
 		lang			='en';
-		
 		api_base_url	='';
-		
 		site_base_url	='/nodix.site';
 		
 		ec				= new EC('secp256k1');
-		
-		accountName		= '%account_name%';
-		
 		paytxfee		=  %SelfNode.paytxfee%;
-	
-		my_accounts		= node_accounts;
-
 		
 		$('#paytxfee').val(paytxfee);
-
 		
-		update_accounts		('select an account');
-	
-		select_account		(accountName);
-
+		MyAccount		= new AccountList	('account_list','my_wallet',{'withSecret':true,'staking':false,'newAccnt':false});
+		MyAccount.setAddressText			('Enter the secret key for the addresses you want to use for the transaction on below, and check the box to enable transaction from this address.');
+		MyAccount.setAccounts				(%node_accounts%,'%account_name%');
 		
-		if(accountName == '')
-		{
-	
-			$('#accnt_pw').css('display', 'none');
-			$('#account_name').val('');  
-			
-			$('#account_name').css('display', 'none');
+		$('.coin_unit').html				(get_amount_coin(unit));
 		
-		}
-
-		get_source_addrs	('%account_name%',node_addrs);
 
 	});
 	end_js
 
-	
 	html_block "templates/footer.html"
 `
-

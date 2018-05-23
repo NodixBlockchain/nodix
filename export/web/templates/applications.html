@@ -1,17 +1,9 @@
    <script type="text/javascript">
-       function addr_select(obj) {
 
+       function select_addr(obj) {
            if (has_app_root == 0) {
                $('#new_app_addr').val($(obj).attr('addr'));
            }
-          
-       }
-
-       function get_unspent(obj, table_name) {
-           addr_txs = null;
-           addr_tx_page_idx = 0;
-           $('#list_container').css('display', 'block');
-           list_unspent($(obj).attr('addr'), $('#' + table_name).attr('txdiv'));
        }
    </script>
    <style>
@@ -23,10 +15,8 @@
        {
            min-width:120px;
        }
-
        #list_container
        {
-           display:none;
            max-height:300px;
            width:100%;
            overflow-y:scroll;
@@ -41,93 +31,58 @@
            color:red;
        }
    </style>
-<div class="content">
+
+    <div class="content">
     <section>
         <h2>Addresses</h2>
-        <div id="addresses">
-            <h3>Account</h3><select style="display:inline;" id="my_account" name="my_account" style="max-width:120px;" onchange="var value = $(this).val(); if (value.length == 0) { $('#accnt_pw').css('display', 'none'); $('#account_name').val(''); $('#account_name').css('display', 'none'); my_addrs = null; update_my_addrs_divs('address_list', null); } else { $('#accnt_pw').css('display', 'inline'); select_account(value); if (has_app_root) { get_addrs(value, 'address_list_table', get_unspent); get_addrs_select(value, 'app_addr'); } else { get_addrs(value, 'address_list_table', addr_select); } }"></select>
-            <span id="accnt_pw"><label>password</label><input size="8" type="password" name="pw" id="pw" /><input type="button" id="signin" name="signin" value="signin" /></span>
-            <table id="address_list_table" txdiv="list_table" class="table"><thead><tr><th>address</th><th>confirmed</th><th>unconfirmed</th><th>secret</th><th>use in transaction</th></tr></thead><tbody></tbody></table>
-            <div id="list_container">
-                <section>
-                    <h3>Unspents</h3>
-                    <table id="list_table" class="table"><thead><tr><th>time</th><th>tx</th><th>amount</th><th>nconf</th></tr></thead><tbody></tbody></table>
-                </section>
+        <div id="addresses"></div>
+    </section>
+    <section>
+        <h2>Transactions</h2>
+        <div id="list_container"></div>
+    </section>
+    <hr />
+    <div id="app_root_infos"></div>
+    <div id="app_list"></div>
+
+    <section>
+        <h2>New application</h2>
+        <div id="new_app" class="container">
+            <form name="new app">
+                <fieldset>
+                    <legend>Application infos</legend>
+                    <div class="row">  <div class="col-md-4"><span id="app_error"></span></div></div>
+                    <div class="row">
+                        <div class="col-md-2"><label>Application name</label></div><div class="col-md-2"><input type="text" id="app_name" name="app_name" /></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2"><label>Application address</label></div><div class="col-md-2"><select name="app_addr" id="app_addr"></select></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2"><label>Application fees</label></div><div class="col-md-2"><span id="root_app_fees"></span></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2"><label>Transaction fees</label></div><div class="col-md-2"><input type="text" name="paytxfee" id="paytxfee" /></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2"><label>Total fees</label></div><div class="col-md-2"><span id="totalfee"></span></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2"><label>Selected addrs:</label></div><div class="col-md-2"><span id="selected_balance"></span></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2"><input type="button" value="create app" onclick="MyApps.create_app($('#app_addr').val(), $('#app_name').val(), $('#paytxfee').val());" /></div>
+                    </div>
+                </fieldset>
+            </form>
+            <div class="row">
+                <div class="col-md-6"><div id="app_tx"></div></div>
+            </div>
+            <div class="row">
+                <div class="col-md-6"><input type="button" onclick=" signtxinputs(my_tx.txid, my_tx.txsin);" value="sign & send" /></div>
             </div>
         </div>
     </section>
-    <hr />
 
-    <div id="app_root_infos">
-        <section>
-            <h2>Application root</h2>
-            <div class="container">
-                <div class="row">
-                    <div class="col-md-2">txid:<span id="root_app_txh"></span></div>
-                </div>
-                <div class="row">
-                    <div class="col-md-2">addr:<span id="root_app_addr"></span></div>
-                </div>
-            </div>
-        </section>
-        <hr />
-        <section>
-            <h2>Applications</h2>
-            <div class="container" id="apps"></div>
-        </section>
-        <hr />
-        <section>
-            <h2>New application</h2>
-            <div id="new_app" class="container">
-                <form name="new app">
-                    <fieldset>
-                        <legend>Application infos</legend>
-                        <div class="row">  <div class="col-md-4"><span id="app_error"></span></div></div>
-                        <div class="row">
-                            <div class="col-md-2"><label>Application name</label></div><div class="col-md-2"><input type="text" id="app_name" name="app_name" /></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-2"><label>Application address</label></div><div class="col-md-2"><select name="app_addr" id="app_addr"></select></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-2"><label>Application fees</label></div><div class="col-md-2"><span id="root_app_fees"></span></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-2"><label>Transaction fees</label></div><div class="col-md-2"><input type="text" name="paytxfee" id="paytxfee" /></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-2"><label>Total fees</label></div><div class="col-md-2"><span id="totalfee"></span></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-2"><label>Selected addrs:</label></div><div class="col-md-2"><span id="selected_balance"></span></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-2"><input type="button" value="create app" onclick="create_app($('#app_addr').val(), $('#app_name').val(), $('#paytxfee').val(), my_addrs);" /></div>
-                        </div>
-                    </fieldset>
-                </form>
-                <div class="row">
-                    <div class="col-md-6"><div id="app_tx"></div></div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6"><input type="button" onclick=" signtxinputs(my_tx.txid, my_tx.txsin);" value="sign & send" /></div>
-                </div>
-            </div>
-        </section>
-    </div>
-    <div id="app_root_new">
-        <section>
-            <h2>New app root</h2>>
-            <div id="address_list" class="table"></div>
-            <div class="container">
-                <fieldset>
-                    <legend>no app root set</legend>
-                    <div class="row">
-                        <div class="col-md-2"><label>select an address to use as approot</label></div><div class="col-md-2"><input type="text" name="new_app_addr" id="new_app_addr" /></div>
-                    </div>
-                    <div class="row"><div class="col-md-2"><input type="button" value="set app root" name="new_app_submit" id="new_app_submit" onclick="set_app_root($('#new_app_addr').val());" /></div></div>
-                </fieldset>
-            </div>
-        </section>
-    </div>
+    <div id="app_root_new"></div>
 </div>

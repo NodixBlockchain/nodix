@@ -1,12 +1,14 @@
 <style type="text/css">
-    #staking_div {
-        border: 1px solid;
-        border-radius: 4px;
-        padding: 8px;
-    }
-
     #list_table td {
         vertical-align: top;
+    }
+    #newtxid
+    {
+        display:'none';
+    }
+    
+    .selected {
+        background-color: #AAA;
     }
 
     .tx_error {
@@ -16,118 +18,72 @@
     .tx_ready {
         color: #0F0;
     }
+
+    .tx_unconf {
+        color: #484;
+    }
 </style>
 
 <script language="javascript">
-    var ec;
-    var addrs = null;
-    var unspents = null;
-    var stake_unspents = null;
-    var totalweight = 0;
-    var pubkey;
-    var privkey;
     var unit = 1;
-    var staketimer = null;
-    var block_target, now, last_block_time;
-    var nHashes = 0;
-
-    function get_source_addrs(username,user_addrs) 
+   
+    function update_unit(select_obj)
     {
-        var n;
-        var arAddr = [];
-        my_addrs = user_addrs;
-        accountName = username;
+        var amount = parseFloat($('#amount').val()) * unit;
 
-        update_staking_addrs('address_list_table');
+        unit = select_obj.options[select_obj.selectedIndex].value;
+        $('.coin_unit').html(select_obj.options[select_obj.selectedIndex].text + ' / ' + '&nbsp;' + get_amount_coin(unit));
 
-        $('.dostake').change(function () {
-            var addr = $(this).attr('addr');
-            var secret = $('#secret_' + addr).val();
-            rpc_call('getprivaddr', [accountName, addr], function (keyData) {
-                var AddrAr = [];
-                var DecHexkey = strtoHexString(un_enc(secret, keyData.result.privkey.slice(0, 64)));
-                var test_key = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
-                var tpubkey = test_key.getPublic().encodeCompressed('hex');
-                rpc_call('pubkeytoaddr', [tpubkey], function (data) {
-                    if (data.result.addr != addr) {
-                        $('#dostake_' + addr).prop('checked', false);
-                        $('#secret_' + addr).css('color', 'red');
-                        $('#dostake_' + addr).attr('pubkey', '');
-                        $('#dostake_' + addr).attr('privkey', '');
-                    }
-                    else {
-                        $('#dostake_' + addr).prop('checked', true);
+        MyAccount.update_unspent    ();
+        MyAccount.update_addrs      ();
 
+        if(my_tx!=null)
+            $('#newtx').html(get_tmp_tx_html(my_tx));
+        else
+            $('#newtx').html('');
 
-                        $('#dostake_' + addr).attr('pubkey' , tpubkey);
-                        $('#dostake_' + addr).attr('privkey', DecHexkey);
-                        $('#secret_' + addr).css  ('color', 'green');
-                    }
-
-                    for (n = 0; n < my_addrs.length; n++) {
-                        if ($('#dostake_' + my_addrs[n].address).is(':checked'))
-                            AddrAr.push(my_addrs[n].address);
-                    }
-                    list_unspent(AddrAr, 'list_table');
-                });
-            });
-        });
+        $('#amount').val(amount / unit);
     }
+
     </script>
     <div class="container">
         <div class="row">
         <div class="col-sm-1"><label>Units</label></div>
         <div class="col-md-2">
-            <select style="max-width:120px;" onchange="unit = this.options[this.selectedIndex].value; update_unspent('list_table'); $('#stakeweight').html(totalweight / unit); update_staking_addrs('address_list_table');" id="units" name="units">
-            <option value="1">satoshis</option>
-            <option value="1000000">cents</option>
-            <option value="100000000">coin</option>
+            <select style="max-width:120px;" onchange="update_unit(this)" id="units" name="units">
+                <option value="100000000">coin</option>
+                <option value="1000000">cents</option>
+                <option value="1">satoshis</option>
             </select>
         </div>
         </div>
     </div>
+
+    <section>
+        <h2 class="heading-md">Select your account</h2>
+        <div id="account_list"></div>
+    </section>
+
     <div class="container">
         <div class="row">
-            <div class="col-md-2"><label>Account</label></div>
-            <div class="col-md-2">
-                <select id="my_account" name="my_account" style="max-width:120px;" onchange="var value = $(this).val(); if (value.length == 0) { $('#accnt_pw').css('display', 'none'); $('#account_name').val('');  $('#account_name').css('display', 'none'); my_addrs = null; update_my_addrs('address_list_table'); } else { $('#accnt_pw').css('display', 'block'); select_account(value); get_addrs(value, 'address_list_table'); }"></select>
-            </div>
-
-        </div>
-
-        <div id="accnt_pw">
-            <div class="row">
-                <div class="col-md-2"><label>password</label></div><div class="col-md-2"><input size="8" type="password" name="pw" id="pw" /><input type="button" id="signin" name="signin" /></div>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="container">
-    <p>Enter the secret key for the addresses you want to use for the transaction on below, and check the box to enable transaction from this address.</p>
-    <table id="address_list_table" txdiv="list_table" class="table">
-        <thead><tr><th>address</th><th>confirmed</th><th>unconfirmed</th><th>secret</th><th>use in transaction</th></tr></thead>
-        <tbody></tbody>
-    </table>
-    </div>
-    <div class="container">
-        <div class="row">
-            <div class="col-md-2">send : <input name="amount" id="amount" type="text" /> </div>
+            <div class="col-md-2">send : <br /><input name="amount" id="amount" type="text" /> </div>
+            <div class="col-md-2"><br /><span class="coin_unit"></span></div>
             <div class="col-md-2">tx fee : <input name="paytxfee" id="paytxfee" type="text" /> </div>
-
             <div class="col-md-2">to : <input type="text" id="dstAddr" name="dstAddr" /> </div>
-            <div class="col-md-2"><input type="button" value="view tx" onclick=" maketxfrom(getMyAddrs(), $('#amount').val(), $('#dstAddr').val(), 'list_table');" /></div>
+            <div class="col-md-2"><input type="button" value="view tx" onclick=" maketxfrom(MyAccount.getSelectedAddrs(), Math.ceil( (parseFloat($('#amount').val())*unit)), $('#dstAddr').val());" /></div>
         </div>
-
         <div class="row">
-            <div class="col-md-6"><div id="newtx"></div><input type="button" onclick=" signtxinputs(my_tx.txid, my_tx.txsin);" value="sign & send" /></div>
+            <div class="col-md-6">Selected balance : <div id="selected_balance"></div></div>
+        </div>
+        <div class="row">
+            <div id="div_newtxid" class="col-md-6">new tx id : <span id="newtxid"></span></div>
+        </div>
+        <div class="row">
+            <div class="col-md-6"><div id="newtx"></div><input id="sendtx_but" type="button" disabled="disabled" onclick=" signtxinputs(my_tx.txid, my_tx.txsin);" value="sign & send" /></div>
         </div>
     </div>
 
-<div class="container">
-    <div class="row">
-        <div class="col-md-6">
-            <table id="list_table" class="table"><thead><tr><th>time</th><th>tx</th><th>amount</th><th>nconf</th></tr></thead><tbody></tbody></table>
-        </div>
-    </div>
-</div>
+    <section>
+        <div id="my_wallet"></div>
+    </section>
+

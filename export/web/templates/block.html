@@ -6,40 +6,20 @@
                 <h2>block explorer</h2>
                 <div style="vertical-align:bottom;">
                     <span>Units : </span>
-                    <select onchange="unit = this.options[this.selectedIndex].value; updateblock(block); update_txs(txs, 'tx_list');" id="units" name="units">
+                    <select onchange="unit = this.options[this.selectedIndex].value; MyBlocks.updateblock(block); MyBlocks.update_txs(txs);" id="units" name="units">
                         <option value="100000000">ADX</option>
                         <option value="100000">mADX</option>
                         <option value="100">µADX</option>
                     </select>
-                    <div style="text-align:center;vertical-align:bottom;padding-bottom:8px;">enter a block or tx hash.<input type="text" id="imp_hash" size="64" name="imp_hash" value="" /><input type="button" value="search" onclick="selectBlock( $('#imp_hash').val());" /></div>
+                    <div style="text-align:center;vertical-align:bottom;padding-bottom:8px;">enter a block or tx hash.<input type="text" id="imp_hash" size="64" name="imp_hash" value="" /><input type="button" value="search" onclick="MyBlocks.selectBlock( $('#imp_hash').val());" /></div>
                 </div>
             </div>
         </div>
     </section>
     <section>
-        <div id="lastblock">
-            <div><h1>block&nbsp;<span id="blockhash"></span></h1></div>
-            <table id="tblblock" cellpadding="0" cellspacing="0" border="0">
-                <tr><td class="lbl">height :</td> <td class="val" id="height"></td></tr>
-                <tr><td class="lbl">hash :</td> <td class="val" id="hash"></td></tr>
-                <tr><td class="lbl">prevblockhash :</td> <td onclick="selectBlockTxs(this.innerHTML);" class="val block_hash" id="previousblockhash"></td></tr>
-                <tr><td class="lbl">nextblockhash :</td> <td onclick="selectBlockTxs(this.innerHTML);" class="val block_hash" id="nextblockhash"></td></tr>
-                <tr><td class="lbl">time :</td> <td class="val" id="time"></td></tr>
-                <tr><td class="lbl">reward:</td> <td class="val" id="reward"></td></tr>
-                <tr><td class="lbl">confirmations :</td> <td class="val" id="confirmations"></td></tr>
-                <tr><td class="lbl">difficulty :</td> <td class="val" id="difficulty"></td></tr>
-                <tr><td class="lbl">merkleroot :</td> <td class="val" id="merkleroot"></td></tr>
-                <tr><td class="lbl">nonce :</td> <td class="val" id="nonce"></td></tr>
-                <tr><td class="lbl">bits : </td><td class="val" id="bits"></td></tr>
-                <tr><td class="lbl">difficulty hash :</td> <td class="val" id="diffhash"></td></tr>
-                <tr><td class="lbl">proofhash :</td> <td class="val" id="proofhash"></td></tr>
-                <tr><td class="lbl">size :</td> <td class="val" id="size"></td></tr>
-                <tr><td class="lbl">stakemodifier2 :</td> <td class="val" id="stakemodifier2"></td></tr>
-                <tr><td class="lbl">version :</td> <td class="val" id="version"></td></tr>
-                <tr><td class="lbl">txs :</td> <td class="val" id="txs"></td></tr>
-            </table>
-            <div id="tx_list"></div>
-        </div>
+        <h1>block&nbsp;<span id="blockhash"></span></h1>
+        <div id="lastblock"></div>
+        <div id="tx_list"></div>
     </section>
 </div>
 <!--=== End Block Explorer ===-->

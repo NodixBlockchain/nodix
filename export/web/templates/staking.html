@@ -9,6 +9,10 @@
         vertical-align: top;
     }
 
+    .selected {
+        background-color: #AAA;
+    }
+
     .tx_error {
         color: #F00;
     }
@@ -16,21 +20,17 @@
     .tx_ready {
         color: #0F0;
     }
+
+    .tx_unconf {
+        color: #484;
+    }
 </style>
 
 <script language="javascript">
     var ec;
-    var addrs = null;
-    var unspents = null;
-    var stake_unspents = null;
-    var totalweight = 0;
-    var pubkey;
-    var privkey;
     var unit = 1;
     var staketimer = null;
-    var block_target, now, last_block_time;
     var nHashes = 0;
-
 
     function staking_loop(hash_data, time_start, time_end, diff) {
         var ct;
@@ -52,58 +52,65 @@
         return 0;
     }
 
-    function check_all_staking() {
-        if ($('#do_staking').prop('checked')) {
-            if (stake_unspents != null) {
+    function check_all_staking()
+    {
+        if ($('#do_staking').prop('checked'))
+        {
+            if (MyAccount.staking_unspents != null) {
                 var n;
                 var time_start, time_end;
                 var timeStart = Math.floor(new Date().getTime() / 1000);
                 var timeBegin = Math.floor((timeStart + 15) / 16) * 16;
-                var num_stake_unspents = stake_unspents.length;
-                if (last_block_time > (now - block_target)) {
-                    time_start = Math.floor((last_block_time + 15) / 16) * 16;
-                    time_end = time_start + block_target;
+
+                var num_stake_unspents = MyAccount.staking_unspents.length;
+
+                if (stake_infos.last_block_time > (stake_infos.now - stake_infos.block_target)) {
+                    time_start  = Math.floor((stake_infos.last_block_time + 15) / 16) * 16;
+                    time_end    = time_start + stake_infos.block_target;
                 }
                 else {
-                    time_start = timeBegin - 16;
-                    time_end = timeBegin + 16;
+                    time_start  = timeBegin - 16;
+                    time_end    = timeBegin + 16;
                 }
                 nHashes = 0;
 
                 for (n = 0; n < num_stake_unspents; n++) {
                     var txtime, staking;
-                    staking = stake_unspents[n];
-                    //console.log('staking : ' + staking.txid + '[' + staking.vout + '] ' + time_start + ' to ' + time_end);
-                    txtime = staking_loop(staking.hash_data, time_start, time_end, staking.difficulty);
+
+                    staking = MyAccount.staking_unspents[n];
+                    txtime  = staking_loop(staking.hash_data, time_start, time_end, staking.difficulty);
+
                     if (txtime > 0) {
-                        var pubkey = $('#dostake_' + staking.dstaddr).attr('pubkey');
+                        var pubkey = $('#selected_' + staking.dstaddr).attr('pubkey');
                         rpc_call('getstaketx', [staking.txid, staking.vout, txtime, pubkey], function (staketx) {
                             var txh, txa, secret;
+
                             if (!staketx.error) {
                                 txh = staketx.result.txhash;
-                                bh = staketx.result.newblockhash;
+                                bh  = staketx.result.newblockhash;
                                 txa = staketx.result.addr;
 
-                                rpc_call('getprivaddr', [accountName, txa], function (keyData) {
+                                rpc_call('getprivaddr', [MyAccount.accountName, txa], function (keyData) {
 
                                     if (!keyData.error) {
-                                        secret = $('#secret_' + txa).val();
-                                        var DecHexkey = strtoHexString(un_enc(secret, keyData.result.privkey.slice(0, 64)));
-                                        var keys = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
+                                        secret          = $('#secret_' + txa).val();
+                                        var DecHexkey   = strtoHexString(un_enc(secret, keyData.result.privkey.slice(0, 64)));
+                                        var keys        = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
+
                                         // Sign message (must be an array, or it'll be treated as a hex sequence)
-                                        var pubk = keys.getPublic().encodeCompressed('hex');
-                                        var signature = keys.sign(txh, 'hex');
+                                        var pubk        = keys.getPublic().encodeCompressed('hex');
+                                        var signature   = keys.sign(txh, 'hex');
+
                                         // Export DER encoded signature in Array
                                         //var derSign = signature.toDER('hex');
                                         var derSign = signature.toLowS();
-                                        rpc_call('signstaketx', [bh, derSign, pubk], function (txsign) {
-                                            var hash = txsign.result.newblockhash;
-                                            var blocksignature = keys.sign(hash, 'hex');
-                                            //var derSign = blocksignature.toDER('hex');
-                                            var derSign = blocksignature.toLowS();
 
-                                            rpc_call('signstakeblock', [hash, derSign, pubk], function (blksign) {
-                                            });
+                                        rpc_call('signstaketx', [bh, derSign, pubk], function (txsign) {
+                                            var hash            = txsign.result.newblockhash;
+                                            var blocksignature  = keys.sign(hash, 'hex');
+                                            var derSign         = blocksignature.toLowS();
+
+                                            rpc_call    ('signstakeblock', [hash, derSign, pubk], function (blksign) {});
                                         });
                                     }
                                 });
@@ -126,117 +133,46 @@
     }
 
 
-  
-
-    function get_staking_addrs(username,user_addrs) {
-        var arAddr = [];
-        accountName = username;
-        my_addrs = user_addrs;
-
-        for (var n = 0; n < my_addrs.length; n++) {
-            arAddr[n] = my_addrs[n].address;
-        }
-
-        list_staking_unspent    (arAddr);
-        update_staking_addrs    ('address_list_table');
-        
-        $('.dostake').change(function () {
-            var addr = $(this).attr('addr');
-            var secret = $('#secret_' + addr).val();
-            rpc_call('getprivaddr', [accountName, addr], function (keyData) {
-                var stakeAddrAr = [];
-                var DecHexkey = strtoHexString(un_enc(secret, keyData.result.privkey.slice(0, 64)));
-                var test_key = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
-                var tpubkey = test_key.getPublic().encodeCompressed('hex');
-                rpc_call('pubkeytoaddr', [tpubkey], function (data) {
-                    if (data.result.addr != addr) {
-                        $('#dostake_' + addr).prop('checked', false);
-                        $('#secret_' + addr).css('color', 'red');
-                        $('#dostake_' + addr).attr('pubkey', '');
-                    }
-                    else {
-                        $('#dostake_' + addr).prop('checked', true);
-                        $('#dostake_' + addr).attr('pubkey', tpubkey);
-                        $('#secret_' + addr).css('color', 'green');
-                    }
-                    for (n = 0; n < my_addrs.length; n++) {
-                        if ($('#dostake_' + my_addrs[n].address).is(':checked'))
-                            stakeAddrAr[n] = my_addrs[n].address;
-                    }
-                    list_staking(stakeAddrAr)
-                    update_unspent('list_table');
-
-                });
-            });
-        });
-    }
-
-    function newkey() {
-        var ec = new EC('secp256k1');
-        var addr, sk, hexk;
-        addr = $('#privkey').val();
-        data = from_b58(addr, "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
-
-        crc = toHexString(data.slice(34, 38));
-
-        sk = data.slice(0, 34);
-        hexk = toHexString(sk);
-        h = sha256(hexk);
-        h2 = sha256(h);
-        if (crc != h2.slice(0, 8))
-            alert('bad key');
-
-        sk = data.slice(1, 33);
-        hexk = toHexString(sk);
-        keys = ec.keyPair({ priv: hexk, privEnc: 'hex' });
-        pubkey = keys.getPublic().encodeCompressed('hex');
-        privkey = hexk;
-
-        pubkey_to_addr(pubkey);
-    }
 
 </script>
-    <div class="row">
-    <div class="col-sm-1"><label>Units</label></div>
-    <div class="col-md-2">
-        <select style="max-width:120px;" onchange="unit = this.options[this.selectedIndex].value; update_unspent('list_table'); $('#stakeweight').html(totalweight / unit); update_staking_addrs('address_list_table');" id="units" name="units">
-        <option value="1">satoshis</option>
-        <option value="1000000">cents</option>
-        <option value="100000000">coin</option>
-        </select>
-    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-1"><label>Units</label></div>
+            <div class="col-md-2">
+                <select style="max-width:120px;" onchange="unit = this.options[this.selectedIndex].value; MyAccount.update_unspent(); MyAccount.update_addrs(); $('#stakeweight').html(MyAccount.totalweight / unit); " id="units" name="units">
+                    <option value="1">satoshis</option>
+                    <option value="1000000">cents</option>
+                    <option value="100000000">coin</option>
+                </select>
+            </div>
+        </div>
     </div>
 
-    <div class="row">
-    <div class="col-sm-1"><label>Account</label></div>
-    <div class="col-md-2"><select id="my_account" name="my_account" style="max-width:120px;" onchange="  if (window.location.href.substr(window.location.href.lastIndexOf('/') + 1) == 'staking') window.location.href = './staking/' + this.options[this.selectedIndex].value; else window.location.href = './' + this.options[this.selectedIndex].value; "></select></div>
+    <section>
+        <h2 class="heading-md">Manage your wallet</h2>
+        <div id="account_list"></div>
+    </section>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-2"><label>total available on this account</label></div>
+            <div class="col-md-2"><span id="txtotal"></span></div>
+        </div>
     </div>
 
-    <p>Enter the secret key for the addresses you want to stake on below, and check the box to enable staking on this address.</p>
-    
-<form>
-    <table id="address_list_table" txdiv="list_table" class="table">
-        <thead><tr><th>address</th><th>confirmed</th><th>unconfirmed</th><th>secret</th><th>enable staking</th><th>rescan</th></tr></thead>
-        <tbody></tbody>
-    </table>
-</form>
-
-    <div class="row">
-        <div class="col-md-2"><label>total available on this account</label></div>
-        <div class="col-md-2"><span id="txtotal"></span></div>
-    </div>
     <div id="staking_div">
         <h2>Select the addresses to stake on above, and then check the enable staking box.</h2>
 
         <span id="stake_msg"></span>
-        <div><span id="staking">enable staking : <input disabled="disabled" type="checkbox" onclick="if (!this.checked) { clearTimeout(staketimer); } else { staketimer = setTimeout(check_all_staking, 1000); }" id="do_staking"></input></span></div>
+        <div><span id="staking">enable staking : <input disabled="disabled" type="checkbox" onclick="if (!this.checked) { clearTimeout(staketimer); } else { check_all_staking(); }" id="do_staking" /></span></div>
         <div>total weight :<span id="stakeweight"></span></div>
         <div>number of staking txs :<span id="nstaketxs"></span></div>
         <div>hash rate:<span id="hashrate"></span></div>
         <div>new hash :<span id="newhash"></span></div>
     </div>
 
-    <table id="list_table" class="table">
-        <thead><tr><th>time</th><th>tx</th><th>amount</th><th>nconf</th></tr></thead>
-        <tbody></tbody>
-    </table>
+
+    <section>
+        <div id="my_wallet"></div>
+    </section>

@@ -6,39 +6,16 @@
                 <h2>block explorer</h2>
                 <div style="vertical-align:bottom;">
                     <span>Units : </span>
-                    <select onchange="unit = this.options[this.selectedIndex].value; update_tx('tx_list');" id="units" name="units">
+                    <select onchange="unit = this.options[this.selectedIndex].value; MyBlocks.update_tx();" id="units" name="units">
                         <option value="100000000">ADX</option>
                         <option value="100000">mADX</option>
                         <option value="100">µADX</option>
                     </select>
-                    <div style="text-align:center;vertical-align:bottom;padding-bottom:8px;">enter a block or tx hash.<input type="text" id="imp_tx" size="64" name="imp_tx" value="" /><input type="button" value="search" onclick=" var txid=$('#imp_tx').val();  get_tx(txid); " /></div>
                 </div>
             </div>
         </div>
     </section>
-    <section>
-      <div class="panel panel-green margin-bottom-40">
-	    <div class="panel-heading">
-             <h3 class="panel-title"><i class="fa fa-tasks"></i>transaction&nbsp;<span id="txhash"></span></h3>
-             <table cellpadding="0" cellspacing="0" border="0">
-                 <tr><td class="lbl">size</td><td class="val" id="size"></td></tr>
-                 <tr><td class="lbl"> Received Time</td><td class="val" id="txtime"></td></tr>
-                 <tr><td class="lbl"> Mined Time</td><td class="val" id="blocktime"></td></tr>
-                 <tr><td class="lbl">Included in Block</td><td class="val" id="txblock"></td></tr>
-                 <tr><td id="coinbaselbl">Coinbase</td><td class="val" id="coinbase"></td></tr>
-             </table>
-        </div>
-	    <div class="panel-body">
-          <div id="tx_list"></div>
-          <!--
-              <table id="tx_list" cellpadding="0" cellspacing="0" border="0">
-                  <thead><tr><th>in</th><th>out</th></tr></thead>
-                  <tbody></tbody>
-              </table>
-          -->
-        </div>
-      </div>
-    </section>
+    <section id="txPanel"></section>
 </div>
 <!--=== End Block Explorer ===-->
 </div>

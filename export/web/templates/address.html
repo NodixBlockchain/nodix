@@ -3,55 +3,14 @@
   <section>
   <div style="vertical-align:bottom;">
     <span>Units : </span>
-    <select onchange="unit = this.options[this.selectedIndex].value; update_blocks(); update_txs(txs, 'tx_list');" id="units" name="units">
+    <select onchange="unit = this.options[this.selectedIndex].value; MyBlocks.update_blocks(); MyBlocks.update_txs(); MyBlocks.update_addr_balance();" id="units" name="units">
       <option value="100000000">ADX</option>
       <option value="100000">mADX</option>
       <option value="100">µADX</option>
     </select>
   </div>
-  <input type="text" id="imp_addr" size="64" name="imp_addr" value="" />
-  <input type="button" value="search" onclick="page_idx = 0; currentAddr=$('#imp_addr').val(); txs = null; list_addr_txs(currentAddr, page_idx);" />
   </section>
-  <section>
-  <div class="panel panel-green margin-bottom-40">
-  <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-tasks"></i>address&nbsp;<span id="address"></span></h3></div>
-  <div class="panel-body">
-    <div class="row">
-      <span class="col-md-2">Total Received :</span >
-      <span class="col-md-1" id="Received"></span >
-    </div>
-    <div class="row">
-      <span class="col-md-2">Total Sent :</span >
-    <span class="col-md-1" id="Sent"></span >
-    </div>
-    <div class="row">
-      <span  class="col-md-2">Final Balance :</span >
-      <span class="col-md-1" id="Balance"></span >
-    </div>
-    <div class="row">
-      <span class="col-md-2">No. Transactions :</span >
-      <span class="col-md-1" id="Transactions"></span >
-    </div>
-  </div>
-  <div class="panel panel-green margin-bottom-40">
-	   <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-tasks"></i>Transactions</h3></div>
-	   <div class="panel-body">
-       <span id="currentaddrtx"></span>/<span id="totaladdrtx"></span>
-       <input type="button" id="loadmore" value="load 10 more" onclick="page_idx++; list_addr_txs(currentAddr, page_idx);" />
-       <div id="tx_list"></div>
-       <!--
-          <table id="tx_list" cellpadding="0" cellspacing="0" border="0">
-              <thead><tr><th colspan="2"><h1>transactions</h1></th></tr></thead>
-              <tbody></tbody>
-          </table>
-       -->
-     </div>
-  </div>
-  </div>
-  </section>
-
-  </div>
-</div>
+  <section id="addrs"></section>
 </div>
 <!--=== End Block Explorer ===-->
 </div>

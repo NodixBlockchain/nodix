@@ -72,7 +72,7 @@
 
  #list_table th input,select
 {
-  max-width:48px;
+  max-width:100px;
   display:block;
   text-align:center;
 }

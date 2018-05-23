@@ -6,16 +6,17 @@
         <h2>block explorer</h2>
         <div style="vertical-align:bottom;">
           <span>Units : </span>
-          <select onchange="unit = this.options[this.selectedIndex].value; update_blocks(); update_txs(txs, 'tx_list');" id="units" name="units">
+          <select onchange="unit = this.options[this.selectedIndex].value; MyBlocks.update_blocks(); MyBlocks.update_txs(txs);" id="units" name="units">
             <option value="100000000">ADX</option>
             <option value="100000">mADX</option>
             <option value="100">µADX</option>
           </select>
-          <div style="text-align:center;vertical-align:bottom;padding-bottom:8px;">enter a block or tx hash.<input type="text" id="search_bar" name="search_bar" size="68" /><input type="button" id="do_search" name="do_search" value="search" onclick="var hash=$('#search_bar').val();if(hash.length==64){selectBlockTxs(hash); SelectTx(hash);} "/></div>
+          <div style="text-align:center;vertical-align:bottom;padding-bottom:8px;">enter a block or tx hash.<input type="text" id="search_bar" name="search_bar" size="68" /><input type="button" id="do_search" name="do_search" value="search" onclick="var hash=$('#search_bar').val(); if(hash.length==64){ MyBlocks.selectBlockTxs(hash); MyBlocks.SelectTx(hash); } "/></div>
         </div>
      </div>
     </div>
     </section>
+
     <section>
        <div class="row">
          <div class="col-md-9">
@@ -33,116 +34,18 @@
        </div>
    </section>
 
-   <section>
-     <div class="row">
-       <div class="col-md-1">
-         <h3>previous day</h3>
-         <span onclick="blocks = null; txs=null; blk_page_idx = 0; tx_page_idx = 0; list_blocks(this.innerHTML, blk_page_idx,0); list_txs(this.innerHTML, tx_page_idx);" id="blocklistprev"></span>
-       </div>
-       <div class="col-md-1">
-       <h3>blocks for day </h3>
-       <span  onclick="blocks = null; txs=null; blk_page_idx = 0; tx_page_idx = 0; list_blocks(this.innerHTML, blk_page_idx,0); list_txs(this.innerHTML, tx_page_idx);" id="blocklistdate"></span>
-       </div>
-       <div class="col-md-1">
-         <h3>next day</h3>
-         <span onclick="blocks = null; txs=null; blk_page_idx = 0; tx_page_idx = 0; list_blocks(this.innerHTML, blk_page_idx,0); list_txs(this.innerHTML, tx_page_idx);" id="blocklistnext"></span>
-       </div>
-     </div>
-   </section>
-    <section>
-      <div class="row">
-        <div class="col-md-5">
-            <div class="panel panel-green margin-bottom-40">
-						<div class="panel-heading"><h3 class="panel-title"><i class="fa fa-tasks"></i>Blocks</h3>
-              <br/>
-              <div id="blk_filter_list"></div>
-            </div>
-						<div class="panel-body">
-              <div class="row">
-                <div class="col-md-2">
-                  <select id="blk_filter_key">
-                    <option value="height">height</option>
-                    <option value="time">time</option>
-                    <option value="reward">reward</option>
-                    <option value="tx*">ntx</option>
-                    <option value="size">size</option>
-                  </select>
-                </div>
-                <div class="col-md-2">
-                <select id="blk_filter_op">
-                 <option value=">">&gt;</option>
-                 <option value="<">&lt;</option>
-                 <option value="=">=</option>
-               </select>
-                </div>
-                <div class="col-md-2"><input type="text" id="blk_filter_val" size="8"/></div>
-                <div class="col-md-2"><button onclick="add_block_filter($('#blk_filter_key').val(),$('#blk_filter_op').val(),$('#blk_filter_val').val());  blk_page_idx=0; blocks = null; list_blocks(null, blk_page_idx,0);" type="button" >add filter</button></div>
-             </div>
-              <table id="list_table" class="table table-hover">
-               <thead>
-               <tr>
-                 <th id="height_hdr">height</th>
-                 <th id="time_hdr">time</th>
-                 <th id="reward_hdr">reward</th>
-                 <th>type</th>
-                 <th id="ntx_hdr">ntx</th>
-                 <th id="size_hdr">size</th>
-               </tr>
-               </thead>
-               <tbody></tbody></table>
-            </div>
-            <input type="button" id="blkloadmore" value="load 10 more" onclick="var mdate; if(blk_filters.length==0)mdate=dateConverter(CurrentTime);else mdate=null; blk_page_idx++; list_blocks(mdate, blk_page_idx,lastLastBlock);" />
-            <span id="curblocks"></span>/<span id="totalblocks"></span>
-            <input type="button" id="searchmore" value="search more" onclick="blk_page_idx=0; list_blocks(null, blk_page_idx,$('#cursearch').val());" />
-            from block #<input type="text" id="cursearch" disabled="disabled" value="0"/>
-            
-         </div>
+   <section id="navday"></section>
 
-        </div>
-        <div class="col-md-7">
-            <div class="panel panel-green margin-bottom-40">
-						  <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-tasks"></i>Transactions</h3></div>
-						  <div class="panel-body"><div id="tx_list"></div></div>
-              <input type="button" id="txloadmore" value="load 10 more" onclick="tx_page_idx++; list_txs(dateConverter(CurrentTime), tx_page_idx);" />
-              <span id="curtxs"></span>/<span id="totaltxs"></span>
-            </div>
-      </div>
-    </div>
-   </section>
-  <section>
-  <div class="modal fade" id="blockmodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content" >
-         <div class="modal-header"><h3 style="display: inline;">block&nbsp;<button type="button" class="close" data-dismiss="modal" style="vertical-align:top;" aria-hidden="true">×</button><br/><span id="blockhash"></span></h3> </div>
-          <div class="modal-body">
-              <div class="row" style="margin-left:0px;">
-              <div class="col">
-                <div id="lastblock">
-                  <section>
-                     <table id="tblblock" >
-                         <tr><td class="lbl">height :</td> <td id="height"></td></tr>
-                         <tr><td class="lbl">time :</td> <td id="time"></td></tr>
-                         <tr><td class="lbl">hash :</td> <td id="hash"></td></tr>
-                         <tr><td class="lbl">previousblockhash :</td> <td onmouseup="selectBlockTxs(this.innerHTML);" class="iblock_hash" id="previousblockhash"></td></tr>
-                         <tr><td class="lbl">nextblockhash :</td> <td onmouseup="selectBlockTxs(this.innerHTML);" class="iblock_hash" id="nextblockhash"></td></tr>
-                         <tr><td class="lbl">confirmations :</td> <td id="confirmations"></td></tr>
-                         <tr><td class="lbl">difficulty :</td> <td id="difficulty"></td></tr>
-                         <tr><td class="lbl">merkleroot :</td> <td id="merkleroot"></td></tr>
-                         <tr><td class="lbl">nonce :</td> <td id="nonce"></td></tr>
-                         <tr><td class="lbl">bits : </td><td id="bits"></td></tr>
-                         <tr><td class="lbl">difficulty hash :</td> <td id="diffhash"></td></tr>
-                         <tr><td class="lbl">proofhash :</td> <td id="proofhash"></td></tr>
-                         <tr><td class="lbl">size :</td> <td id="size"></td></tr>
-                         <tr><td class="lbl">stakemodifier2 :</td> <td id="stakemodifier2"></td></tr>
-                         <tr><td class="lbl">version :</td> <td id="version"></td></tr>
-                         <tr><td class="lbl">txs :</td> <td id="txs"></td></tr>
-                     </table>
-                    </section>
-                </div>
+    <section id="blocks"></section>
+
+    <section >
+      <div class="modal fade" id="blockmodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+              <div class="modal-content">
+                  <div class="modal-header"><h3 style="display: inline;">block&nbsp;<button type="button" class="close" data-dismiss="modal" style="vertical-align:top;" aria-hidden="true">×</button><br /><span id="blockhash"></span></h3> </div>
+                  <div class="modal-body"><div class="row" style="margin-left:0px;"><div class="col"><div id="lastblock"><section id="blockInfos"></section></div></div></div></div>
               </div>
-            </div>
-           </div>
-         </div>
+          </div>
       </div>
     </section>
 </div>

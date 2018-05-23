@@ -1,0 +1,268 @@
+		#blocks_header,#block_header {
+                width: 100%;
+                display: block;
+                background-color: #F7FFFF;
+                vertical-align: bottom;
+                height: 128px;
+            }
+        
+		#left_tab {
+            width:45%;
+            display: inline-block;
+            vertical-align: top;
+            margin:10px;
+        }
+
+        #right_tab {
+            width:45%;
+            display: inline-block;
+            vertical-align: top;
+            margin:10px;
+        }
+        #list_table th {
+            color:#FFF;
+            border-bottom: 1px solid;
+            background-color:#606060;
+        }  
+        #list_table td {
+            padding: 4px;
+            color:#000;
+            border-bottom: 1px solid;
+            background-color:#F2F2F2;
+        }
+        #addr_list th {
+            border-bottom: 1px solid;
+            background-color:#606060;
+			padding:2px;
+        }  
+        #addr_list td {
+            padding: 4px;
+            border-bottom: 1px solid #000;
+            background-color:#C8C8C8;
+			padding:2px;
+        }
+
+
+        #tx_list th {
+            color:#FFF;
+            border-bottom: 1px solid;
+            background-color:#606060;
+        }  
+		.tx_lnk{
+            cursor: pointer;
+		}
+
+		.block_hash {
+            font-size: 1.0em;
+            font-weight: normal;
+            font-family: monospace;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+		        .tx_address {
+            font-size: 1.1em;
+            font-weight: lighter;
+            cursor: pointer;
+            font-style: italic;
+            text-decoration: underline;
+        }
+
+        .tx_hash {
+			font-size: 1.0em;
+            font-family: monospace;
+			font-weight: normal;
+            border-bottom: 1px solid #000;
+        }
+        .iblock_hash {
+            font-size: 1.0em;
+            font-weight: normal;
+            font-family: monospace;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+		.block_date
+		{
+			font-size:1.1em;
+			font-weight:normal;
+			font-family:'Courier New';
+			margin:1px;
+		}
+		.block_time
+		{
+			font-size:0.8em;
+			font-weight:lighter;
+			font-family:'Courier New';
+			margin:1px;
+		}
+        @media only screen and (max-width: 800px) {
+            /* For mobile phones: */
+           #left_tab {
+               width:40%;
+               display: inline-block;
+               vertical-align: top;
+               margin:10px;
+           }
+
+           #right_tab {
+               width:40%;
+               display: inline-block;
+               vertical-align: top;
+               margin:10px;
+           }
+           
+            #list_table td {
+                padding: 4px;
+                border-bottom: 1px solid;
+            }
+			.tx_lnk{
+				font-size: 0.8em;
+				font-weight: normal;
+				font-family: monospace;
+				cursor: pointer;
+			}
+			.block_hash {
+				font-size: 0.8em;
+				font-weight: normal;
+				font-family: monospace;
+				cursor: pointer;
+				text-decoration: underline;
+			}
+			.block_date
+			{
+				font-size:0.9em;
+				font-weight:normal;
+				font-family:'Courier New';
+				margin:0px;
+			}
+			.block_time
+			{
+				font-size:0.6em;
+				font-weight:lighter;
+				font-family:'Courier New';
+				margin:0px;
+			}
+
+			.iblock_hash {
+				font-size: 0.8em;
+				font-weight: normal;
+				font-family: monospace;
+				cursor: pointer;
+				text-decoration: underline;
+			}
+        }
+
+
+        #lastblock {
+            display: block;
+            margin: 4px;
+            border: 1px solid;
+            border-radius: 2px;
+            vertical-align: top;
+        }
+
+        #address_txs {
+            display: block;
+            margin: 4px;
+            border: 1px solid;
+            border-radius: 2px;
+            vertical-align: top;
+        }
+
+
+        dt, dd {
+            display: inline-block;
+            margin-left: 4px;
+        }
+
+        dd {
+            border: 2px solid;
+            padding: 8px;
+        }
+
+        .selected {
+            font-weight: 900;
+        }
+
+
+        .clickable {
+            cursor:pointer;
+            font-style:italic;
+            text-decoration:underline;
+        }
+
+        .block_infos {
+            font-family: Ubuntu,sans-serif;
+        }
+
+        .lbl {
+            text-align: right;
+            padding:2px;
+        }
+        .val
+        {
+            text-align:left;
+            padding:2px;
+        }
+
+
+        .txhdr {
+            font-size: 1.0em;
+            font-weight: normal;
+            font-family: monospace;
+            background-color: #F2F2F2;
+            border: 1px solid;
+            border-color: #000;
+            text-align:left;
+        }
+
+        .txhdr td {
+            padding: 2px;
+        }
+
+        tr.tx_infos{
+            display:none;
+        }
+        .tx_expand{
+               cursor:pointer;
+               font-size:18px; 
+               font-weight:bold;
+			   margin:4px;
+        }
+        
+
+        .txmine {
+            text-align: right;
+            border-bottom: 1px solid #000;
+        }
+
+        #blockhash {
+            font-size: 0.6em;
+            font-weight: lighter;
+            font-family: monospace;
+        }
+
+        #coinbase,#coinbaselbl {
+            display:none;
+        }
+        .visible {
+            display:block;
+        }
+
+        #tx_details
+        {
+            width:60%;
+        }
+
+
+		#txs div{
+			cursor:pointer;
+			font-weight:lighter;
+
+		}
+
+		.addr_send {
+            color:#ff0000;
+        }
+        .addr_recv {
+            color:#4cff00;
+        }

@@ -1,210 +1,10 @@
    <script type="text/javascript">
-       var type_keys=[];
 
-
-       function addr_select(obj) {
-
-           if (has_app_root == 0) {
-               $('#new_app_addr').val($(obj).attr('addr'));
-           }
-          
-       }
-       function get_unspent(obj, table_name) {
-           addr_txs = null;
-           addr_tx_page_idx = 0;
-           $('#list_container').css('display', 'block');
-           list_unspent($(obj).attr('addr'), $('#' + table_name).attr('txdiv'));
-       }
-
-
-       function update_type_keys(list_id)
-       {
-           var n;
-
-           $('#' + list_id).empty();
-
-           for(n=0;n<type_keys.length;n++)
-           {
-               var unique_html='';
-               var name = get_obj_type_name(type_keys[n].key);
-
-               if (type_keys[n].unique==true)
-                   unique_html = 'unique';
-
-
-               if (name != null)
-                   $('#' + list_id).append('<div class="row"><div class="col-md-2">' + type_keys[n].name + ':' + name + '</div>' + unique_html + '</div>');
-           }
-       }
-
-       function add_type_key(name,key,unique)
-       {
-           var type = {};
-           var n;
-           alert(unique);
-
-           $('#app_error').css('display', 'none');
-
-           if (name.length < 3)
-           {
-               $('#app_error').html('type key must be 3 char long min.');
-               $('#app_error').css('display', 'block');
-               return false;
-           }
-
-           for (n = 0; n < type_keys.length; n++) {
-
-               if(type_keys[n].name==name)
-               {
-                   $('#app_error').html('type key already exists');
-                   $('#app_error').css('display', 'block');
-                   return false;
+       function addr_selected(obj) {
+               if (has_app_root == 0) {
+                   $('#new_app_addr').val(obj.getAttribute('addr'));
                }
-           }
-
-           type.name=name;
-           type.key = parseInt(key);
-
-           if (unique==1)
-               type.unique = true;
-           else
-               type.unique = false;
-
-           type_keys.push(type);
-           update_type_keys('new_type_keys');
-
-           return true;
        }
-
-       function create_type() {
-
-           var type_name = $('#new_type_name').val();
-           var type_id = parseInt($('#new_type_id').val());
-
-           $('#app_error').css('display', 'none');
-
-           if (type_name.length < 3)
-           {
-               $('#app_error').css('display', 'block');
-               $('#app_error').html('type name must be 3 char long min.');
-               return false;
-           }
-           
-           if ((type_id < 1) || (isNaN(type_id)))
-           {
-               $('#app_error').css('display', 'block');
-               $('#app_error').html('type id be a number >= 1.');
-               return false;
-           }
-
-           if (type_keys.length < 1)
-           {
-               $('#app_error').css('display', 'block');
-               $('#app_error').html('type must have at least one key.');
-               return false;
-           }
-
-           var addrEntry = document.getElementById('dostake_' + my_app.appAddr);
-           if(addrEntry==null)
-           {
-               $('#app_error').css('display', 'block');
-               $('#app_error').html('Select the account containing the app master key');
-               return;
-           }
-           var DecHexkey = $(addrEntry).attr('privkey');
-           if ((DecHexkey == null) || (DecHexkey.length<64))
-           {
-               $('#app_error').css('display', 'block');
-               $('#app_error').html('enter secret key of app master key');
-               return;
-           }
-
-           var pubKey   = $(addrEntry).attr('pubkey');
-           var mykey    = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
-           var Cpubkey  = mykey.getPublic().encodeCompressed('hex');
-
-           rpc_call('pubkeytoaddr', [pubKey], function (data) {
-
-               if(Cpubkey!=pubKey)
-               {
-                   $('#app_error').css('display', 'block');
-                   $('#app_error').html('invalid secret key of app master key');
-               }
-               else {
-                   $('#appAddr').css("color", "green");
-
-                   create_app_type(app_name, type_name, type_id, type_keys, parseInt($('#paytxfee').val() * unit), my_addrs);
-
-
-               }
-           });
-       }
-
-
-      
-       function get_type_input_val(typeid, key) {
-
-           var id = typeid + '_' + key.name;
-
-           if ((key.id >> 24) == 0x1E) {
-               return $('#' + id).val();
-           }
-           else if ((key.id == 1) || (key.id == 0x0B000100) || (key.id == 0x0A000040)) {
-               return $('#' + id).val();
-           }
-           else if ((key.id == 2) || (key.id == 8) || (key.id == 256) || (key.id == 2048)) {
-               return parseInt($('#' + id).val());
-           }
-           else if ((key.id == 4096) || (key.id == 16384)) {
-               return parseFloat($('#' + id).val());
-           }
-           else if (key.id == 218103810) {
-
-               var ret = [];
-               ret.push(parseFloat($('#' + id + '_0').val()));
-               ret.push(parseFloat($('#' + id + '_1').val()));
-               ret.push(parseFloat($('#' + id + '_2').val()));
-
-               alert(ret);
-               return ret;
-           }
-           else if (key.id == 0x00000080) {
-
-               var ret = [];
-               ret.push(Math.min(255, parseInt($('#' + id + '_0').val())));
-               ret.push(Math.min(255, parseInt($('#' + id + '_1').val())));
-               ret.push(Math.min(255, parseInt($('#' + id + '_2').val())));
-               ret.push(Math.min(255, parseInt($('#' + id + '_3').val())));
-               return ret;
-           }
-           else if ((key.id == 1024) || (key.id == 0x0A000040)) {
-
-               return '0';
-           }
-
-       }
-       function new_obj(type_id) {
-
-           var n, nn;
-           var newobj = {};
-
-           for (n = 0; n < app_types.length; n++) {
-
-               if (app_types[n].id == type_id) {
-                   for (nn = 0; nn < app_types[n].keys.length; nn++) {
-                       var keyname = app_types[n].keys[nn].name;
-                       var id = type_id + '_' + keyname;
-                       var val = get_type_input_val(type_id, app_types[n].keys[nn]);
-                       newobj[keyname] = val;
-                   }
-                   return newobj;
-               }
-           }
-           return null;
-       }
-
-
-
    </script>
    <style>
        #new_type input,select{
@@ -221,11 +21,9 @@
        .invisible{
            display:none;
        }
-
-  
-
-
-
+       #newtxid {
+           display: 'none';
+       }
        #list_container
        {
            display:none;
@@ -233,6 +31,21 @@
            width:100%;
            overflow-y:scroll;
            margin:32px;
+       }
+       .selected {
+           background-color: #AAA;
+       }
+
+       .tx_error {
+           color: #F00;
+       }
+
+       .tx_ready {
+           color: #0F0;
+       }
+
+       .tx_unconf {
+           color: #484;
        }
        #addresses
        {
@@ -258,55 +71,47 @@
     <section>
         <h2>Addresses</h2>
         <div id="addresses">
-            <h3>Account</h3><select style="display:inline;" id="my_account" name="my_account" style="max-width:120px;" onchange="var value = $(this).val(); if (value.length == 0) { $('#accnt_pw').css('display', 'none'); $('#account_name').val(''); $('#account_name').css('display', 'none'); my_addrs = null; update_my_addrs_divs('address_list', null); } else { $('#accnt_pw').css('display', 'inline'); select_account(value); if (has_app_root) { get_addrs(value, 'address_list_table', get_unspent); get_addrs_select(value, 'fileKey'); get_addrs_select(value, 'obj_addr'); } else { get_addrs(value, 'address_list_table', addr_select); } }"></select>
-            <span id="accnt_pw"><label>password</label><input size="8" type="password" name="pw" id="pw" /><input type="button" id="signin" name="signin" value="signin" /></span>
-            <table id="address_list_table" txdiv="list_table" class="table"><thead><tr><th>address</th><th>confirmed</th><th>unconfirmed</th><th>secret</th><th>use in transaction</th></tr></thead><tbody></tbody></table>
-            <div id="list_container">
-                <section>
-                    <h3>Unspents</h3>
-                    <table id="list_table" class="table"><thead><tr><th>time</th><th>tx</th><th>amount</th><th>nconf</th></tr></thead><tbody></tbody></table>
-                </section>
-            </div>
+        </div>
+    </section>
+    <section>
+        <h2>transactions</h2>
+        <div id="list_container">
         </div>
     </section>
     <hr />
 
-    <div id="app_root_infos">
-        <section>
-            <h2>Application root</h2>
-            <div class="container">
-                <div class="row">
-                    <div class="col-md-2">txid:<span id="root_app_txh"></span></div>
-                </div>
-                <div class="row">
-                    <div class="col-md-2">addr:<span id="root_app_addr"></span></div>
-                </div>
-            </div>
-        </section>
-    </div>
+    <div id="app_root_infos"></div>
     <div id="app_root_error">no application root set</div>
     <hr />
     <div id="app_infos">
         <section>
-            <h2>Application</h2>
-            <div class="container" id="app"></div>
+        <h2>Application</h2>
+        <div class="container" id="app"></div>
 
-            <div class="container">
-                <div class="row">
-                    <div class="col-md-2"><label>Transaction fees</label></div><div class="col-md-2"><input type="text" name="paytxfee" id="paytxfee" /></div>
-                </div>
-                <div class="row">
-                    <div class="col-md-2"><label>Selected addrs:</label></div><div class="col-md-2"><span id="selected_balance"></span></div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6"><div id="type_tx"></div></div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6"><input type="button" onclick=" signtxinputs(my_tx.txid, my_tx.txsin);" value="sign & send" /></div>
-                </div>
+        
+        <div class="container">
+            <hr/>
+            <h2>Transaction</h2>
+            <div id="app_error">application&nbsp;<span id="app_name"></span>&nbsp;not found</div>
+            <div class="row">
+                <div class="col-md-2"><label>Transaction fees</label></div><div class="col-md-2"><input type="text" name="paytxfee" id="paytxfee" /></div>
             </div>
+            <div class="row">
+                <div class="col-md-2"><label>Selected addrs:</label></div><div class="col-md-2"><span id="selected_balance"></span></div>
+            </div>
+            <div class="row">
+                <div id="div_newtxid" class="col-md-6">new tx id : <span id="newtxid"></span></div>
+            </div>
+            <div class="row">
+                <div class="col-md-6"><div id="type_tx"></div></div>
+            </div>
+            <div class="row">
+                <div class="col-md-6"><input type="button" onclick=" signtxinputs(my_tx.txid, my_tx.txsin);" value="sign &amp; send" /></div>
+            </div>
+        </div>
         </section>
     </div>
-    <div id="app_error">application&nbsp;<span id="app_name"></span>&nbsp;not found</div>
+
+    
+    
     </div>
