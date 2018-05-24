@@ -15,11 +15,11 @@ section .code
 
 %endif
 
-
+align 32 
 %ifdef PREFIX
-	align 32 _intersect_ray_boxesf_sse :
+_intersect_ray_boxesf_sse:
 %else
-	align 32 intersect_ray_boxesf_sse :
+intersect_ray_boxesf_sse:
 %endif
 	
 	mov eax			,[esp+4]
@@ -187,10 +187,12 @@ section .code
 	mov eax,[esp-16-12]
   ret
 
+align 32 
+
 %ifdef PREFIX 
-	align 32 _intersect_ray_boxf_sse :
+	_intersect_ray_boxf_sse :
 %else
-	align 32  intersect_ray_boxf_sse :
+	intersect_ray_boxf_sse :
 %endif 
  
 	mov ecx,esp
