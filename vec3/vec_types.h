@@ -99,10 +99,6 @@ typedef 		inverse_mat3x3d_func		*inverse_mat3x3d_func_ptr;
 
 typedef 		get_mat3x3gl_func			*get_mat3x3gl_func_ptr;
 
-
-void *aligned_alloc(unsigned int size);
-void  aligned_free(void	 *a_ptr);
-
 EulerAngles Eul_(float ai, float aj, float ah, int order);
 
 Quat		Eul_ToQuat					(EulerAngles ea);
