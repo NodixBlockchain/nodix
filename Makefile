@@ -12,6 +12,13 @@ default: export/libcon.a export/launcher
 export/launcher: launcher/main.c export/libcon.a
 	gcc $(CFLAGS) -lc -lm -pthread -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include launcher/main.c export/libcon.a -o export/launcher
 
+export/libcon.a: $(CONSRC) $(XMLSRC) $(ZLIBSRC)
+	nasm -f elf32 libcon/tpo.asm -o tpo.o
+	nasm -f elf32 libcon/runtime.asm -o runtime.o
+	gcc  $(CFLAGS)  $(COMMON_INCS) -Ilibcon/unix/include -Ilibcon/expat/xmlparse -Ilibcon/expat/xmltok $(CONSRC) $(XMLSRC) $(ZLIBSRC) -DNOCRYPT -c
+	ld *.o -melf_i386 -soname libcon.so -shared -o export/libcon.so
+	ar -cvq export/libcon.a *.o
+
 export/libnodix.so:export/libbase.so export/libnode_adx.so export/libcon.so nodix/main.c
 	gcc $(CFLAGS)  -Lexport -lcon -lblock_adx -lnode_adx -lbase $(COMMON_INCS)  nodix/main.c $(MOD_LDFLAGS),-soname,libnodix.so -shared -o export/libnodix.so
 
@@ -50,7 +57,7 @@ export/libnode_adx.so: node/node_impl.c node_adx/node_api.h
 export/libbase.so:libbaseimpl/funcs.c
 	gcc $(CFLAGS) $(COMMON_INCS) libbaseimpl/funcs.c -shared -o export/libbase.so
 
-modz:export/modz/vec3.tpo export/modz/ecdsa.tpo export/modz/wallet.tpo export/modz/stake_pos3.tpo export/modz/nodix.tpo export/modz/rpc_wallet.tpo export/modz/block_explorer.tpo
+modz:export/modz/vec3.tpo export/modz/protocol_adx.tpo export/modz/ecdsa.tpo export/modz/wallet.tpo export/modz/stake_pos3.tpo export/modz/nodix.tpo export/modz/rpc_wallet.tpo export/modz/block_explorer.tpo
 	@echo "modz ok"
 
 export/modz/block_explorer.tpo:export/mod_maker export/libblock_explorer.so
@@ -92,13 +99,6 @@ export/modz/rpc_wallet.tpo:export/mod_maker export/librpc_wallet.so
 export/mod_maker:  export/libcon.so
 	gcc -m32 -Lexport  -lpthread $(COMMON_INCS) mod_maker/coff.c mod_maker/main.c mod_maker/elf.c export/libcon.a -o export/mod_maker
 	
-export/libcon.a: $(CONSRC) $(XMLSRC) $(ZLIBSRC)
-	nasm -f elf32 libcon/tpo.asm -o tpo.o
-	nasm -f elf32 libcon/runtime.asm -o runtime.o
-	gcc $(CFLAGS)  $(COMMON_INCS) -Ilibcon/unix/include -Ilibcon/expat/xmlparse -Ilibcon/expat/xmltok $(CONSRC) $(XMLSRC) $(ZLIBSRC) -DNOCRYPT -c
-	ld *.o -shared -melf_i386 -soname libcon.so -o export/libcon.so
-	ar -cvq export/libcon.a *.o
-
 clean:
 	rm -f export/libcon.a export/libcon.so export/launcher *.o
 
