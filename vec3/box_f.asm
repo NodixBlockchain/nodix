@@ -1,16 +1,26 @@
 
 section .code
 
-global _intersect_ray_boxf_sse
-export _intersect_ray_boxf_sse
-
-global _intersect_ray_boxesf_sse
-export _intersect_ray_boxesf_sse
- 
- align 32
- _intersect_ray_boxesf_sse :
- 
+%ifdef PREFIX
 	
+	global _intersect_ray_boxf_sse
+	global _intersect_ray_boxesf_sse
+
+	export _intersect_ray_boxf_sse
+	export _intersect_ray_boxesf_sse
+%else
+
+	GLOBAL  intersect_ray_boxf_sse:function 
+	GLOBAL  intersect_ray_boxesf_sse:function 
+
+%endif
+
+
+%ifdef PREFIX
+	align 32 _intersect_ray_boxesf_sse :
+%else
+	align 32 intersect_ray_boxesf_sse :
+%endif
 	
 	mov eax			,[esp+4]
 	MOVAPS xmm6		,[eax]
@@ -176,9 +186,12 @@ export _intersect_ray_boxesf_sse
 	
 	mov eax,[esp-16-12]
   ret
- 
- align 32
- _intersect_ray_boxf_sse :
+
+%ifdef PREFIX 
+	align 32 _intersect_ray_boxf_sse :
+%else
+	align 32  intersect_ray_boxf_sse :
+%endif 
  
 	mov ecx,esp
 	
