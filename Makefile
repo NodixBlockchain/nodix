@@ -57,7 +57,7 @@ export/libnode_adx.so: node/node_impl.c node_adx/node_api.h
 export/libbase.so:libbaseimpl/funcs.c
 	gcc $(CFLAGS) $(COMMON_INCS) libbaseimpl/funcs.c -shared -o export/libbase.so
 
-modz:export/modz/vec3.tpo export/modz/protocol_adx.tpo export/modz/ecdsa.tpo export/modz/wallet.tpo export/modz/stake_pos3.tpo export/modz/nodix.tpo export/modz/rpc_wallet.tpo export/modz/block_explorer.tpo
+modz:export/modz/vec3.tpo export/modz/protocol_adx.tpo export/modz/ecdsa.tpo export/modz/block_adx.tpo export/modz/wallet.tpo export/modz/stake_pos3.tpo export/modz/nodix.tpo export/modz/rpc_wallet.tpo export/modz/block_explorer.tpo
 	@echo "modz ok"
 
 export/modz/block_explorer.tpo:export/mod_maker export/libblock_explorer.so
@@ -103,5 +103,5 @@ clean:
 	rm -f export/libcon.a export/libcon.so export/launcher *.o
 
 clean_mod:
-	rm -f export/mod_maker export/libblock_explorer.so  export/libnodix.so export/libstake_pos3.so export/libstake_pos2.so export/modz/protocol_adx.tpo export/modz/block_adx.tpo export/modz/nodix.tpo export/modz/stake_pos3.tpo  export/modz/stake_pos2.tpo export/modz/block_explorer.tpo
+	rm -f export/mod_maker export/libblock_adx.so export/libprotocol_adx.so export/libblock_explorer.so  export/libnodix.so export/libstake_pos3.so export/libstake_pos2.so export/modz/protocol_adx.tpo export/modz/block_adx.tpo export/modz/nodix.tpo export/modz/stake_pos3.tpo  export/modz/stake_pos2.tpo export/modz/block_explorer.tpo
 
