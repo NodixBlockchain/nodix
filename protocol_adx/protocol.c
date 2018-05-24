@@ -11,16 +11,18 @@
 
 C_IMPORT ctime_t C_API_FUNC  get_time_c();
 
-unsigned int		GETDATA_TX			= 1;
-unsigned int		GETDATA_BLOCK		= 2;
-unsigned int		GETDATA_FILE		= 0x10;
-unsigned int		magic				= 0xCDCDCDCD;
+const unsigned int	GETDATA_TX		= 1;
+const unsigned int	GETDATA_BLOCK		= 2;
+const unsigned int	GETDATA_FILE		= 0x10;
+unsigned int		magic			= 0xCDCDCDCD;
 
-hash_t				null_hash			= { 0xFF };
-struct string		def_vstr			= { "empty" };
-unsigned char		def_vint[5]			= { 0xFF };
-unsigned char		null_vint			= 0xAB;
-unsigned int		ping_nonce			= 1;
+hash_t			null_hash	= { 0x66 };
+/* struct string		def_vstr	= { PTR_NULL, 0xFF, 0xFF }; */
+
+char			def_str[33]     = { 0xFF };
+unsigned char		def_vint[5]	= { 0xEF };
+unsigned char		null_vint	= 0xAB;
+unsigned int		ping_nonce	= 1;
 
 unsigned int NODE_HASH_txsout = 0xCDCDCDCD, NODE_HASH_script = 0xCDCDCDCD, NODE_HASH_txsin = 0xCDCDCDCD, NODE_HASH_version = 0xCDCDCDCD, NODE_HASH_prev = 0xCDCDCDCD, NODE_HASH_merkle_root = 0xCDCDCDCD, NODE_HASH_time = 0xCDCDCDCD, NODE_HASH_bits, NODE_HASH_nonce = 0xCDCDCDCD, NODE_HASH_services = 0xCDCDCDCD, NODE_HASH_addr = 0xCDCDCDCD, NODE_HASH_port = 0xCDCDCDCD, NODE_HASH_p2p_addr = 0xCDCDCDCD, NODE_HASH_locktime = 0xCDCDCDCD, NODE_HASH_tx_hash = 0xCDCDCDCD, NODE_HASH_value = 0xCDCDCDCD, NODE_HASH_sequence = 0xCDCDCDCD, NODE_HASH_idx = 0xCDCDCDCD, NODE_HASH_size = 0xCDCDCDCD, NODE_HASH_cmd = 0xCDCDCDCD, NODE_HASH_payload = 0xCDCDCDCD;
 
@@ -32,10 +34,15 @@ OS_API_C_FUNC(int) init_protocol(mem_zone_ref_ptr params)
 
 	memset_c(null_hash, 0, sizeof(hash_t));
 
+	/*
 	def_vstr.str = malloc_c(33);
 	def_vstr.len = 32;
 	def_vstr.size = 33;
 	strcpy_cs(def_vstr.str, 32, "empty");
+	*/
+
+	strcpy_cs(def_str, 33, "empty");
+
 	null_vint = 0;
 
 	def_vint[0] = 0xFE;
@@ -104,8 +111,14 @@ OS_API_C_FUNC(size_t) init_node(mem_zone_ref_ptr key)
 	mem_zone_ref my_list = { PTR_NULL };
 	mem_zone_ref_ptr sub = PTR_NULL;
 	unsigned short  port = 0xFFFF;
-	ipv4_t			ip = { 0xFF };
+	ipv4_t		ip = { 0xFF };
 	mem_zone_ref	vin = { PTR_NULL },	txin_list = { PTR_NULL };
+ 	struct string 	def_vstr;
+	
+	def_vstr.str  = def_str;
+	def_vstr.len  = 32;
+        def_vstr.size = 33;
+
 	switch (tree_mamanger_get_node_type(key))
 	{
 
