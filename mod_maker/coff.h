@@ -10,6 +10,8 @@
 #endif
 
 
+#define	MAX_IMPORT 4096
+#define	MAX_EXPORT 256
 #define EI_NIDENT 16
 
 typedef unsigned int Elf32_Addr;
@@ -355,9 +357,9 @@ int						index;
 unsigned int			sections_file_data_ptr;
 
 section_imp_ord			ImportsOrd[1000];
-section_imp_name		ImportsName[1000];
+section_imp_name		ImportsName[MAX_IMPORT];
 section_exp_ord			ExportsOrd[1000];
-section_exp_name		ExportsName[1000];
+section_exp_name		ExportsName[MAX_EXPORT];
 
 SymEntry				SymList[1000];
 RELOC					RelocList[1000];

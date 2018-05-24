@@ -511,18 +511,23 @@ void ReadElfeImpExp(PEFile *PE)
 						 printf("no type %s  ",sym_name);
 
 					 printf("size : %d, value %x",SymTbl->st_size,SymTbl->st_value);
+					 printf("\r\n");
 
-					 if((bind==1)&&(type==0)&&(SymTbl->st_shndx==0))
+					 if (sec->num_sec_imp_name < MAX_IMPORT)
 					 {
-						//strcpy(sec->ImportsName[sec->num_sec_imp_name].dll_name		,name);
-						strcpy(sec->ImportsName[sec->num_sec_imp_name].func_name,sym_name);
-
-						sec->ImportsName[sec->num_sec_imp_name].addr_reloc			=SymTbl->st_value;
-						sec->ImportsName[sec->num_sec_imp_name].sym_idx				=s_id;
-
-						sec->num_sec_imp_name++;
+						 if ((bind == 1) && (type == 0) && (SymTbl->st_shndx == 0))
+						 {
+							 strcpy(sec->ImportsName[sec->num_sec_imp_name].func_name, sym_name);
+							 sec->ImportsName[sec->num_sec_imp_name].addr_reloc = SymTbl->st_value;
+							 sec->ImportsName[sec->num_sec_imp_name].sym_idx = s_id;
+							 sec->num_sec_imp_name++;
+						 }
 					 }
-
+					 else
+					 {
+						 printf("too much imports ");
+						 exit(0);
+					 }
 
 					 if((bind==1)&&((SymTbl->st_shndx>0)&&(SymTbl->st_shndx<PE->num_esection)))
 					 {
@@ -530,15 +535,21 @@ void ReadElfeImpExp(PEFile *PE)
 
 						t_sec=PE->eSections[SymTbl->st_shndx];
 
-						strcpy(t_sec->ExportsName[t_sec->num_sec_exp_name].func_name	,sym_name);
+						if (t_sec->num_sec_exp_name < MAX_EXPORT)
+						{
+							strcpy(t_sec->ExportsName[t_sec->num_sec_exp_name].func_name, sym_name);
 
-						t_sec->ExportsName[t_sec->num_sec_exp_name].addr_reloc		=	SymTbl->st_value;
-						t_sec->ExportsName[t_sec->num_sec_exp_name].sym_idx			=	s_id;
+							t_sec->ExportsName[t_sec->num_sec_exp_name].addr_reloc = SymTbl->st_value;
+							t_sec->ExportsName[t_sec->num_sec_exp_name].sym_idx = s_id;
 
-						t_sec->num_sec_exp_name++;
+							t_sec->num_sec_exp_name++;
+						}
+						else
+						{
+							printf	("too much exports ");
+							exit	(0);
+						}
 					 }
-					 
-					 printf("\r\n");
 				}
 				s_id++;
 				n+=sizeof(Elf32_Sym);
@@ -815,16 +826,6 @@ void BuildElf_RVA(PEFile *PE)
 									 rel_sec->RemapList[rel_sec->num_remap].offset						=	sec_ofs;
 									 rel_sec->RemapList[rel_sec->num_remap].type						=	1;
 
-									 /*
-									 value																=  *((unsigned int *)(&rel_sec->Data[sec_ofs]));
-									 target_sec_id														=	FindSectionMem(PE,value);
-
-
-									 value																=	value+rel_sec->v_addr;
-									 *((unsigned int *)(&rel_sec->Data[sec_ofs]))						=	value;
-									 */
-
-
 									 rel_sec->num_remap++;
 								}
 								else if(Sym_Tbl)
@@ -852,7 +853,6 @@ void BuildElf_RVA(PEFile *PE)
 										if(Sym_Tbl->st_value>0)
 										{
 											rel_sec->RemapList[rel_sec->num_remap].offset					=	sec_ofs;
-											
 
 											if(rel_type==2)
 											{
@@ -871,23 +871,30 @@ void BuildElf_RVA(PEFile *PE)
 										}
 										else
 										{
-											int nnn;
-											rel_sec->ImportsName[rel_sec->num_sec_imp_name].dll_name[0]=0;
-
-											nnn=0;
-											while(nnn<PE->num_libs)
+											if (rel_sec->num_sec_imp_name < MAX_IMPORT)
 											{
-												strcat(rel_sec->ImportsName[rel_sec->num_sec_imp_name].dll_name,PE->lib_names[nnn]);
-												strcat(rel_sec->ImportsName[rel_sec->num_sec_imp_name].dll_name,";");
-												nnn++;
+												int nnn;
+
+												rel_sec->ImportsName[rel_sec->num_sec_imp_name].dll_name[0] = 0;
+
+												for(nnn = 0;nnn < PE->num_libs;nnn++)
+												{
+													strcat(rel_sec->ImportsName[rel_sec->num_sec_imp_name].dll_name, PE->lib_names[nnn]);
+													strcat(rel_sec->ImportsName[rel_sec->num_sec_imp_name].dll_name, ";");
+												}
+
+												strcpy	(rel_sec->ImportsName[rel_sec->num_sec_imp_name].func_name, sym_name);
+
+												rel_sec->ImportsName[rel_sec->num_sec_imp_name].addr_reloc		= sec_ofs;
+												rel_sec->ImportsName[rel_sec->num_sec_imp_name].sym_idx			= s_id;
+
+												rel_sec->num_sec_imp_name++;
 											}
-
-											strcpy(rel_sec->ImportsName[rel_sec->num_sec_imp_name].func_name	,sym_name);
-
-											rel_sec->ImportsName[rel_sec->num_sec_imp_name].addr_reloc			=	sec_ofs;
-											rel_sec->ImportsName[rel_sec->num_sec_imp_name].sym_idx				=	s_id;
-
-											rel_sec->num_sec_imp_name++;
+											else
+											{
+												printf("too much imports \n");
+												return;
+											}
 										}
 									}
 								}
@@ -905,90 +912,6 @@ void BuildElf_RVA(PEFile *PE)
 						printf("error: section not found for sym : %d - %d \n",dyn->d_tag,dyn->d_un.d_ptr);
 					}
 				}
-
-				
-
-				/*
-				if(dyn->d_tag==DT_SYMTAB)
-				{
-					int					sec_id,n_sym;
-					unsigned int		mem_ofs,sym_table_size;
-					char				*sym_table;
-
-
-					sec_id		=	FindSectionMem(PE,dyn->d_un.d_ptr);
-					if(sec_id>=0)
-					{
-						mem_ofs			=	dyn->d_un.d_ptr-PE->Sections[sec_id]->phdr.p_vaddr;
-						sym_table		=	&PE->Sections[sec_id]->Data[mem_ofs];
-						sym_table_size	=	PE->Sections[sec_id]->SectionDataLen-mem_ofs;
-
-						n_sym			=	0;
-
-						while(n_sym<sym_table_size)
-						{
-							int bind,type;
-							char *sym_name, *sec_name;
-
-							SymTbl=(Elf32_Sym *)&sym_table[n_sym];
-
-							bind=ELF32_ST_BIND(SymTbl->st_info);
-							type=ELF32_ST_TYPE(SymTbl->st_info);
-							if(type!=3)
-							{
-
-								sym_name	=	FindElfString(PE,SymTbl->st_name);
-	
-
-								printf("segment [%d]=>[%d]: (%d,%d) ",i,SymTbl->st_shndx,bind,type);
-								
-								 if((type==STT_FILE)&&(sym_name!=NULL))
-									printf("source file %s",sym_name);
-								 else if((type==STT_FUNC)&&(sym_name!=NULL))
-									printf("func %s ",sym_name);
-								 else if((type==STT_OBJECT)&&(sym_name!=NULL))
-									printf("object %s ",sym_name);
-								 else if(sym_name!=NULL)
-									 printf("no type %s  ",sym_name);
-
-								 printf("size : %d, value %x",SymTbl->st_size,SymTbl->st_value);
-								 printf("\r\n");
-
-								 
-								 if((bind==1)&&(type==0)&&(SymTbl->st_shndx==0))
-								 {
-									//strcpy(sec->ImportsName[sec->num_sec_imp_name].dll_name		,name);
-									strcpy(sec->ImportsName[sec->num_sec_imp_name].func_name,sym_name);
-									sec->ImportsName[sec->num_sec_imp_name].addr_reloc			=SymTbl->st_value;
-									sec->ImportsName[sec->num_sec_imp_name].sym_idx				=s_id;
-
-									sec->num_sec_imp_name++;
-								 }
-
-
-								 if((bind==1)&&((SymTbl->st_shndx>0)&&(SymTbl->st_shndx<PE->num_esection)))
-								 {
-									Section					*t_sec;
-
-									t_sec=PE->eSections[SymTbl->st_shndx];
-
-									strcpy(t_sec->ExportsName[t_sec->num_sec_exp_name].func_name	,sym_name);
-
-									t_sec->ExportsName[t_sec->num_sec_exp_name].addr_reloc		=	SymTbl->st_value;
-									t_sec->ExportsName[t_sec->num_sec_exp_name].sym_idx			=	s_id;
-
-									t_sec->num_sec_exp_name++;
-								 }
-								 
-								 
-								 
-							}
-							s_id++;
-							n_sym+=sizeof(Elf32_Sym);
-						}
-					}
-				}
-				*/
 
 				if(dyn->d_tag==DT_NULL)break;
 
@@ -1121,77 +1044,84 @@ void ReadElfImpExp(PEFile *PE)
 
 
 
-								if((bind==1)&&(sym_name!=NULL))
+							if((bind==1)&&(sym_name!=NULL))
+							{
+								if(SymTbl->st_value>0)
 								{
-									if(SymTbl->st_value>0)
-									{
-	 									 int			exp_sec_id;
-										 Section		*exp_sec;
-										 unsigned int	sec_ofs;
+	 								 int			exp_sec_id;
+									 Section		*exp_sec;
+									 unsigned int	sec_ofs;
 
-										if((strncmp(sym_name,"FT_",3))&&
-										   (strncmp(sym_name,"ft_",3))&&
-										   (strncmp(sym_name,"tt_",3))&&
-										   (strncmp(sym_name,"TT_",3))&&
-										   (strncmp(sym_name,"af_",3))&&
-										   (strncmp(sym_name,"t1_",3))&&
-										   (strncmp(sym_name,"ps_",3))&&
-										   (strncmp(sym_name,"t42_",4))&&
-										   (strncmp(sym_name,"pcf_",4))&&
-										   (strncmp(sym_name,"pfr_",4))&&
-										   (strncmp(sym_name,"cff_",4))&&
-										   (strncmp(sym_name,"afm_",4))&&
-										   (strncmp(sym_name,"afm_",4))&&
-										   (strncmp(sym_name,"psaux_",6))&&
-										   (strncmp(sym_name,"t1cid_",6))&&
-										   (strncmp(sym_name,"psnames_",8))&&
-										   (strncmp(sym_name,"pshinter_",9))&&
-										   (strncmp(sym_name,"autofit_",8))&&
-										   (strncmp(sym_name,"winfnt_",7))&&
-										   (strncmp(sym_name,"sfnt_",5))&&
-										   (strncmp(sym_name,"png_",4))&&
-										   
-										   (strncmp(sym_name,"bdf_",4))
+									if((strncmp(sym_name,"FT_",3))&&
+									   (strncmp(sym_name,"ft_",3))&&
+									   (strncmp(sym_name,"tt_",3))&&
+									   (strncmp(sym_name,"TT_",3))&&
+									   (strncmp(sym_name,"af_",3))&&
+									   (strncmp(sym_name,"t1_",3))&&
+									   (strncmp(sym_name,"ps_",3))&&
+									   (strncmp(sym_name,"t42_",4))&&
+									   (strncmp(sym_name,"pcf_",4))&&
+									   (strncmp(sym_name,"pfr_",4))&&
+									   (strncmp(sym_name,"cff_",4))&&
+									   (strncmp(sym_name,"afm_",4))&&
+									   (strncmp(sym_name,"afm_",4))&&
+									   (strncmp(sym_name,"psaux_",6))&&
+									   (strncmp(sym_name,"t1cid_",6))&&
+									   (strncmp(sym_name,"psnames_",8))&&
+									   (strncmp(sym_name,"pshinter_",9))&&
+									   (strncmp(sym_name,"autofit_",8))&&
+									   (strncmp(sym_name,"winfnt_",7))&&
+									   (strncmp(sym_name,"sfnt_",5))&&
+									   (strncmp(sym_name,"png_",4))&&
+									   (strncmp(sym_name,"bdf_",4))
 
-										   
-										   )
-										{	
-										 exp_sec_id		=	FindSectionMem(PE,SymTbl->st_value);
+									   
+									   )
+									{	
+									 exp_sec_id		=	FindSectionMem(PE,SymTbl->st_value);
 
-										 if(exp_sec_id>=0)
+									 if(exp_sec_id>=0)
+									 {
+										 char	name[128];
+										 int	nnn;
+
+										 
+
+										 strcpy	(name,basename(PE->file_name));
+
+										 nnn=strlen(name);
+										 while(nnn--)
 										 {
-											 char	name[128];
-											 int	nnn;
-
-											 
-
-											 strcpy	(name,basename(PE->file_name));
-
-											 nnn=strlen(name);
-											 while(nnn--)
+											 if(name[nnn]=='.')
 											 {
-												 if(name[nnn]=='.')
-												 {
-													 name[nnn]=0;
-													 break;
-												 }
+												 name[nnn]=0;
+												 break;
+											 }
+										 }
+
+										 exp_sec	=	PE->Sections[exp_sec_id];
+										 sec_ofs	=	SymTbl->st_value-exp_sec->v_addr;
+
+										 if (exp_sec->num_sec_exp_name < MAX_EXPORT)
+										 {
+											 if (sym_name != NULL)
+											 {
+												 strcpy(exp_sec->ExportsName[exp_sec->num_sec_exp_name].dll_name, name);
+												 strcpy(exp_sec->ExportsName[exp_sec->num_sec_exp_name].func_name, sym_name);
 											 }
 
-											 exp_sec	=	PE->Sections[exp_sec_id];
-											 sec_ofs	=	SymTbl->st_value-exp_sec->v_addr;
+											 exp_sec->ExportsName[exp_sec->num_sec_exp_name].addr_reloc = sec_ofs;
+											 exp_sec->ExportsName[exp_sec->num_sec_exp_name].sym_idx = s_id;
 
-											 if(sym_name!=NULL)
-											 {
-												strcpy(exp_sec->ExportsName[exp_sec->num_sec_exp_name].dll_name  ,name);
-												strcpy(exp_sec->ExportsName[exp_sec->num_sec_exp_name].func_name,sym_name);
-											 }
-
-											 exp_sec->ExportsName[exp_sec->num_sec_exp_name].addr_reloc			=	sec_ofs;
-											 exp_sec->ExportsName[exp_sec->num_sec_exp_name].sym_idx			=	s_id;
-											 
 											 exp_sec->num_sec_exp_name++;
-										}
+										 }
+										 else
+										 {
+											 printf("too much exports ");
+											 exit(0);
+										 }
 									}
+								   }
 								}
 							}
 
