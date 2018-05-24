@@ -12,14 +12,12 @@
 C_IMPORT ctime_t C_API_FUNC  get_time_c();
 
 const unsigned int	GETDATA_TX		= 1;
-const unsigned int	GETDATA_BLOCK		= 2;
-const unsigned int	GETDATA_FILE		= 0x10;
+const unsigned int	GETDATA_BLOCK	= 2;
+const unsigned int	GETDATA_FILE	= 0x10;
 unsigned int		magic			= 0xCDCDCDCD;
 
-hash_t			null_hash	= { 0x66 };
-/* struct string		def_vstr	= { PTR_NULL, 0xFF, 0xFF }; */
-
-char			def_str[33]     = { 0xFF };
+hash_t				null_hash	= { 0x66 };
+char				def_str[33] = { 0xFF };
 unsigned char		def_vint[5]	= { 0xEF };
 unsigned char		null_vint	= 0xAB;
 unsigned int		ping_nonce	= 1;
@@ -32,18 +30,10 @@ OS_API_C_FUNC(int) init_protocol(mem_zone_ref_ptr params)
 
 	if (!tree_manager_get_child_value_i32(params, NODE_HASH("magic"), &magic))return 0;
 
-	memset_c(null_hash, 0, sizeof(hash_t));
+	memset_c	(null_hash, 0, sizeof(hash_t));
+	strcpy_cs	(def_str, sizeof(def_str), "empty");
 
-	/*
-	def_vstr.str = malloc_c(33);
-	def_vstr.len = 32;
-	def_vstr.size = 33;
-	strcpy_cs(def_vstr.str, 32, "empty");
-	*/
-
-	strcpy_cs(def_str, 33, "empty");
-
-	null_vint = 0;
+	null_vint	= 0;
 
 	def_vint[0] = 0xFE;
 	def_vint[1] = 0;
@@ -73,12 +63,10 @@ OS_API_C_FUNC(int) init_protocol(mem_zone_ref_ptr params)
 	NODE_HASH_cmd = NODE_HASH("cmd");
 	NODE_HASH_payload = NODE_HASH("payload");
 
-
-
-	tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
-	tree_manager_set_child_value_i32(&log, "magic", magic);
-	log_message					("p2p protocol ok version : %version%  magic : %magic% ", &log);
-	release_zone_ref(&log);
+	tree_manager_create_node			("log", NODE_LOG_PARAMS, &log);
+	tree_manager_set_child_value_i32	(&log, "magic", magic);
+	log_message							("p2p protocol ok magic : %magic% ", &log);
+	release_zone_ref					(&log);
 
 	return 1;
 }
@@ -86,7 +74,7 @@ OS_API_C_FUNC(int) init_protocol(mem_zone_ref_ptr params)
 
 OS_API_C_FUNC(void) get_magic(unsigned int *inmagic)
 {
-	*inmagic=magic ;
+	*inmagic = magic;
 }
 
 
@@ -97,10 +85,11 @@ OS_API_C_FUNC(int) add_bitcore_addr(mem_zone_ref_ptr node, ipv4_t ip, unsigned s
 	if (!tree_manager_find_child_node(node, NODE_HASH_p2p_addr, NODE_BITCORE_ADDR, &addr_node))
 		tree_manager_add_child_node(node, "p2p_addr", NODE_BITCORE_ADDR, &addr_node);
 
-	tree_manager_set_child_value_i64(&addr_node, "services", services);
-	tree_manager_set_child_value_ipv4(&addr_node, "addr", ip);
-	tree_manager_set_child_value_i16(&addr_node, "port", port);
-	release_zone_ref(&addr_node);
+	tree_manager_set_child_value_i64	(&addr_node, "services", services);
+	tree_manager_set_child_value_ipv4	(&addr_node, "addr", ip);
+	tree_manager_set_child_value_i16	(&addr_node, "port", port);
+	release_zone_ref					(&addr_node);
+
 	return 1;
 }
 
@@ -108,117 +97,114 @@ OS_API_C_FUNC(int) add_bitcore_addr(mem_zone_ref_ptr node, ipv4_t ip, unsigned s
 
 OS_API_C_FUNC(size_t) init_node(mem_zone_ref_ptr key)
 {
-	mem_zone_ref my_list = { PTR_NULL };
-	mem_zone_ref_ptr sub = PTR_NULL;
-	unsigned short  port = 0xFFFF;
-	ipv4_t		ip = { 0xFF };
-	mem_zone_ref	vin = { PTR_NULL },	txin_list = { PTR_NULL };
- 	struct string 	def_vstr;
+	mem_zone_ref		my_list = { PTR_NULL };
+	mem_zone_ref_ptr	sub = PTR_NULL;
+	ipv4_t				ip = { 0xFF };
+	mem_zone_ref		vin = { PTR_NULL },	txin_list = { PTR_NULL };
+	unsigned short		port = 0xFFFF;
+ 	struct string 		def_vstr;
 	
 	def_vstr.str  = def_str;
 	def_vstr.len  = 32;
-        def_vstr.size = 33;
+    def_vstr.size = 33;
 
 	switch (tree_mamanger_get_node_type(key))
 	{
-
-	case NODE_GFX_INT:
-		tree_manager_write_node_dword(key, 0, 0);
+		case NODE_GFX_INT:
+			tree_manager_write_node_dword(key, 0, 0);
 		break;
-	case NODE_GFX_BINT:
-		tree_manager_write_node_qword(key, 0, 0);
+		case NODE_GFX_BINT:
+			tree_manager_write_node_qword(key, 0, 0);
 		break;
-	case NODE_BITCORE_BLOCK_HASH:
-	case NODE_FILE_HASH:
-	case NODE_BITCORE_TX_HASH:
-	case NODE_BITCORE_HASH:
-	case NODE_BIN_DATA:
-		tree_manager_write_node_hash(key, 0, null_hash);
+		case NODE_BITCORE_BLOCK_HASH:
+		case NODE_FILE_HASH:
+		case NODE_BITCORE_TX_HASH:
+		case NODE_BITCORE_HASH:
+		case NODE_BIN_DATA:
+			tree_manager_write_node_hash(key, 0, null_hash);
 		break;
-	case NODE_BITCORE_VSTR:
-		tree_manager_write_node_vstr(key, 0, &def_vstr);
+		case NODE_BITCORE_VSTR:
+			tree_manager_write_node_vstr(key, 0, &def_vstr);
 		break;
-	case NODE_BITCORE_VINT:
-		tree_manager_write_node_vint(key, 0, &def_vint);
+		case NODE_BITCORE_VINT:
+			tree_manager_write_node_vint(key, 0, &def_vint);
 		break;
-	case NODE_BITCORE_BLK_HDR:
-		tree_manager_set_child_value_i32(key, "version", 0);
-		tree_manager_set_child_value_hash(key, "prev", null_hash);
-		tree_manager_set_child_value_hash(key, "merkle_root", null_hash);
-		tree_manager_set_child_value_i32(key, "time", 0);
-		tree_manager_set_child_value_i32(key, "bits", 0);
-		tree_manager_set_child_value_i32(key, "nonce", 0);
-		//tree_manager_set_child_value_vint(key, "ntx", &def_vint);
-	break;
-	case NODE_BITCORE_PUBKEY:
-	{
-		unsigned char pk[33] = { 0 };
-		tree_manager_write_node_data(key, pk, 0,33);
-	}
-	break;
-	case NODE_BITCORE_ECDSA_SIG:
-		tree_manager_write_node_byte(key, 0, 70);
-		tree_manager_write_node_byte(key, 1, 0x30);
-		tree_manager_write_node_byte(key, 2, 68);
-		tree_manager_write_node_byte(key, 3, 0x02);
-		tree_manager_write_node_byte(key, 4, 32);
-		tree_manager_write_node_data(key, null_hash, 5, 32);
-		tree_manager_write_node_byte(key, 37, 0x02);
-		tree_manager_write_node_byte(key, 38, 32);
-		tree_manager_write_node_data(key, null_hash, 39, 32);
-	break;
-	case NODE_BITCORE_TXIN:
-		tree_manager_set_child_value_hash(key, "txid", null_hash);
-		tree_manager_set_child_value_i32(key, "idx", 0xFFFFFFFF);
-		tree_manager_set_child_value_vstr(key, "script", &def_vstr);
-	break;
-	case NODE_BITCORE_TXOUT:
-		tree_manager_set_child_value_i64(key, "value", 0);
-		tree_manager_set_child_value_vstr(key, "script", &def_vstr);
+		case NODE_BITCORE_BLK_HDR:
+			tree_manager_set_child_value_i32(key, "version", 0);
+			tree_manager_set_child_value_hash(key, "prev", null_hash);
+			tree_manager_set_child_value_hash(key, "merkle_root", null_hash);
+			tree_manager_set_child_value_i32(key, "time", 0);
+			tree_manager_set_child_value_i32(key, "bits", 0);
+			tree_manager_set_child_value_i32(key, "nonce", 0);
+			//tree_manager_set_child_value_vint(key, "ntx", &def_vint);
 		break;
-	case NODE_BITCORE_TX:
-		tree_manager_set_child_value_i32(key, "version", 0);
-		tree_manager_set_child_value_i32(key, "time", 0);
-		
-		if (!tree_manager_find_child_node(key, NODE_HASH_txsin, NODE_BITCORE_VINLIST, &txin_list))
-			tree_manager_add_child_node(key, "txsin", NODE_BITCORE_VINLIST, &txin_list);
-		
-		tree_manager_add_child_node	(&txin_list, "txin", NODE_BITCORE_TXIN, &vin);
-		init_node					(&vin);
-		release_zone_ref			(&vin);
-		release_zone_ref			(&txin_list);
-
-		if (!tree_manager_find_child_node(key, NODE_HASH_txsout, NODE_BITCORE_VOUTLIST, &txin_list))
-			tree_manager_add_child_node(key, "txsout", NODE_BITCORE_VOUTLIST, &txin_list);
-
-		tree_manager_add_child_node (&txin_list, "txout", NODE_BITCORE_TXOUT, &vin);
-		init_node					(&vin);
-		release_zone_ref			(&vin);
-		release_zone_ref			(&txin_list);
-
-
-		tree_manager_set_child_value_i32(key, "locktime", 0);
-
-		break;
-	case NODE_BITCORE_TX_LIST:
-		for (tree_manager_get_first_child(key, &my_list, &sub); ((sub != NULL) && (sub->zone != NULL)); tree_manager_get_next_child(&my_list, &sub))
+		case NODE_BITCORE_PUBKEY:
 		{
-			init_node(sub);
+			unsigned char pk[33] = { 0 };
+			tree_manager_write_node_data(key, pk, 0,33);
 		}
-	break;
-	case NODE_BITCORE_ADDR:
-		tree_manager_set_child_value_i64(key, "services", 0);
-		tree_manager_set_child_value_ipv4(key, "addr", ip);
-		tree_manager_set_child_value_i16(key, "port", port);
-	break;
-	case NODE_BITCORE_ADDRT:
-		tree_manager_set_child_value_i32(key, "time", 0);
-		tree_manager_set_child_value_i64(key, "services", 0);
-		tree_manager_set_child_value_ipv4(key, "addr", ip);
-		tree_manager_set_child_value_i16(key, "port", port);
-	break;
+		break;
+		case NODE_BITCORE_ECDSA_SIG:
+			tree_manager_write_node_byte(key, 0, 70);
+			tree_manager_write_node_byte(key, 1, 0x30);
+			tree_manager_write_node_byte(key, 2, 68);
+			tree_manager_write_node_byte(key, 3, 0x02);
+			tree_manager_write_node_byte(key, 4, 32);
+			tree_manager_write_node_data(key, null_hash, 5, 32);
+			tree_manager_write_node_byte(key, 37, 0x02);
+			tree_manager_write_node_byte(key, 38, 32);
+			tree_manager_write_node_data(key, null_hash, 39, 32);
+		break;
+		case NODE_BITCORE_TXIN:
+			tree_manager_set_child_value_hash(key, "txid", null_hash);
+			tree_manager_set_child_value_i32(key, "idx", 0xFFFFFFFF);
+			tree_manager_set_child_value_vstr(key, "script", &def_vstr);
+		break;
+		case NODE_BITCORE_TXOUT:
+			tree_manager_set_child_value_i64(key, "value", 0);
+			tree_manager_set_child_value_vstr(key, "script", &def_vstr);
+			break;
+		case NODE_BITCORE_TX:
+			tree_manager_set_child_value_i32(key, "version", 0);
+			tree_manager_set_child_value_i32(key, "time", 0);
+		
+			if (!tree_manager_find_child_node(key, NODE_HASH_txsin, NODE_BITCORE_VINLIST, &txin_list))
+				tree_manager_add_child_node(key, "txsin", NODE_BITCORE_VINLIST, &txin_list);
+		
+			tree_manager_add_child_node	(&txin_list, "txin", NODE_BITCORE_TXIN, &vin);
+			init_node					(&vin);
+			release_zone_ref			(&vin);
+			release_zone_ref			(&txin_list);
+
+			if (!tree_manager_find_child_node(key, NODE_HASH_txsout, NODE_BITCORE_VOUTLIST, &txin_list))
+				tree_manager_add_child_node(key, "txsout", NODE_BITCORE_VOUTLIST, &txin_list);
+
+			tree_manager_add_child_node (&txin_list, "txout", NODE_BITCORE_TXOUT, &vin);
+			init_node					(&vin);
+			release_zone_ref			(&vin);
+			release_zone_ref			(&txin_list);
 
 
+			tree_manager_set_child_value_i32(key, "locktime", 0);
+
+		break;
+		case NODE_BITCORE_TX_LIST:
+			for (tree_manager_get_first_child(key, &my_list, &sub); ((sub != NULL) && (sub->zone != NULL)); tree_manager_get_next_child(&my_list, &sub))
+			{
+				init_node(sub);
+			}
+		break;
+		case NODE_BITCORE_ADDR:
+			tree_manager_set_child_value_i64(key, "services", 0);
+			tree_manager_set_child_value_ipv4(key, "addr", ip);
+			tree_manager_set_child_value_i16(key, "port", port);
+		break;
+		case NODE_BITCORE_ADDRT:
+			tree_manager_set_child_value_i32(key, "time", 0);
+			tree_manager_set_child_value_i64(key, "services", 0);
+			tree_manager_set_child_value_ipv4(key, "addr", ip);
+			tree_manager_set_child_value_i16(key, "port", port);
+		break;
 	}
 	return 1;
 }
