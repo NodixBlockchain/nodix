@@ -11,8 +11,9 @@
 
 
 #define	MAX_IMPORT 4096
+#define	MAX_REMAP  16*1024
 #define	MAX_EXPORT 256
-#define EI_NIDENT 16
+#define EI_NIDENT  16
 
 typedef unsigned int Elf32_Addr;
 typedef unsigned short Elf32_Half;
@@ -363,7 +364,7 @@ section_exp_name		ExportsName[MAX_EXPORT];
 
 SymEntry				SymList[1000];
 RELOC					RelocList[1000];
-dyn_remap				RemapList[16000];
+dyn_remap				RemapList[MAX_REMAP];
 SymEntry				ExtrnSyms[50];
 int						num_sec_imp_ord;
 int						num_sec_imp_name;
