@@ -150,3 +150,4 @@ debug/node_adx_d.dll
 *.opensdf
 export/vec3_d.dll
 export/vec3.dll
+export/anon_rpc.dll
