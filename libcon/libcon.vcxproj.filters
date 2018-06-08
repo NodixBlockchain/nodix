@@ -158,9 +158,6 @@
     <ClInclude Include="include\io.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
-    <ClInclude Include="std_base.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
     <ClInclude Include="base\std_mem.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
@@ -178,6 +175,9 @@
     </ClInclude>
     <ClInclude Include="minizip-master\zip.h">
       <Filter>Fichiers sources\minizip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\serv\libcon\base\std_base.h">
+      <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
