@@ -5,7 +5,7 @@
 typedef void			*mem_ptr;
 typedef const void		*const_mem_ptr;
 
-typedef size_t		   mem_size;
+typedef size_t			mem_size;
 
 struct big64
 {
@@ -59,7 +59,7 @@ LIBC_API unsigned int	ASM_API_FUNC		compare_z_exchange_c(volatile unsigned int *
 LIBC_API unsigned int	ASM_API_FUNC		compare_exchange_c  (volatile unsigned int *data,unsigned int value, unsigned int new_value);
 
 
-LIBC_API char			ASM_API_FUNC		fetch_add_c(volatile unsigned int *data, volatile unsigned int new_value);
+LIBC_API short			ASM_API_FUNC		fetch_add_c(volatile short *data, volatile short new_value);
 LIBC_API char			ASM_API_FUNC		mfence_c();
 
 
@@ -74,6 +74,5 @@ LIBC_API unsigned int	ASM_API_FUNC		calc_crc32_c(const char *, size_t);
 #ifndef NULL 
 #define NULL (void *)0x00000000
 #endif
-
 
 

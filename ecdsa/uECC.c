@@ -1581,7 +1581,13 @@ OS_API_C_FUNC(int) crypto_extract_key(dh_key_t pk, const dh_key_t sk)
 	if(maincurve == PTR_INVALID)
 		maincurve = uECC_secp256k1();
 	return uECC_make_key(pk, sk, maincurve);
-	//return uECC_compute_public_key(sk, pk, maincurve);
+}
+
+OS_API_C_FUNC(int) compress_pub(dh_key_t pk, dh_key_t cpk)
+{
+	uECC_compress(pk, cpk, maincurve);
+
+	return 1;
 }
 
 OS_API_C_FUNC(struct string) crypto_sign(const struct string *msg, const dh_key_t sk)
@@ -1612,6 +1618,16 @@ OS_API_C_FUNC(int) crypto_sign_open(const struct string *sign, const struct stri
 	return uECC_verify(npk, msg->str, msg->len, sign->str, maincurve);
 }
 
+OS_API_C_FUNC(int) derive_key(dh_key_t public_key, dh_key_t private_key, hash_t secret)
+{
+	dh_key_t pkey;
+	if (maincurve == PTR_INVALID)
+		maincurve = uECC_secp256k1();
+
+	uECC_decompress(public_key, pkey, maincurve);
+
+	return uECC_shared_secret(pkey, private_key, secret, maincurve);
+}
 
 #if uECC_ENABLE_VLI_API
 

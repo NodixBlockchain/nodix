@@ -24,7 +24,6 @@
 #include "../wallet/wallet_api.h"
 #include "../node_adx/node_api.h"
 
-//#define _DEBUG
 
 mem_zone_ref		self_node  = { PTR_INVALID };
 hash_t				null_hash = { 0xCD };
@@ -81,6 +80,7 @@ find_last_pos_block_func_ptr				find_last_pos_block = PTR_INVALID;
 find_blk_staking_tx_func_ptr				find_blk_staking_tx	= PTR_INVALID;
 check_blk_sig_func_ptr						check_blk_sig = PTR_INVALID;
 find_last_stake_modifier_func_ptr			find_last_stake_modifier = PTR_INVALID;
+
 
 //protocol module
 C_IMPORT int			C_API_FUNC node_process_event_handler(const char *msg_list_name, mem_zone_ref_ptr node, mem_zone_ref_ptr msg);
@@ -261,10 +261,18 @@ OS_API_C_FUNC(int) accept_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_lis
 	mem_zone_ref		log = { PTR_NULL };
 	struct string		sign = { PTR_NULL };
 	uint64_t			block_reward = 0, staking_reward = 0, nblks;
+	ctime_t				now;
 	int					ret = 1;
 	unsigned int		is_staking;
-	unsigned int		checktx;
+	unsigned int		checktx, block_time;
 
+
+	if (!tree_manager_get_child_value_i32(header, NODE_HASH("time"), &block_time))
+		return 0;
+	
+	now = get_time_c();
+	if (!future_drift(now, block_time))
+		return 0;
 
 	tree_manager_get_child_value_i64(&self_node, NODE_HASH("block_height"), &nblks);
 
@@ -272,39 +280,42 @@ OS_API_C_FUNC(int) accept_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_lis
 	if (pos_kernel != PTR_NULL)
 	{
 		mem_zone_ref stake_tx = { PTR_NULL };
-		
 
 		if (find_blk_staking_tx(tx_list, &stake_tx))
 		{
 			struct string pubK = { PTR_NULL };
-			is_staking = 1;
-
-			ret = check_tx_input_sig(&stake_tx, 0, &pubK);
-			if (!ret)log_output("bad staking input \n");
-
-
+			unsigned int  tx_time;
+			
+			tree_manager_get_child_value_i32(&stake_tx, NODE_HASH("time"), &tx_time);
+			
+			ret = future_drift(block_time, tx_time);
+			if (ret)
+			{
+				ret = check_tx_input_sig(&stake_tx, 0, &pubK);
+				if (!ret)log_output("bad staking input \n");
+			}
 			if (ret)
 			{
 				ret = check_blk_sig(header, &pubK);
 				if (!ret)log_output("bad staking signature \n");
 			}
-			
 			free_string(&pubK);
-			ret = 1;
+
+			//ret = 1;
 			if (ret)
 			{
 				ret = check_tx_pos(header, &stake_tx);
 				if (!ret)log_output("bad staking POS \n");
 			}
-
 			if (ret)
 			{
 				ret = get_stake_reward(nblks, &block_reward);
 				if (!ret)log_output("stake reward error\n");
 			}
 			release_zone_ref(&stake_tx);
-
 			if (!ret)return 0;
+
+			is_staking = 1;
 		}
 	}
 
@@ -314,11 +325,11 @@ OS_API_C_FUNC(int) accept_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_lis
 		unsigned int		powbits, blkbits;
 		hash_t				out_diff;
 
-
-		if (!block_pow(nblks))
+		if (block_pow_limit())
 			return 0;
 
 		tree_manager_get_child_value_i32(header, NODE_HASH("bits"), &blkbits);
+
 		if (!tree_manager_get_child_value_i32(&self_node, NODE_HASH("current_pow_diff"), &powbits))
 			powbits = blkbits;
 		
@@ -342,7 +353,7 @@ OS_API_C_FUNC(int) accept_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_lis
 		checktx = 0;
 
 	tree_manager_get_child_value_hash(header, NODE_HASH("merkle_root"), merkle);
-	return check_tx_list(tx_list, block_reward, merkle, checktx);
+	return check_tx_list(tx_list, block_reward, merkle, block_time, checktx);
 }
 
 int handle_file(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
@@ -373,6 +384,7 @@ int handle_file(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 
 		if (ret)
 		{
+			/*
 			unsigned int n;
 			n = 0;
 			while (n<32)
@@ -382,6 +394,9 @@ int handle_file(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 				n++;
 			}
 			chash[64] = 0;
+			*/
+
+			bin_2_hex(fileHash, 32, chash);
 
 			make_string		(&filePath, "apps");
 			cat_cstring_p	(&filePath, appName.str);
@@ -506,9 +521,10 @@ int handle_getaddr(mem_zone_ref_ptr src_node, mem_zone_ref_ptr payload)
 	mem_zone_ref		my_list = { PTR_NULL }, peer_nodes = { PTR_NULL }, addrs = { PTR_NULL };
 	mem_zone_ref_ptr	node = PTR_NULL;
 	ctime_t				now;
-		if (!tree_manager_find_child_node(&self_node, NODE_HASH("peer_nodes"), NODE_BITCORE_NODE_LIST, &peer_nodes))
-		return 1;
 
+	if (!tree_manager_find_child_node(&self_node, NODE_HASH("peer_nodes"), NODE_BITCORE_NODE_LIST, &peer_nodes))
+		return 1;
+	
 	now = get_time_c();
 	tree_manager_create_node("addrs", NODE_BITCORE_ADDR_LIST, &addrs);
 
@@ -1033,6 +1049,9 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 
 				if (!node_get_hash_idx(n, h))continue;
 
+
+				bin_2_hex	(h, 32, chash);
+				/*
 				n = 0; 
 				while (n<32)
 				{
@@ -1041,6 +1060,7 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 					n++;
 				}
 				chash[64] = 0;
+				*/
 				
 				if (is_pow_block(chash))
 					get_blockreward (n, &reward);
@@ -1114,22 +1134,30 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 		if (!tree_manager_find_child_node(&header, NODE_HASH("signature"), NODE_BITCORE_ECDSA_SIG, &sig))
 			tree_manager_add_child_node(&header, "signature", NODE_BITCORE_ECDSA_SIG, &sig);
 
-		ret=tree_manager_write_node_sig(&sig, 0, signature.str, signature.len);
+		
+		tree_manager_write_node_sig(&sig, 0, signature.str, signature.len);
 
+		/*
+		ret=tree_manager_write_node_sig(&sig, 0, signature.str, signature.len);
 		if (!ret)
 		{
 			log_output("write block sig error \n");
 		}
+		*/
 		release_zone_ref(&sig);
 	}
 
 	if (find_hash(blk_hash))
 	{
 		char ch1[65];
-		unsigned int n;
+		
 
 		if (!find_index_hash(blk_hash))
 		{
+			bin_2_hex	(blk_hash, 32, ch1);
+
+			/*
+			unsigned int n;
 			n = 0;
 			while (n < 32)
 			{
@@ -1138,6 +1166,7 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 				n++;
 			}
 			ch1[64] = 0;
+			*/
 
 			log_output("remove block ");
 			log_output(ch1);
@@ -1526,7 +1555,6 @@ int load_pos_module(const char *mod_name,const char *mod_file,tpo_mod_file *tpom
 {
 	if (!load_module(mod_file, mod_name, tpomod))return 0;
 
-#ifndef _DEBUG
 	init_pos					= (init_pos_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "init_pos", 0);
 	store_blk_staking			= (store_blk_staking_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "store_blk_staking", 0);
 	store_blk_tx_staking		= (store_blk_staking_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "store_blk_tx_staking", 0);
@@ -1540,8 +1568,7 @@ int load_pos_module(const char *mod_name,const char *mod_file,tpo_mod_file *tpom
 	find_blk_staking_tx			=	(find_blk_staking_tx_func_ptr) get_tpo_mod_exp_addr_name(tpomod, "find_blk_staking_tx", 0);
 	check_blk_sig				=	 (check_blk_sig_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "check_blk_sig", 0);
 	find_last_stake_modifier	= (find_last_stake_modifier_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "find_last_stake_modifier", 0);
-							 
-#endif
+
 	return 1;
 }
 
@@ -1625,7 +1652,6 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 
 	if (ret)
 	{
-#ifndef _DEBUG
 		init_pos = (init_pos_func_ptr)get_tpo_mod_exp_addr_name(pos_kernel, "init_pos", 0);
 		store_blk_staking = (store_blk_staking_func_ptr)get_tpo_mod_exp_addr_name(pos_kernel, "store_blk_staking", 0);
 		store_blk_tx_staking = (store_blk_staking_func_ptr)get_tpo_mod_exp_addr_name(pos_kernel, "store_blk_tx_staking", 0);
@@ -1638,7 +1664,6 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 		find_blk_staking_tx = (find_blk_staking_tx_func_ptr)get_tpo_mod_exp_addr_name(pos_kernel, "find_blk_staking_tx", 0);
 		check_blk_sig = (check_blk_sig_func_ptr)get_tpo_mod_exp_addr_name(pos_kernel, "check_blk_sig", 0);
 		find_last_stake_modifier = (find_last_stake_modifier_func_ptr)get_tpo_mod_exp_addr_name(pos_kernel, "find_last_stake_modifier", 0);
-#endif
 	}
 	init_wallet(&self_node, pos_kernel);
 
@@ -1691,6 +1716,8 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	*/
 
 	//node_remove_last_block();
+
+	
 	
 	/*
 	{
@@ -1723,13 +1750,18 @@ OS_API_C_FUNC(int) app_loop(mem_zone_ref_ptr params)
 	
 
 
-	empty_trash					();
-	do_mark_sweep				(get_tree_mem_area_id(),5000);
+	
+	empty_trash();
+	do_mark_sweep(get_tree_mem_area_id(),5000);
+	
 
+	node_check_services();
+	
+	
 	node_check_new_connections	();
-	node_check_services			();
 	update_peernodes			();
 	process_nodes				();
+	
 
 	if (tree_manager_find_child_node(&self_node, NODE_HASH("submitted txs"), NODE_BITCORE_TX_LIST, &tx_list))
 	{

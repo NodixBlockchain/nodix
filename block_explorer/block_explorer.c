@@ -147,6 +147,8 @@ OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zon
 	{
 		if ((nblks>0) && (node_get_hash_idx( nblks - 1, block_hash)))
 		{
+			bin_2_hex(block_hash, 32, chash);
+			/*
 			n = 0;
 			while (n < 32)
 			{
@@ -155,6 +157,7 @@ OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zon
 				n++;
 			}
 			chash[64] = 0;
+			*/
 		}
 
 	}
@@ -328,6 +331,9 @@ int		get_tx	(mem_zone_ref_ptr my_tx,mem_zone_ref_ptr result)
 
 					if ((script.len > 0)&&(script.len<1024))
 					{
+						bin_2_hex(script.str, script.len, hexscript);
+
+						/*
 						unsigned char *p = (unsigned char *)script.str;
 						n = 0;	
 						while (n<script.len)
@@ -337,6 +343,7 @@ int		get_tx	(mem_zone_ref_ptr my_tx,mem_zone_ref_ptr result)
 							n++;
 						}
 						hexscript[n * 2] = 0;
+						*/
 					}
 					else
 						hexscript[0] = 0;
@@ -466,6 +473,9 @@ int		get_tx	(mem_zone_ref_ptr my_tx,mem_zone_ref_ptr result)
 
 							if (script.len < 1024)
 							{
+								bin_2_hex(script.str, script.len, hexscript);
+
+								/*
 								unsigned char *p = (unsigned char *)script.str;
 								n = 0;
 								while (n < script.len)
@@ -475,6 +485,7 @@ int		get_tx	(mem_zone_ref_ptr my_tx,mem_zone_ref_ptr result)
 									n++;
 								}
 								hexscript[n * 2] = 0;
+								*/
 							}
 							else
 								hexscript[0] = 0;
@@ -1067,6 +1078,11 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 			if (txl != PTR_NULL)
 			{
 				int		ntx, ival;
+
+
+				bin_2_hex(hash, 32, chash);
+
+				/*
 				n = 0;
 				while (n < 32)
 				{
@@ -1075,6 +1091,8 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 					n++;
 				}
 				chash[64] = 0;
+				*/
+
 				ival = strtol_c		(txl->value.str, PTR_NULL, 10);
 				ntx  = get_blk_ntxs	(chash);
 				switch (txl->op)
@@ -1091,6 +1109,9 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 			{
 				if (tree_manager_create_node("block", NODE_GFX_OBJECT, &new_block))
 				{
+					bin_2_hex_r(hash, 32, prm);
+
+					/*
 					n = 0;
 					while (n < 32)
 					{
@@ -1099,6 +1120,7 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 						n++;
 					}
 					prm[64] = 0;
+					*/
 					if (block(prm, req, &new_block))
 					{
 						if ((num >= page_num*limit) && (cur < limit))

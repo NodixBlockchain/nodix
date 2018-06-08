@@ -55,7 +55,57 @@ LIBC_API uint64_t		C_API_FUNC load_bigendian			(const unsigned char *x);
 LIBC_API void			C_API_FUNC strtod_c					(const char *str, double *d);
 LIBC_API void			C_API_FUNC strtof_c					(const char *str, float *f);
 
+
 static const char		hex_chars[]		=	{'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+
+static inline void bin_2_hex(const unsigned char *bin, size_t len, char *hex)
+{
+	unsigned int b2hn, b2hnn;
+	for(b2hn = 0, b2hnn = 0; b2hn < len; b2hn++, b2hnn += 2)
+	{
+		hex[b2hnn + 0] = hex_chars[bin[b2hn] >> 0x04];
+		hex[b2hnn + 1] = hex_chars[bin[b2hn] & 0x0F];
+	}
+	hex[b2hnn] = 0;
+}
+
+static inline void bin_2_hex_r(const unsigned char *bin, size_t len, char *hex)
+{
+	unsigned int b2hn, b2hnn;
+	for (b2hn = 0, b2hnn = (len - 1) * 2; b2hn < len; b2hn++, b2hnn -= 2)
+	{
+		hex[b2hnn + 0] = hex_chars[bin[b2hn] >> 0x04];
+		hex[b2hnn + 1] = hex_chars[bin[b2hn] & 0x0F];
+	}
+	hex[len * 2] = 0;
+}
+
+static inline void hex_2_bin(const char *chex, unsigned char *bin)
+{
+	unsigned int b2hn, b2hnn;
+	char         hex[3];
+	hex[2] = 0;
+	for (b2hn = 0, b2hnn = 0; chex[b2hn] != 0 ; b2hn++, b2hnn += 2)
+	{
+		hex[0] = chex[b2hnn + 0];
+		hex[1] = chex[b2hnn + 1];
+		bin[b2hn] = strtoul_c(hex, NULL, 16);
+	}
+}
+
+static inline void hex_2_bin_r(const char *chex, unsigned char *bin)
+{
+	unsigned int b2hn, b2hnn;
+	char         hex[3];
+	hex[2] = 0;
+
+	for (b2hn = strlen_c(chex) / 2, b2hnn = 0; chex[b2hn] != 0; b2hn--, b2hnn += 2)
+	{
+		hex[0] = chex[b2hnn + 0];
+		hex[1] = chex[b2hnn + 1];
+		bin[b2hn] = strtoul_c(hex, NULL, 16);
+	}
+}
 
 typedef unsigned char	ipv4_t[4];
 typedef	char			bitcore_cmd_t[12];

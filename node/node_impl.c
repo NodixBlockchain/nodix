@@ -30,6 +30,7 @@ NODE_API int			C_API_FUNC	    node_get_script_modules(mem_zone_ref_ptr modules){
 NODE_API int			C_API_FUNC	    node_get_script_msg_handlers(mem_zone_ref_ptr handlers){return 0;}
 NODE_API int			C_API_FUNC		node_set_script(mem_zone_ref_ptr script){return 0;}
 NODE_API int			C_API_FUNC		remove_block(hash_t blk_hash){return 0;}
+NODE_API int			C_API_FUNC		block_pow_limit() { return 0; }
 
 NODE_API int			C_API_FUNC		node_init_service(mem_zone_ref_ptr service, mem_zone_ref_ptr pos_mod_def){ return 0; }
 NODE_API int			C_API_FUNC		proccess_http_reqs(mem_zone_ref_ptr service){ return 0; }

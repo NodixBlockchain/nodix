@@ -25,40 +25,38 @@ C_IMPORT void			C_API_FUNC	serialize_children	(mem_zone_ref_ptr node, unsigned c
 C_IMPORT size_t			C_API_FUNC	read_node			(mem_zone_ref_ptr key, const char *payload, size_t len);
 
 C_IMPORT void			C_API_FUNC	unserialize_children(mem_zone_ref_ptr obj, const_mem_ptr payload,size_t len);
+
+
 /* store txout */
-extern int				store_tx_vout(const char *txh,mem_zone_ref_ptr txout_list,unsigned int oidx, btc_addr_t out_addr);
-
-
-
+extern int				store_tx_vout		(const char *txh,mem_zone_ref_ptr txout_list,unsigned int oidx, btc_addr_t out_addr);
 /* check signature */
-extern int				check_sign(const struct string *sign, const struct string *pubK, const hash_t txh);
+extern int				check_sign			(const struct string *sign, const struct string *pubK, const hash_t txh);
 /* check public key from tx output */
-extern int				check_txout_key(mem_zone_ref_ptr output, unsigned char *pkey,btc_addr_t addr);
+extern int				check_txout_key		(mem_zone_ref_ptr output, unsigned char *pkey,btc_addr_t addr);
 /* compute scrypt block hash */
-extern int				scrypt_blockhash(const void* input, hash_t hash);
+extern int				scrypt_blockhash	(const void* input, hash_t hash);
 
-extern	int				add_script_var	(mem_zone_ref_ptr script_node, const struct string *val);
+extern	int				add_script_var		(mem_zone_ref_ptr script_node, const struct string *val);
 
-extern  int				add_script_uivar(mem_zone_ref_ptr script_node,uint64_t val);
+extern  int				add_script_uivar	(mem_zone_ref_ptr script_node,uint64_t val);
 
-extern  int				get_script_file(struct string *script, mem_zone_ref_ptr file);
+extern  int				get_script_file		(struct string *script, mem_zone_ref_ptr file);
 
+extern int				b58tobin			(void *bin, size_t *binszp, const char *b58, size_t b58sz);
 
-extern int				b58tobin(void *bin, size_t *binszp, const char *b58, size_t b58sz);
+extern void				keyrh_to_addr		(unsigned char *pkeyh, btc_addr_t addr);
 
-extern void				keyrh_to_addr(unsigned char *pkeyh, btc_addr_t addr);
+extern struct string	get_next_script_var	(const struct string *script,size_t *offset);
 
-extern struct string	get_next_script_var(const struct string *script,size_t *offset);
+extern int				add_script_opcode	(mem_zone_ref_ptr script_node, unsigned char opcode);
 
-extern int add_script_opcode(mem_zone_ref_ptr script_node, unsigned char opcode);
+extern int				add_script_push_data(mem_zone_ref_ptr script_node, const_mem_ptr data, size_t size);
 
-extern int add_script_push_data(mem_zone_ref_ptr script_node, const_mem_ptr data, size_t size);
+extern int				get_script_data		(const struct string *script, size_t *offset, struct string *data);
 
-extern int get_script_data(const struct string *script, size_t *offset, struct string *data);
-
-extern int get_script_layout(struct string *script, mem_zone_ref_ptr file);
-extern int get_script_module(struct string *script, mem_zone_ref_ptr file);
-extern int find_index_str(const char *app_name, const char *typeStr, const char *keyname, const struct string *val, hash_t hash);
+extern int				get_script_layout	(struct string *script, mem_zone_ref_ptr file);
+extern int				get_script_module	(struct string *script, mem_zone_ref_ptr file);
+extern int				find_index_str		(const char *app_name, const char *typeStr, const char *keyname, const struct string *val, hash_t hash);
 
 
 hash_t					null_hash			= { 0xCD };
@@ -84,18 +82,22 @@ unsigned int			reward_halving		= 0xFFFFFFFF;
 
 uint64_t				last_pow_block		= 0xFFFFFFFF;
 uint64_t				pow_reward			= 100000*ONE_COIN;
-
-node					*blk_root = PTR_INVALID;
+node					*blk_root			= PTR_INVALID;
 
 //#undef _DEBUG
 #ifdef _DEBUG
 LIBEC_API int			C_API_FUNC crypto_extract_key	(dh_key_t pk, const dh_key_t sk);
 LIBEC_API int			C_API_FUNC crypto_sign_open		(const struct string *sign, const struct string *msgh, const struct string *pk);
 LIBEC_API struct string	C_API_FUNC crypto_sign			(struct string *msg, const dh_key_t sk);
+LIBEC_API int			C_API_FUNC compress_pub			(dh_key_t pk, dh_key_t cpk);
+LIBEC_API int			C_API_FUNC derive_key			(dh_key_t public_key, dh_key_t private_key, hash_t secret);
+
 #else
 
 crypto_extract_key_func_ptr crypto_extract_key = PTR_INVALID;
 crypto_sign_open_func_ptr	crypto_sign_open   = PTR_INVALID;
+compress_pubkey_func_ptr	compress_pub	   = PTR_INVALID;
+derive_key_func_ptr			derive_key		   = PTR_INVALID;
 
 #ifdef FORWARD_CRYPTO
 crypto_sign_func_ptr		crypto_sign		   = PTR_INVALID;
@@ -113,13 +115,16 @@ int load_sign_module(mem_zone_ref_ptr mod_def, tpo_mod_file *tpo_mod)
 
 	strcpy_cs							(name, 64, tree_mamanger_get_node_name(mod_def));
 	tree_manager_get_child_value_str	(mod_def, NODE_HASH("file"), file, 256, 0);
-	ret=load_module(file, name, tpo_mod);
+	ret=load_module						(file, name, tpo_mod);
 	if(ret)
 	{
 
 #ifndef _DEBUG
 		crypto_extract_key = (crypto_extract_key_func_ptr)get_tpo_mod_exp_addr_name(tpo_mod, "crypto_extract_key", 0);
 		crypto_sign_open = (crypto_sign_open_func_ptr)get_tpo_mod_exp_addr_name(tpo_mod, "crypto_sign_open", 0);
+		compress_pub = (compress_pubkey_func_ptr)get_tpo_mod_exp_addr_name(tpo_mod, "compress_pub", 0);
+		derive_key = (derive_key_func_ptr)get_tpo_mod_exp_addr_name(tpo_mod, "derive_key", 0);
+
 #ifdef FORWARD_CRYPTO
 		crypto_sign = (crypto_sign_func_ptr)get_tpo_mod_exp_addr_name(tpo_mod, "crypto_sign", 0);
 #endif
@@ -134,6 +139,17 @@ OS_API_C_FUNC(int) is_trusted_app(const char *appName)
 	return tree_manager_find_child_node(&trusted_apps, NODE_HASH(appName), 0xFFFFFFFF, PTR_NULL);
 }
 
+OS_API_C_FUNC(int) future_drift(ctime_t time1,ctime_t time2)
+{
+	return (time2 <= (time1 + 16)) ? 1 : 0;
+}
+
+OS_API_C_FUNC(int) get_pow_block_limit(uint64_t *lastPowBlock)
+{
+	*lastPowBlock = last_pow_block;
+
+	return 1;
+}
 
 OS_API_C_FUNC(int) init_blocks(mem_zone_ref_ptr node_config, mem_zone_ref_ptr trustedApps)
 {
@@ -232,18 +248,22 @@ OS_API_C_FUNC(int) init_blocks(mem_zone_ref_ptr node_config, mem_zone_ref_ptr tr
 #endif	
 	return 1;
 }
-OS_API_C_FUNC(int) block_pow(uint64_t height)
-{
-	if (last_pow_block == 0)return 1;
-	if (height<=last_pow_block)return 1;
-
-	return 0;
-}
 
 OS_API_C_FUNC(int) extract_key(dh_key_t priv,dh_key_t pub)
 {
 	return crypto_extract_key(pub, priv);
 }
+
+OS_API_C_FUNC(int) compress_key(dh_key_t pub, dh_key_t cpub)
+{
+	return compress_pub(pub, cpub);
+}
+
+OS_API_C_FUNC(int) derive_secret(dh_key_t pub, dh_key_t priv,hash_t secret)
+{
+	return derive_key(pub, priv, secret);
+}
+
 
 
 
@@ -256,7 +276,6 @@ OS_API_C_FUNC(int) blk_find_last_pow_block(mem_zone_ref_ptr pindex, unsigned int
 	{
 		hash_t		lbp;
 		uint64_t    bh;
-		unsigned int n;
 
 		tree_manager_get_child_value_i64(pindex, NODE_HASH("height"), &bh);
 
@@ -267,6 +286,9 @@ OS_API_C_FUNC(int) blk_find_last_pow_block(mem_zone_ref_ptr pindex, unsigned int
 			bh = last_pow_block;
 
 		get_hash_idx("blk_indexes", bh-1, lbp);
+
+		bin_2_hex(lbp, 32, chash);
+		/*
 		n = 0;
 		while (n < 32)
 		{
@@ -275,7 +297,7 @@ OS_API_C_FUNC(int) blk_find_last_pow_block(mem_zone_ref_ptr pindex, unsigned int
 			n++;
 		}
 		chash[64] = 0;
-
+		*/
 		load_blk_hdr(pindex, chash);
 	}
 
@@ -789,7 +811,7 @@ OS_API_C_FUNC(int) make_app_child_obj_tx(mem_zone_ref_ptr tx, const char *app_na
 	mem_zone_ref_ptr	out = PTR_NULL;
 	struct string		sscript = { 0 }, strKey = { 0 }, null_str = { 0 };
 	ctime_t				time;
-	unsigned int		n, keytype, objType, flags;
+	unsigned int		keytype, objType, flags;
 	int					ret;
 	int					item_oidx = -1;
 
@@ -797,6 +819,9 @@ OS_API_C_FUNC(int) make_app_child_obj_tx(mem_zone_ref_ptr tx, const char *app_na
 
 	if (!tree_node_find_child_by_name(&apps, app_name, PTR_NULL))return 0;
 
+
+	bin_2_hex(objHash, 32, chash);
+	/*
 	n = 0;
 	while (n < 32)
 	{
@@ -805,6 +830,7 @@ OS_API_C_FUNC(int) make_app_child_obj_tx(mem_zone_ref_ptr tx, const char *app_na
 		n++;
 	}
 	chash[64] = 0;
+	*/
 
 	ret = load_obj_type(app_name, chash, &objType, objAddr);
 	if (ret)ret = get_app_type_key(app_name, objType, keyName, &keytype,&flags);
@@ -1395,7 +1421,7 @@ OS_API_C_FUNC(int)  dump_tx_infos(mem_zone_ref_ptr tx)
 	mem_zone_ref	in = { PTR_NULL },prev_tx = { PTR_NULL };
     int 			ret;
     unsigned char	hash_type;
-    unsigned int    prevOutIdx,n;
+    unsigned int    prevOutIdx;
 
 	if (!load_tx_input(tx, 0, &in, &prev_tx))return 0;
     
@@ -1412,6 +1438,10 @@ OS_API_C_FUNC(int)  dump_tx_infos(mem_zone_ref_ptr tx)
 	if (ret)ret = tree_manager_get_child_value_istr(&out, NODE_HASH("script"), &oscript, 0);
 	if (ret)ret = compute_tx_sign_hash(tx, 0, &oscript, hash_type, txsh);
     
+
+	bin_2_hex(txsh, 32, chash);
+
+	/*
     n = 0;
 	while (n < 32)
 	{
@@ -1420,11 +1450,15 @@ OS_API_C_FUNC(int)  dump_tx_infos(mem_zone_ref_ptr tx)
 		n++;
 	}
 	chash[64] = 0;
+	*/
 			
 	log_output("tx sign hash ");
     log_output(chash);
     log_output("\n");
+
+	bin_2_hex(vpubK.str, vpubK.len, chash);
     
+	/*
     n = 0;
 	while (n < vpubK.len)
 	{
@@ -1434,6 +1468,7 @@ OS_API_C_FUNC(int)  dump_tx_infos(mem_zone_ref_ptr tx)
 		n++;
 	}
 	chash[vpubK.len*2] = 0; 
+	*/
 	
 	uitoa_s(vpubK.len,dd,32,10);
 	
@@ -1442,7 +1477,10 @@ OS_API_C_FUNC(int)  dump_tx_infos(mem_zone_ref_ptr tx)
     log_output(" len ");
     log_output(dd);
     log_output("\n");
-           
+      
+
+	bin_2_hex(sign.str, sign.len, chash);
+	/*
     n = 0;
 	while (n < sign.len)
 	{
@@ -1452,6 +1490,7 @@ OS_API_C_FUNC(int)  dump_tx_infos(mem_zone_ref_ptr tx)
 		n++;
 	}
 	chash[sign.len*2] = 0; 
+	*/
 	
 	uitoa_s(sign.len,dd,32,10);
 	
@@ -1763,10 +1802,12 @@ OS_API_C_FUNC(int) check_tx_input_sig(mem_zone_ref_const_ptr tx, unsigned int nI
 			{
 				char th[65] = { 0 };
 				char txh[65] = { 0 };
-				unsigned int n;
 
 				tree_manager_get_child_value_str(tx, NODE_HASH("txid"), txh, 65, 0);
 
+				bin_2_hex(txsh, 32, th);
+
+				/*
 				n = 0;
 				while (n < 32)
 				{
@@ -1775,6 +1816,9 @@ OS_API_C_FUNC(int) check_tx_input_sig(mem_zone_ref_const_ptr tx, unsigned int nI
 					n++;
 				}
 				th[64] = 0;
+				*/
+
+
 				log_output("signature check failed '");
 				log_output(th);
 				log_output("' '");
@@ -2010,7 +2054,7 @@ int add_app_tx_type(mem_zone_ref_ptr app, mem_zone_ref_ptr typetx)
 	struct string typeStr = { 0 }, typeName = { 0 }, typeId = { 0 }, Flags = { 0 };
 	mem_zone_ref_ptr out = PTR_NULL;
 	size_t offset = 0;
-	unsigned int type_id, flags;
+	unsigned int type_id;
 	int ret = 0;
 
 	if (!get_tx_output(typetx, 0, &type_def))return 0;
@@ -2842,7 +2886,11 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 			char			phash[65];
 			mem_zone_ref	prevout = { PTR_NULL }, txouts = { PTR_NULL };
 			unsigned char	*pet = (unsigned char *)et;
+
+
+			bin_2_hex(pet, 32, phash);
 			
+			/*
 			n = 0;
 			while (n < 32)
 			{
@@ -2851,6 +2899,7 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 				n++;
 			}
 			phash[64]	= 0;
+			*/
 
 			ret			= check_utxo(phash, et[8]);
 
@@ -2859,6 +2908,9 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 				char	rphash[65];
 				char	iStr[16];
 
+				bin_2_hex_r(pet, 32, rphash);
+
+				/*
 				n = 0;
 				while (n < 32)
 				{
@@ -2866,8 +2918,8 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 					rphash[n * 2 + 1] = hex_chars[pet[31 - n] & 0x0F];
 					n++;
 				}
-
 				rphash[64] = 0;
+				*/
 				
 				uitoa_s		(et[8], iStr, 16, 10);
 
@@ -2964,6 +3016,10 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 			char iStr[16];
 			unsigned char	*pet = (unsigned char *)et;
 
+
+			bin_2_hex_r(pet, 32, prevTx);
+
+			/*
 			n = 0;
 			while (n < 32)
 			{
@@ -2972,6 +3028,7 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 				n++;
 			}
 			prevTx[64] = 0;
+			*/
 
 			itoa_s			(iidx, iStr, 16, 10);
 			log_output		("check input failed at input #");
@@ -3182,9 +3239,12 @@ OS_API_C_FUNC(int) check_tx_outputs(mem_zone_ref_ptr tx, uint64_t *total, unsign
 				{
 					char			chash[65];
 					struct string	appName;
-					unsigned int	n, ptype, ktype, is_signed, flags;
+					unsigned int	ptype, ktype, is_signed, flags;
 					unsigned char	*hd = (unsigned char *)cHash.str;
 
+
+					bin_2_hex(hd, 32, chash);
+					/*
 					n = 0;
 					while (n < 32)
 					{
@@ -3193,6 +3253,8 @@ OS_API_C_FUNC(int) check_tx_outputs(mem_zone_ref_ptr tx, uint64_t *total, unsign
 						n++;
 					}
 					chash[64] = 0;
+					*/
+
 					log_output("new obj child '");
 					log_output(chash);
 					log_output("':'");
@@ -3296,7 +3358,7 @@ OS_API_C_FUNC(int) find_inputs(mem_zone_ref_ptr tx_list, hash_t txid,unsigned in
 }
 
 
-OS_API_C_FUNC(int) check_tx_list(mem_zone_ref_ptr tx_list,uint64_t block_reward,hash_t merkle,unsigned int check_sig)
+OS_API_C_FUNC(int) check_tx_list(mem_zone_ref_ptr tx_list,uint64_t block_reward,hash_t merkle, unsigned int block_time,unsigned int check_sig)
 {
 	hash_t				merkleRoot;
 	mem_zone_ref		my_list = { PTR_NULL };
@@ -3344,121 +3406,127 @@ OS_API_C_FUNC(int) check_tx_list(mem_zone_ref_ptr tx_list,uint64_t block_reward,
 		uint64_t			total_in, total_out;
 		mem_zone_ref		txin_list = { PTR_NULL }, my_llist = { PTR_NULL };
 		mem_zone_ref_ptr	input = PTR_NULL;
+		unsigned int		tx_time;
+		
 
 		is_staking = 0;
 		is_coinbase = 0;
 		total_out = 0;
 		total_in = 0;
 
-		if (is_tx_null(tx))
-			continue;
+		ret = tree_manager_get_child_value_i32(tx, NODE_HASH("time"), &tx_time);
 
-		if(is_app_root(tx))
+		if (ret)
 		{
-			if(has_root_app)
-			{
-				log_output			("app root tx already set \n");
-				dec_zone_ref		(tx);
-				release_zone_ref	(&my_list);
-				release_zone_ref	(&blkobjs);
-
-				bt_deltree			(blk_root);
-				return 0;
-			}
-			continue;
+			ret = (tx_time <= (block_time+20)) ? 1 : 0;
+			if (!ret)
+				log_output("tx time after block time \n");
 		}
 
-		if (!check_tx_inputs(tx, &total_in, &is_coinbase, check_sig|2))
+		if (ret)
 		{
-			log_output("invalid inputs \n");
+			if (is_app_root(tx))
+			{
+				if (has_root_app)
+				{
+					ret = 0;
+					log_output("app root already set \n");
+				}
+				else
+					continue;
+			}
+		}
+
+		if (ret)
+		{
+			ret = check_tx_inputs(tx, &total_in, &is_coinbase, check_sig | 2);
+			if(!ret)log_output("invalid inputs \n");
+		}
+		if (ret)
+		{
+			ret = check_tx_outputs(tx, &total_out, &is_staking);
+			if(!ret)log_output("invalid outputs \n");
+		}
+
+		if (ret)
+		{
+			if (is_staking)
+			{
+				if (coinstaking == 0)
+				{
+					ret = 0;
+					log_output("invalid coin stake\n");
+				}
+				else
+				{
+					coinstaking = 0;
+					list_reward = total_out - total_in;
+				}
+			}
+			else if (is_coinbase)
+			{
+				if (coinbase == 0)
+				{
+					ret = 0;
+					log_output("invalid coin base\n");
+				}
+				else
+				{
+					coinbase = 0;
+					list_reward = total_out - total_in;
+				}
+			}
+			else
+			{
+				if (total_out > total_in)
+				{
+					ret = 0;
+					log_output("insufficient input \n");
+				}
+				else
+				{
+					txFee = total_in - total_out;
+					fees += txFee;
+				}
+			}
+		}
+
+		if (ret)
+		{
+			if (tree_manager_find_child_node(tx, NODE_HASH("AppName"), NODE_GFX_STR, PTR_NULL))
+			{
+				uint64_t root_amnt;
+				if (!tree_manager_get_child_value_i64(tx, NODE_HASH("app_root_amnt"), &root_amnt))root_amnt = 0;
+				if (root_amnt < app_fee)
+				{
+					ret = 0;
+					log_output("insufficient root amount\n");
+				}
+			}
+		}
+
+		if (!ret)
+		{
 			dec_zone_ref		(tx);
 			release_zone_ref	(&my_list);
-			release_zone_ref	(&blkobjs);
-			bt_deltree			(blk_root);
-			return 0;
-		}
-		
-		if (!check_tx_outputs(tx, &total_out, &is_staking))
-		{
-			log_output("invalid outputs \n");
-			dec_zone_ref		(tx);
-			release_zone_ref	(&my_list);
-			release_zone_ref	(&blkobjs);
-			bt_deltree			(blk_root);
-			return 0;
-		}
-		
-		if (is_staking)
-		{
-			if (coinstaking == 0)
-			{
-				log_output		("invalid coin stake \n");
-				dec_zone_ref	(tx);
-				release_zone_ref(&my_list);
-				release_zone_ref	(&blkobjs);
-				bt_deltree(blk_root);
-				return 0;
-			}
-			coinstaking = 0;
-			list_reward = total_out - total_in;
-		}
-		else if (is_coinbase)
-		{
-			if (coinbase == 0)
-			{
-				log_output("invalid coin base \n");
-
-				dec_zone_ref		(tx);
-				release_zone_ref	(&my_list);
-				release_zone_ref	(&blkobjs);
-				bt_deltree			(blk_root);
-				return 0;
-			}
-			coinbase	= 0;
-			list_reward = total_out - total_in;
-		}
-		else
-		{
-			if(total_out>total_in)
-			{
-				log_output("insufficient input \n");
-				dec_zone_ref		(tx);
-				release_zone_ref	(&my_list);
-				release_zone_ref	(&blkobjs);
-				bt_deltree			(blk_root);
-				return 0;
-			}
-			
-			txFee = total_in - total_out;
-			fees += txFee;
-		}
-		if (tree_manager_find_child_node(tx, NODE_HASH("AppName"), NODE_GFX_STR, PTR_NULL))
-		{
-			uint64_t root_amnt;
-			if (!tree_manager_get_child_value_i64(tx, NODE_HASH("app_root_amnt"), &root_amnt))root_amnt = 0;
-
-			if (root_amnt<app_fee)
-			{
-				log_output			("insufficient root amount\n");
-				dec_zone_ref		(tx);
-				release_zone_ref	(&my_list);
-				release_zone_ref	(&blkobjs);
-				bt_deltree			(blk_root);
-				return 0;
-			}
+			break;
 		}
 	}
-	
-	
+		
 	release_zone_ref(&blkobjs);
 	if (!ret)
 	{
+		bt_deltree	(blk_root);
+		blk_root	= PTR_NULL;
 		log_message("error tx",PTR_NULL);
 		return 0;
 	}
 	if (list_reward > (block_reward + fees))
 	{
 		mem_zone_ref log = { PTR_NULL };
+
+		bt_deltree(blk_root);
+		blk_root = PTR_NULL;
 
 		tree_manager_create_node		 ("log", NODE_LOG_PARAMS, &log);
 		tree_manager_set_child_value_i64 (&log, "list", list_reward);
@@ -3635,7 +3703,6 @@ OS_API_C_FUNC(int) make_genesis_block(mem_zone_ref_ptr genesis_conf,mem_zone_ref
 OS_API_C_FUNC(int) get_tx_data(mem_zone_ref_ptr tx, mem_zone_ref_ptr txData)
 {
 	struct string	txdata = { 0 };
-	unsigned int	n;
 	size_t			size;
 	uint64_t		fee;
 	unsigned char	*buffer;
@@ -3650,12 +3717,16 @@ OS_API_C_FUNC(int) get_tx_data(mem_zone_ref_ptr tx, mem_zone_ref_ptr txData)
 	txdata.size = txdata.len + 1;
 	txdata.str = malloc_c(txdata.size);
 
+
+	bin_2_hex(buffer, size, txdata.str);
+	/*
 	for (n = 0; n < size; n++)
 	{
 		txdata.str[n * 2 + 0] = hex_chars[buffer[n] >> 4];
 		txdata.str[n * 2 + 1] = hex_chars[buffer[n] & 0x0F];
 	}
 	txdata.str[txdata.len] = 0;
+	*/
 
 	free_c(buffer);
 

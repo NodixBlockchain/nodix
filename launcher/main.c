@@ -1,4 +1,5 @@
-/* copyright antoine bentue-ferrer 2017-2018 */
+//#define _DEBUG
+/* copyright antoine bentue-ferrer 2016 */
 #include <base/std_def.h>
 #include <base/std_mem.h>
 #include <base/mem_base.h>
@@ -10,9 +11,13 @@
 #include <tpo_mod.h>
 #include <fsio.h>
 
+#ifdef NDEBUG
+#undef _DEBUG
+#endif
+
 typedef int C_API_FUNC app_func(mem_zone_ref_ptr params);
 
-typedef void C_API_FUNC	tree_manager_init_func(size_t size, unsigned int flags);
+typedef void C_API_FUNC	tree_manager_init_func(size_t size, size_t  nzones, unsigned int flags);
 
 typedef int	C_API_FUNC load_script_func(const char *file,const char *name, mem_zone_ref_ptr script_vars,unsigned int opt);
 typedef int	C_API_FUNC resolve_script_var_func(mem_zone_ref_ptr script_vars, mem_zone_ref_ptr script_proc, const char *var_path, unsigned int var_type, mem_zone_ref_ptr out_var, mem_zone_ref_ptr pout_var);
@@ -39,6 +44,8 @@ app_func_ptr						app_init = PTR_INVALID, app_start = PTR_INVALID, app_loop = PT
 
 tpo_mod_file libbase_mod = { 0xDEF00FED };
 
+
+
 int main(int argc, const char **argv)
 {
 	
@@ -46,11 +53,10 @@ int main(int argc, const char **argv)
 	mem_zone_ref			nodeDef = { PTR_NULL }, params = { PTR_NULL }, script_vars = { PTR_NULL }, init_node_proc = { PTR_NULL };
 	const_mem_ptr			*params_ptr;
 	tpo_mod_file			*nodix_mod;
-	
 	int						done = 0,n,withGC;
-
+	
 	init_mem_system			();
-	init_default_mem_area	(24 * 1024 * 1024);
+	init_default_mem_area	(24 * 1024 * 1024, 128*1024);
 	set_exe_path			();
 	network_init			();
 
@@ -87,13 +93,11 @@ int main(int argc, const char **argv)
 	execute_script_proc		 = (execute_script_proc_func_ptr)get_tpo_mod_exp_addr_name(&libbase_mod, "execute_script_proc", 0);;
 	tree_manager_init		 = (tree_manager_init_func_ptr)get_tpo_mod_exp_addr_name(&libbase_mod, "tree_manager_init", 0);;
 
-
 	if(withGC == 1 )
-		tree_manager_init		(32 * 1024 * 1024, 0x10);
+		tree_manager_init		(32 * 1024 * 1024, 128*1024, 0x10);
 	else
-		tree_manager_init		(32 * 1024 * 1024, 0x0);
-	
-	
+		tree_manager_init		(32 * 1024 * 1024, 128 * 1024, 0x0);
+
 	if (!load_script("nodix.node", "nodix.node", &script_vars, 3))
 	{
 		log_output("unable to load node script \n");
@@ -123,8 +127,9 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 	
-	get_script_var_value_ptr(&script_vars, "nodix.mod_ptr"			, (mem_ptr *)&nodix_mod);
-	resolve_script_var		(&script_vars, PTR_NULL, "init_node"	, 0xFFFFFFFF, &init_node_proc, PTR_NULL);
+	get_script_var_value_ptr(&script_vars, "nodix.mod_ptr"	, (mem_ptr *)&nodix_mod);
+	
+	resolve_script_var(&script_vars, PTR_NULL, "init_node", 0xFFFFFFFF, &init_node_proc, PTR_NULL);
 
 	app_init = (app_func_ptr)get_tpo_mod_exp_addr_name(nodix_mod, "app_init", 0);
 	app_start = (app_func_ptr)get_tpo_mod_exp_addr_name(nodix_mod, "app_start", 0);
@@ -144,6 +149,8 @@ int main(int argc, const char **argv)
 		console_print("could not execute script initialization routine.");
 		return 0;
 	}
+	
+
 
 	if (!app_start(&params))
 	{
@@ -155,6 +162,7 @@ int main(int argc, const char **argv)
 	
 	while (isRunning())
 	{
+	
 		app_loop		(PTR_NULL);
 	}
 

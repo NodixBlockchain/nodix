@@ -1,11 +1,9 @@
-#define MAX_MEM_AREAS  32
-#define MAX_MEM_ZONES  1024*128
-#define MAX_FREE_ZONES 1024*64
+
 #define PTR_NULL	(void *)0x00000000L
 #define PTR_INVALID (void *)0xDEADBEEFLL
 #define PTR_FF		(void *)0xFFFFFFFFLL
 
-
+/* #define NATIVE_ALLOC */
 
 typedef struct
 {
@@ -43,9 +41,9 @@ struct gfx_rect
 #ifdef __cplusplus
 	extern "C" {
 #endif
-LIBC_API void			C_API_FUNC init_default_mem_area	(unsigned int size);
+LIBC_API void			C_API_FUNC init_default_mem_area	(size_t size, size_t nzones);
 LIBC_API unsigned int	C_API_FUNC mem_area_enable_sem		(unsigned int area_id);
-LIBC_API unsigned int	C_API_FUNC init_new_mem_area		(mem_ptr phys_start,	mem_ptr phys_end,mem_area_type_t type);
+LIBC_API unsigned int	C_API_FUNC init_new_mem_area		(mem_ptr phys_start,	mem_ptr phys_end,unsigned int nzones,mem_area_type_t type);
 LIBC_API unsigned int	C_API_FUNC free_mem_area			(unsigned int area_id);
 LIBC_API unsigned int	C_API_FUNC allocate_new_zone		(unsigned int area_id,	mem_size zone_size,	mem_zone_ref *zone_ref);
 LIBC_API unsigned int	C_API_FUNC allocate_new_empty_zone	(unsigned int area_id,mem_zone_ref *zone_ref);
@@ -59,8 +57,10 @@ LIBC_API unsigned int	C_API_FUNC get_zone_area_type		(mem_zone_ref_const_ptr zon
 LIBC_API unsigned int	C_API_FUNC create_zone_ref			(mem_zone_ref *dest_zone_ref,mem_ptr ptr,mem_size size);
 LIBC_API void			C_API_FUNC init_mem_system			();
 LIBC_API size_t			C_API_FUNC dump_mem_used			(unsigned int area_id);
-LIBC_API size_t			C_API_FUNC dump_mem_used_after		(unsigned int area_id, unsigned int time, mem_zone_ref *outs, size_t nOuts);
 
+#ifdef _DEBUG
+LIBC_API size_t			C_API_FUNC dump_mem_used_after		(unsigned int area_id, unsigned int time, mem_zone_ref *outs, size_t nOuts);
+#endif
 
 LIBC_API int			C_API_FUNC  get_shared_slot			(mem_zone_ref_ptr shared_zone, mem_zone_ref_ptr *zone_ptr);
 LIBC_API int			C_API_FUNC release_shared_slot		(mem_zone_ref_ptr zone_ptr);
@@ -174,7 +174,4 @@ LIBC_API mem_size	    C_API_FUNC	set_zone_free		(mem_zone_ref_ptr ref, zone_free
 #ifdef __cplusplus
 	}
 #endif
-
-
-
 

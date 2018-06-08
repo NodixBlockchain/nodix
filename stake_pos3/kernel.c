@@ -139,10 +139,14 @@ OS_API_C_FUNC(int) find_last_stake_modifier(char * chash, hash_t nStakeModifier)
 	while (generated_stake_modifier(chash,&height, nStakeModifier)==0)
 	{
 		hash_t		prevHash;
-		int		n;
 		
 		if(height==1)return 0;
 		if (!get_hash_idx("block_indexes", height-1, prevHash))return 0;
+
+		bin_2_hex(prevHash, 32, chash);
+
+		/*
+		int n;
 		n = 0;
 		while (n<32)
 		{
@@ -151,6 +155,7 @@ OS_API_C_FUNC(int) find_last_stake_modifier(char * chash, hash_t nStakeModifier)
 			n++;
 		}
 		chash[64] = 0;
+		*/
                 
 	}
 	return 1;
@@ -226,6 +231,8 @@ OS_API_C_FUNC(int) load_last_pos_blk(mem_zone_ref_ptr header)
 		if (len >= sizeof(hash_t))
 		{
 			char chash[65];
+
+			/*
 			int	 n;
 			n = 0;
 			while (n<32)
@@ -235,6 +242,9 @@ OS_API_C_FUNC(int) load_last_pos_blk(mem_zone_ref_ptr header)
 				n++;
 			}
 			chash[64] = 0;
+			*/
+
+			bin_2_hex(data, 32, chash);
 			ret = load_blk_hdr(header, chash);
 
 			/*
@@ -740,6 +750,8 @@ OS_API_C_FUNC(int) check_tx_pos(mem_zone_ref_ptr blk,mem_zone_ref_ptr tx)
 
 	tree_manager_get_child_value_hash	(blk, NODE_HASH("prev"), pHash);
 
+	bin_2_hex(pHash, 32, prevHash);
+	/*
 	n = 0;
 	while (n<32)
 	{
@@ -748,6 +760,7 @@ OS_API_C_FUNC(int) check_tx_pos(mem_zone_ref_ptr blk,mem_zone_ref_ptr tx)
 		n++;
 	}
 	prevHash[64] = 0;
+	*/
 
 	if (!find_last_stake_modifier(prevHash, lastStakeModifier))
 	{
@@ -833,6 +846,9 @@ OS_API_C_FUNC(int) create_pos_block(hash_t pHash, mem_zone_ref_ptr tx, mem_zone_
 	get_block_version				(&version);
 	tree_manager_get_child_value_i32(tx, NODE_HASH("time"), &time);
 
+	bin_2_hex(pHash, 32, chash);
+
+	/*
 	n = 0;
 	while (n<32)
 	{
@@ -841,6 +857,7 @@ OS_API_C_FUNC(int) create_pos_block(hash_t pHash, mem_zone_ref_ptr tx, mem_zone_
 		n++;
 	}
 	chash[64] = 0;
+	*/
 
 	get_blk_height	(chash, &height);
 

@@ -346,7 +346,7 @@ LIBBASE_API  void			C_API_FUNC	qsort_ctx_c								(mem_ptr base, mem_size num, m
 
 LIBBASE_API	void			C_API_FUNC	tree_manager_sort_childs				(mem_zone_ref_ptr parent_ref_ptr, const char *name, unsigned int dir);
 
-LIBBASE_API  void 	C_API_FUNC	tree_manager_init								(size_t size,unsigned int flags);
+LIBBASE_API  void 	C_API_FUNC	tree_manager_init								(size_t size,size_t nzones,unsigned int flags);
 LIBBASE_API  void	C_API_FUNC	tree_manager_free								();
 LIBBASE_API  int	C_API_FUNC	tree_manager_json_loadb							(const char *buffer, size_t buflen, mem_zone_ref_ptr result);
 LIBBASE_API  int	C_API_FUNC	tree_manager_json_loadb_as						(const char *buffer, size_t buflen, const char *name, unsigned int type, mem_zone_ref_ptr result);

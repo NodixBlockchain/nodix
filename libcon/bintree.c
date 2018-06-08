@@ -53,11 +53,12 @@ OS_API_C_FUNC(int) bt_insert(node ** tree, tree_entry val)
 
 OS_API_C_FUNC(void) bt_deltree(node * tree)
 {
-	if (tree == uint_to_mem(0xDEF0DEF0))return;
 	if (tree)
 	{
 		bt_deltree(tree->left);
+		tree->left = PTR_NULL;
 		bt_deltree(tree->right);
+		tree->right = PTR_NULL;
 		free_c(tree);
 	}
 }

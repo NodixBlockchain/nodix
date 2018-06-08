@@ -16,6 +16,8 @@ block.c
 */
 
 /* init block module */
+
+
 BLOCK_API  int	C_API_FUNC init_blocks(mem_zone_ref_ptr node_config, mem_zone_ref_ptr trustedApps);
 
 BLOCK_API  int	C_API_FUNC is_trusted_app(const char *appName);
@@ -131,7 +133,7 @@ BLOCK_API int	C_API_FUNC	get_block_version			(unsigned int *v);
 BLOCK_API int	C_API_FUNC	blk_check_sign				(const struct string *sign, const struct string *pubk, const hash_t hash);
 
 /* check validity of input transactions */
-BLOCK_API  int	C_API_FUNC check_tx_list				(mem_zone_ref_ptr tx_list, uint64_t block_reward,hash_t merkle,unsigned int check_sig);
+BLOCK_API  int	C_API_FUNC check_tx_list				(mem_zone_ref_ptr tx_list, uint64_t block_reward,hash_t merkle, unsigned int block_time, unsigned int check_sig);
 
 
 /* find input in tx list */
@@ -162,8 +164,12 @@ BLOCK_API  int	C_API_FUNC get_block_tree				(node **blktree);
 BLOCK_API  int	C_API_FUNC get_tx_data					(mem_zone_ref_ptr tx, mem_zone_ref_ptr txData);
 
 BLOCK_API  int	C_API_FUNC blk_find_last_pow_block		(mem_zone_ref_ptr pindex, unsigned int *block_time);
-BLOCK_API  int	C_API_FUNC block_pow					(uint64_t height);
+BLOCK_API  int	C_API_FUNC get_pow_block_limit			(uint64_t *lastPowBlock);
 BLOCK_API  int	C_API_FUNC extract_key					(dh_key_t priv, dh_key_t pub);
+BLOCK_API  int	C_API_FUNC compress_key					(dh_key_t pub, dh_key_t cpub);
+BLOCK_API  int	C_API_FUNC derive_secret				(dh_key_t pub, dh_key_t priv, hash_t secret);
+
+
 BLOCK_API  int	C_API_FUNC remove_tx_index				(hash_t tx_hash);
 
 BLOCK_API int C_API_FUNC set_root_app					(mem_zone_ref_ptr tx);
@@ -185,6 +191,8 @@ BLOCK_API int C_API_FUNC get_root_app_fee				(mem_zone_ref_ptr rootAppFees);
 BLOCK_API int C_API_FUNC make_app_tx					(mem_zone_ref_ptr tx,const char *app_name,btc_addr_t appAddr);
 BLOCK_API int C_API_FUNC make_app_item_tx				(mem_zone_ref_ptr tx, const struct string *app_name, unsigned int item_id);
 BLOCK_API int C_API_FUNC parse_approot_tx				(mem_zone_ref_ptr tx);
+
+BLOCK_API int C_API_FUNC								future_drift(ctime_t time1,ctime_t time2);
 
 
 BLOCK_API  int  C_API_FUNC get_app_name					(const struct string *script, struct string *app_name);

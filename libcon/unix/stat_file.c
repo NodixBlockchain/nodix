@@ -16,6 +16,7 @@
 #include <utime.h>
 #include <pwd.h>
 
+
 char	path_sep				= '/';
 struct string log_file_name		= { PTR_INVALID,0,0 };
 struct string lck_file_name		= { PTR_INVALID,0,0 };
@@ -37,7 +38,7 @@ struct thread
 	pid_t				h;
 };
 
-struct thread threads[16] = { PTR_INVALID };
+struct thread threads[MAX_THREADS] = { PTR_INVALID };
 
 OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
 {
@@ -78,7 +79,7 @@ void init_threads()
 unsigned int new_thread(pid_t h)
 {
 	unsigned int	n=0;
-	while (n<16)
+	while (n<MAX_THREADS)
 	{
 		if (compare_z_exchange_c((unsigned int *)&threads[n].h, (unsigned int)h))
 			return n;
@@ -91,7 +92,7 @@ unsigned int replace_thread_h(pid_t pold, pid_t pnew)
 {
 	int n = 0;
 
-	while (n < 16)
+	while (n < MAX_THREADS)
 	{
 		if (pold == threads[n].h)
 		{
@@ -106,7 +107,7 @@ unsigned int get_current_thread(pid_t h)
 {
 	int n = 0;
 
-	while (n < 16)
+	while (n < MAX_THREADS)
 	{
 		if (h == threads[n].h)
 			return n;
@@ -183,7 +184,7 @@ void *thread_start(void *p)
 	thread->h	= gettid();
 	func		= thread->func;
 
-	init_default_mem_area(4 * 1024 * 1024);
+	init_default_mem_area(4 * 1024 * 1024, 16*1024);
 	ret = func(&thread->params, &thread->status);
 	free_mem_area(0);
 

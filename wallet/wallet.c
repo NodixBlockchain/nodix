@@ -1168,6 +1168,7 @@ OS_API_C_FUNC(int) remove_wallet_tx(const hash_t tx_hash)
 		if (get_out_script_address(&script, &pubk, out_addr))
 		{
 			char chash[65];
+			/*
 			int	n = 0;
 			while (n < 32)
 			{
@@ -1176,6 +1177,9 @@ OS_API_C_FUNC(int) remove_wallet_tx(const hash_t tx_hash)
 				n++;
 			}
 			chash[64] = 0;
+			*/
+
+			bin_2_hex(tx_hash, 32, chash);
 
 			cancel_unspend_tx_addr	(out_addr, chash, oidx);
 			remove_tx_staking		(out_addr, tx_hash);
@@ -1221,12 +1225,16 @@ OS_API_C_FUNC(int) remove_wallet_tx(const hash_t tx_hash)
 			if (get_tx_output(&ptx, oidx, &vout))
 			{
 				uint64_t amount;
-				int	n = 0;
+				
 
 				tree_manager_get_child_value_i64(&vout, NODE_HASH("value"), &amount);
 
 				if ((amount != 0) && ((amount & 0xFFFFFFFF00000000) != 0xFFFFFFFF00000000) && (amount != 0xFFFFFFFFFFFFFFFF))
 				{
+					bin_2_hex(prev_hash, 32, pchash);
+
+					/*
+					int	n = 0;
 					while (n < 32)
 					{
 						pchash[n * 2 + 0] = hex_chars[prev_hash[n] >> 4];
@@ -1234,6 +1242,7 @@ OS_API_C_FUNC(int) remove_wallet_tx(const hash_t tx_hash)
 						n++;
 					}
 					pchash[64] = 0;
+					*/
 
 					if (tree_manager_get_child_value_istr(&vout, NODE_HASH("script"), &script, 16))
 					{
@@ -1353,7 +1362,7 @@ OS_API_C_FUNC(int) store_tx_wallet(btc_addr_t addr, hash_t tx_hash)
 	struct string	 tx_path = { 0 };
 	mem_zone_ref	 txin_list = { PTR_NULL }, txout_list = { PTR_NULL }, my_list = { PTR_NULL }, tx = { PTR_NULL };
 	mem_zone_ref_ptr input = PTR_NULL, out = PTR_NULL;
-	unsigned int	 n, oidx, iidx;
+	unsigned int	 oidx, iidx;
 	unsigned int	 n_to_addrs;
 	unsigned int	 n_in_addr;
 
@@ -1369,7 +1378,8 @@ OS_API_C_FUNC(int) store_tx_wallet(btc_addr_t addr, hash_t tx_hash)
 	if (!tree_manager_find_child_node(&tx, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list))return 0;
 	if (!tree_manager_find_child_node(&tx, NODE_HASH("txsout"), NODE_BITCORE_VOUTLIST, &txout_list)){ release_zone_ref(&txin_list); return 0; }
 
-	n = 0;
+	/*
+	unsigned int n = 0;
 	while (n < 32)
 	{
 		tchash[n * 2 + 0] = hex_chars[tx_hash[n] >> 4];
@@ -1377,6 +1387,11 @@ OS_API_C_FUNC(int) store_tx_wallet(btc_addr_t addr, hash_t tx_hash)
 		n++;
 	}
 	tchash[64] = 0;
+	*/
+
+	bin_2_hex(tx_hash, 32, tchash);
+
+
 	n_to_addrs = 0;
 	for (tree_manager_get_first_child(&txout_list, &my_list, &out); ((out != NULL) && (out->zone != NULL)); tree_manager_get_next_child(&my_list, &out))
 	{
@@ -1408,7 +1423,7 @@ OS_API_C_FUNC(int) store_tx_wallet(btc_addr_t addr, hash_t tx_hash)
 		char			ptchash[65];
 		hash_t			prev_hash = { 0xFF };
 		struct string	out_path = { 0 };
-		int				n, my_addr;
+		int				my_addr;
 		uint64_t		amount;
 
 		tree_manager_get_child_value_hash(input, NODE_HASH("txid"), prev_hash);
@@ -1448,6 +1463,7 @@ OS_API_C_FUNC(int) store_tx_wallet(btc_addr_t addr, hash_t tx_hash)
 
 		if (my_addr)
 		{
+			/*
 			n = 0;
 			while (n < 32)
 			{
@@ -1456,6 +1472,11 @@ OS_API_C_FUNC(int) store_tx_wallet(btc_addr_t addr, hash_t tx_hash)
 				n++;
 			}
 			ptchash[64] = 0;
+			*/
+
+			bin_2_hex(prev_hash, 32, ptchash);
+
+
 			spend_tx_addr(addr, tchash, iidx, ptchash, oidx, to_addr_list, n_to_addrs);
 
 			if (load_tx_output_amount(prev_hash, oidx, &amount))
@@ -1611,6 +1632,9 @@ OS_API_C_FUNC(int) store_wallet_tx(mem_zone_ref_ptr tx)
 			continue;
 		}
 
+		bin_2_hex(prev_hash, 32, ptchash);
+
+		/*
 		n = 0;
 		while (n<32)
 		{
@@ -1619,6 +1643,7 @@ OS_API_C_FUNC(int) store_wallet_tx(mem_zone_ref_ptr tx)
 			n++;
 		}
 		ptchash[64] = 0;
+		*/
 
 		if (get_tx_output_script(prev_hash, oidx, &script, &amount))
 		{

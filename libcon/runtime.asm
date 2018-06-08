@@ -197,8 +197,8 @@ fetch_add_c:
 %endif
 	push edi
 	mov  edi				, [esp+8]
-	mov  eax				, [esp+12]
-	lock xadd dword [edi]	, eax
+	mov  ax					, [esp+12]
+	lock xadd word [edi]	, ax
 	pop edi
 ret
 

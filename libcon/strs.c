@@ -459,9 +459,6 @@ OS_API_C_FUNC(int) make_cstring(const struct string *str, char *toto, size_t len
 
 OS_API_C_FUNC(void) free_string(struct string *str)
 {
-	if (str == uint_to_mem(0xDEF0DEF0))return;
-	if (str->str == uint_to_mem(0xDEF0DEF0))return;
-
 	if(str->str!=NULL){free_c(str->str);}
 	str->str=NULL;
 	str->len=0;

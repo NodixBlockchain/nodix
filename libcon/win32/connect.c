@@ -459,7 +459,7 @@ OS_API_C_FUNC(char *)readline(struct con *Con, time_t timeout)
 		//fd_read		=	Con->con_set;
 		fd_err				=	Con->con_set;
 		stimeout.tv_sec		=	0;
-		stimeout.tv_usec	=	1000;
+		stimeout.tv_usec	=	10;
 
 		if (select (Con->sock+1, &fd_read, NULL, &fd_err, &stimeout) < 0)
 		{
@@ -571,7 +571,8 @@ OS_API_C_FUNC(int) read_data(struct con *Con, size_t max)
 {
 	fd_set			read_fd_set,err_fd_set;
 	size_t			read;
-	struct timeval	timeout;		
+	struct timeval	timeout;
+	ctime_t			last;
 	
 	if(Con->lastLine.str == NULL)
 	{
@@ -584,11 +585,14 @@ OS_API_C_FUNC(int) read_data(struct con *Con, size_t max)
 		Con->lastLine.size	=	Con->lastLine.len+max+1;
 		Con->lastLine.str	=	realloc_c(Con->lastLine.str,Con->lastLine.size);
 	}
+
+	get_system_time_c(&last);
 	
 	read=0;
  	while(read<max)
 	{
-		int ret;
+		int				ret;
+		ctime_t			now;
 		timeout.tv_sec	=	0;
 		timeout.tv_usec =	1000;
 
@@ -605,10 +609,20 @@ OS_API_C_FUNC(int) read_data(struct con *Con, size_t max)
 			Con->last_rd=	recv(Con->sock,&Con->lastLine.str[Con->lastLine.len],(int)(max-read),0);
 			if(Con->last_rd<=0)
 				break;
+
 			read					+=	Con->last_rd;
 			Con->lastLine.len		+=	Con->last_rd;
+
+			get_system_time_c(&last);
 		}
-		//if (ret == 0)break;
+
+		get_system_time_c(&now);
+
+		if ((now - last) > 100)
+		{
+			Con->last_rd = -1;
+			break;
+		}
 	}
 	return (int)read;
 }

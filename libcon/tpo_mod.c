@@ -16,7 +16,6 @@
 #include "include/tpo_mod.h"
 
 
-unsigned int			debug				=	0xFFFFFFFF;
 tpo_mod_file			*modz[64]			= { PTR_INVALID };
 size_t					n_modz				=	0xFFFFFFFF;
 
@@ -509,7 +508,6 @@ OS_API_C_FUNC(void) register_tpo_exports(tpo_mod_file *tpo_mod,const char *mod_n
 
 }
 
-
 OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_file,unsigned int imp_func_addr)
 {
 	char			mod_name[128];
@@ -536,8 +534,7 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 
 	allocate_new_zone		(0,tpo_file->string_buffer_len	,&tpo_file->string_buffer_ref);
 	mem_stream_read			(file_stream,get_zone_ptr(&tpo_file->string_buffer_ref,0),tpo_file->string_buffer_len);
-	debug=0;
-
+	
 	tpo_file->deco_type	=	mem_stream_read_32(file_stream);
 
 	
@@ -1031,7 +1028,18 @@ OS_API_C_FUNC(int) load_module(const char *file, const char *mod_name, tpo_mod_f
 	log_output			("\n");
 
 	register_tpo_exports(mod, mod_name);
-
+	
+	
+	/*
+	release_zone_ref	(&tpo_file_data);
+	free_c(data); 
+	*/
+	
+	/*
+	log_output("register new mod ");
+	log_output(mod_name);
+	log_output("\n");
+	*/
 
 
 	if (n_modz<32)
@@ -1040,7 +1048,6 @@ OS_API_C_FUNC(int) load_module(const char *file, const char *mod_name, tpo_mod_f
 	return 1;
 
 }
-
 
 
 
@@ -1056,10 +1063,7 @@ OS_API_C_FUNC(int) execute_script_mod_rwcall(tpo_mod_file		*tpo_mod, const char 
 		log_output("\n");
 		return -1;
 	}
-
-
 	return mod_func(input, output);
-
 }
 
 OS_API_C_FUNC(int) execute_script_mod_rcall(tpo_mod_file		*tpo_mod, const char *method, mem_zone_ref_ptr input)
@@ -1074,9 +1078,7 @@ OS_API_C_FUNC(int) execute_script_mod_rcall(tpo_mod_file		*tpo_mod, const char *
 		log_output("\n");
 		return -1;
 	}
-	
 	return mod_func(input);
-
 }
 
 OS_API_C_FUNC(int) execute_script_mod_call(tpo_mod_file		*tpo_mod, const char *method)
@@ -1092,5 +1094,6 @@ OS_API_C_FUNC(int) execute_script_mod_call(tpo_mod_file		*tpo_mod, const char *m
 		log_output("\n");
 		return -1;
 	}
+
 	return mod_func();
 }

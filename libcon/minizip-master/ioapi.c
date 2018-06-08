@@ -15,6 +15,8 @@
 
 #include "../../base/std_def.h"
 
+#include "../../base/std_mem.h"
+
 #include "../../base/std_str.h"
 
 #if defined unix || defined __APPLE__

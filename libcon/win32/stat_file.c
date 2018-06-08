@@ -45,7 +45,7 @@ struct thread
 };
 
 
-struct thread threads[32] = { PTR_INVALID };
+struct thread threads[MAX_THREADS] = { PTR_INVALID };
 
 
 OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
@@ -612,7 +612,7 @@ unsigned int new_thread(unsigned int h)
 {
 	unsigned int	n;
 	n = 0;
-	while (n<16)
+	while (n<MAX_THREADS)
 	{
 		if (compare_z_exchange_c(&threads[n].h,h))
 			return n;
@@ -626,7 +626,7 @@ unsigned int get_current_thread(unsigned int h)
 {
 	int n=0;
 
-	while (n < 16)
+	while (n < MAX_THREADS)
 	{
 		if (h == threads[n].h)
 			return n;
@@ -703,7 +703,7 @@ DWORD WINAPI thread_start(void *p)
 
 	func			= mythread->func;
 
-	init_default_mem_area(4 * 1024 * 1024);
+	init_default_mem_area(4 * 1024 * 1024, 16 * 1024);
 
 	ret = func			 (&mythread->params, &mythread->status);
 	free_mem_area		 (0);
@@ -720,7 +720,7 @@ void scan_threads_stack(mem_ptr lower, mem_ptr upper)
 	DWORD h;
 
 	h = GetCurrentThreadId();
-	for (n = 1; n < 16; n++)
+	for (n = 1; n < MAX_THREADS; n++)
 	{
 		CONTEXT ctx;
 
@@ -755,7 +755,7 @@ void resume_threads()
 {
 	unsigned int n = 0;
 
-	for (n = 0; n < 16; n++)
+	for (n = 0; n < MAX_THREADS; n++)
 	{
 		if (threads[n].h == 0)continue;
 		ResumeThread(threads[n].th);

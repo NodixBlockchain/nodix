@@ -124,9 +124,12 @@ OS_API_C_FUNC(int) find_hash(hash_t hash)
 {
 	char				file_name[65];
 	struct string		blk_path = { PTR_NULL };
-	unsigned int		n;
 	int					ret;
 
+	bin_2_hex(hash, 32, file_name);
+
+	/*
+	unsigned int		n;
 	n = 32;
 	while (n--)
 	{
@@ -134,6 +137,7 @@ OS_API_C_FUNC(int) find_hash(hash_t hash)
 		file_name[n * 2 + 1] = hex_chars[hash[n] & 0x0F];
 	}
 	file_name[64] = 0;
+	*/
 
 	make_blk_path	(file_name,&blk_path);
 	cat_cstring		(&blk_path, "_blk");
@@ -221,6 +225,7 @@ OS_API_C_FUNC(int) load_tx(mem_zone_ref_ptr tx, hash_t blk_hash, const hash_t tx
 	{
 		if (!memcmp_c(&buffer[n], tx_hash, sizeof(hash_t)))
 		{
+
 			int nn= 0;
 			while (nn<32)
 			{
@@ -710,7 +715,10 @@ int rm_obj(const char *app_name, unsigned int type_id, hash_t ohash)
 	mem_zone_ref_ptr	idx = PTR_NULL;
 	struct string		obj_path = { 0 };
 	unsigned int n;
+
+	bin_2_hex(ohash, 32, objHash);
 		
+	/*
 	n = 0;
 	while (n<32)
 	{
@@ -719,6 +727,7 @@ int rm_obj(const char *app_name, unsigned int type_id, hash_t ohash)
 		n++;
 	}
 	objHash[64] = 0;
+	*/
 
 	uitoa_s(type_id, buff, 16, 16);
 
@@ -848,7 +857,8 @@ int rm_app_file(const char *app_name, mem_zone_ref_ptr file)
 
 	if (!tree_manager_get_child_value_hash(file, NODE_HASH("dataHash"), hash))return 0;
 
-
+	bin_2_hex(hash, 32, fileHash);
+	/*
 	n = 0;
 	while (n<32)
 	{
@@ -857,6 +867,7 @@ int rm_app_file(const char *app_name, mem_zone_ref_ptr file)
 		n++;
 	}
 	fileHash[64] = 0;
+	*/
 
 	make_string		(&file_path, "apps");
 	cat_cstring_p	(&file_path, app_name);
@@ -931,6 +942,10 @@ OS_API_C_FUNC(int) remove_tx_index(hash_t tx_hash)
 	unsigned char *buffer;
 	size_t size;
 	unsigned int ret, n;
+
+	bin_2_hex(tx_hash, 32, tchash);
+
+	/*
 	n = 0;
 	while (n<32)
 	{
@@ -939,6 +954,7 @@ OS_API_C_FUNC(int) remove_tx_index(hash_t tx_hash)
 		n++;
 	}
 	tchash[64] = 0;
+	*/
 
 
 	//open index file for the hash
@@ -1139,6 +1155,9 @@ int cancel_tx_inputs(mem_zone_ref_ptr tx)
 			int			  	 n;
 
 			/*rewrite the original tx out from the parent transaction*/
+
+			bin_2_hex(prev_hash, 32, txh);
+			/*
 			n = 0;
 			while (n<32)
 			{
@@ -1147,6 +1166,7 @@ int cancel_tx_inputs(mem_zone_ref_ptr tx)
 				n++;
 			}
 			txh[64] = 0;
+			*/
 
 			ret=tree_manager_find_child_node (&ptx, NODE_HASH("txsout"), NODE_BITCORE_VOUTLIST, &txout_list);
 
@@ -1289,7 +1309,11 @@ OS_API_C_FUNC(int) has_app_file(struct string *app_name, hash_t fileHash)
 	struct string app_path = { 0 };
 	unsigned int n = 0;
 	int ret;
+
+
+	bin_2_hex(fileHash, 32, chash);
 	
+	/*
 	n = 0;
 	while (n<32)
 	{
@@ -1298,6 +1322,7 @@ OS_API_C_FUNC(int) has_app_file(struct string *app_name, hash_t fileHash)
 		n++;
 	}
 	chash[64] = 0;
+	*/
 
 	make_string(&app_path, "apps");
 	cat_cstring_p(&app_path, app_name->str);
@@ -1404,10 +1429,14 @@ OS_API_C_FUNC(int) get_app_missing_files(struct string *app_name, mem_zone_ref_p
 		{
 			char fHAsh[65];
 			struct string filePath = { 0 };
-			unsigned int n;
+			
 
 			if (!tree_find_child_node_by_member_name_hash(pending, NODE_GFX_OBJECT, "hash", buffer + cur+32, PTR_NULL))
 			{
+				bin_2_hex(&buffer[cur], 32, fHAsh);
+
+				/*
+				unsigned int n;
 				n = 0;
 				while (n < 32)
 				{
@@ -1416,7 +1445,7 @@ OS_API_C_FUNC(int) get_app_missing_files(struct string *app_name, mem_zone_ref_p
 					n++;
 				}
 				fHAsh[64] = 0;
-
+				*/
 
 				make_string(&filePath, "apps");
 				cat_cstring_p(&filePath, app_name->str);
@@ -1624,6 +1653,9 @@ OS_API_C_FUNC(int) store_tx_inputs(mem_zone_ref_ptr tx)
 		return 0;
 	}
 
+	bin_2_hex(thash, 32, tx_hash);
+
+	/*
 	n = 0;
 	while (n<32)
 	{
@@ -1632,7 +1664,7 @@ OS_API_C_FUNC(int) store_tx_inputs(mem_zone_ref_ptr tx)
 		n++;
 	}
 	tx_hash[64] = 0;
-
+	*/
 	
 	for (vin = 0, tree_manager_get_first_child(&txin_list, &my_list, &input); ((input != NULL) && (input->zone != NULL)); tree_manager_get_next_child(&my_list, &input), vin++)
 	{
@@ -1681,6 +1713,9 @@ OS_API_C_FUNC(int) store_tx_inputs(mem_zone_ref_ptr tx)
 			continue;
 		}
 			
+		bin_2_hex(prev_hash, 32, phash);
+
+		/*
 		n = 0;
 		while (n<32)
 		{
@@ -1689,6 +1724,7 @@ OS_API_C_FUNC(int) store_tx_inputs(mem_zone_ref_ptr tx)
 			n++;
 		}
 		phash[64] = 0;
+		*/
 	
 		ret=load_utxo	(phash,oidx,&amount,addr);
 		if(ret)
@@ -1884,6 +1920,9 @@ OS_API_C_FUNC(int) store_tx_outputs(mem_zone_ref_ptr tx)
 		return 0;
 	}
 
+	bin_2_hex(thash, 32, tx_hash);
+
+	/*
 	n = 0;
 	while (n<32)
 	{
@@ -1892,6 +1931,7 @@ OS_API_C_FUNC(int) store_tx_outputs(mem_zone_ref_ptr tx)
 		n++;
 	}
 	tx_hash[64] = 0;
+	*/
 
 	n_utxo=tree_manager_get_node_num_children(&txout_list);
 
@@ -1966,13 +2006,18 @@ OS_API_C_FUNC(int) find_blk_hash(const hash_t tx_hash, hash_t blk_hash,uint64_t 
 	unsigned char		*buffer;
 	mem_size			size;
 	int					ret;
+
+
+	bin_2_hex(tx_hash, 32, cthash);
+
+	/*
 	while (n--)
 	{
 		cthash[n * 2 + 0] = hex_chars[tx_hash[n] >> 4];
 		cthash[n * 2 + 1] = hex_chars[tx_hash[n] & 0x0F];
 	}
-
 	cthash[64] = 0;
+	*/
 
 	make_string		(&tx_path, "txs");
 	cat_ncstring_p	(&tx_path, cthash, 2);
@@ -2115,6 +2160,9 @@ OS_API_C_FUNC(int) get_tx_blk_height(const hash_t tx_hash, uint64_t *height, uin
 	if (!find_blk_hash(tx_hash, blk_hash,height, PTR_NULL,tx_time))
 		return 0;
 
+
+	bin_2_hex(blk_hash, 32, chash);
+	/*
 	n = 32;
 	while (n--)
 	{
@@ -2122,6 +2170,7 @@ OS_API_C_FUNC(int) get_tx_blk_height(const hash_t tx_hash, uint64_t *height, uin
 		chash[n * 2 + 1] = hex_chars[blk_hash[n] & 0x0F];
 	}
 	chash[64] = 0;
+	*/
 
 	if (block_time != PTR_NULL)
 	{
@@ -2188,6 +2237,9 @@ OS_API_C_FUNC(int) store_tx_blk_index(const hash_t tx_hash, const hash_t blk_has
 	struct string	tx_path = { 0 };
 	int				n= 0;
 
+	bin_2_hex(tx_hash, 32, tchash);
+
+	/*
 	while (n<32)
 	{
 		tchash[n * 2 + 0] = hex_chars[tx_hash[n] >> 4];
@@ -2195,6 +2247,7 @@ OS_API_C_FUNC(int) store_tx_blk_index(const hash_t tx_hash, const hash_t blk_has
 		n++;
 	}
 	tchash[64] = 0;
+	*/
 
 
 	make_string		(&tx_path, "txs");
@@ -2797,6 +2850,10 @@ OS_API_C_FUNC(int) find_app_type_obj(const char *app_name, unsigned int type_id,
 		while (cur < len) 
 		{
 			char			chash[65];
+
+			bin_2_hex(objHash, 32, chash);
+
+			/*
 			unsigned int	n = 0;
 			
 			while (n<32)
@@ -2806,6 +2863,7 @@ OS_API_C_FUNC(int) find_app_type_obj(const char *app_name, unsigned int type_id,
 				n++;
 			}
 			chash[64] = 0;
+			*/
 
 			if (!strncmp_c(chash, objHash, ilen))
 			{
@@ -2866,9 +2924,10 @@ OS_API_C_FUNC(int) load_obj_childs(const char *app_name, const char *objHash, co
 				char oh[65];
 				btc_addr_t addr;
 				mem_zone_ref newobj = { PTR_NULL };
+
+				bin_2_hex(&buffer[cur], 32, oh);
+				/*
 				unsigned int n;
-
-
 				n = 0;
 				while (n < 32)
 				{
@@ -2877,6 +2936,7 @@ OS_API_C_FUNC(int) load_obj_childs(const char *app_name, const char *objHash, co
 					n++;
 				}
 				oh[64] = 0;
+				*/
 
 				load_obj							(app_name, oh, "obj", 0, &newobj, addr);
 				tree_manager_set_child_value_btcaddr(&newobj, "objAddr", addr);
@@ -2998,6 +3058,10 @@ OS_API_C_FUNC(int) get_app_obj_addr (const char *app_name, unsigned int type_id,
 		char			chash[65];
 		unsigned char	*tx_data;
 		size_t			tx_len;
+
+		bin_2_hex(&buffer[cur], 32, chash);
+
+		/*
 		unsigned int	n = 0;
 
 		while (n<32)
@@ -3007,6 +3071,7 @@ OS_API_C_FUNC(int) get_app_obj_addr (const char *app_name, unsigned int type_id,
 			n++;
 		}
 		chash[64] = 0;
+		*/
 
 		make_string		(&obj_path, "apps");
 		cat_cstring_p	(&obj_path, app_name);
@@ -3133,9 +3198,13 @@ OS_API_C_FUNC(int) load_obj(const char *app_name, const char *objHash, const cha
 									char			chash[256];
 									mem_zone_ref	subObj = { PTR_NULL };
 									unsigned char	*hdata;
-									unsigned int	n;
+									
 									hdata = tree_mamanger_get_node_data_ptr(key, 0);
 
+									bin_2_hex(hdata, 32, chash);
+
+									/*
+									unsigned int	n;
 									n = 0;
 									while (n < 32)
 									{
@@ -3144,6 +3213,7 @@ OS_API_C_FUNC(int) load_obj(const char *app_name, const char *objHash, const cha
 										n++;
 									}
 									chash[64] = 0;
+									*/
 
 									ret = load_obj(app_name, chash, "item", opts, &subObj, PTR_NULL);
 									tree_manager_copy_children_ref(key, &subObj);
@@ -3431,11 +3501,16 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 	hash_t				blk_hash;
 	int					ret;
 	struct string		signature = { 0 }, blk_path = { 0 }, blk_data_path = { 0 };
-	unsigned int		n, n_tx, nc, block_time;
+	unsigned int		n_tx, nc, block_time;
 	
 
 	if (!tree_manager_get_child_value_hash(header, NODE_HASH("blkHash"), blk_hash))return 0;
 
+
+	bin_2_hex	(blk_hash, 32, chash);
+
+	/*
+	unsigned int n;
 	n = 0;
 	while (n<32)
 	{
@@ -3444,6 +3519,7 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 		n++;
 	}
 	chash[64] = 0;
+	*/
 
 	make_string		(&blk_path, "blks");
 	cat_ncstring_p	(&blk_path, chash + 0, 2);
@@ -3599,6 +3675,10 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 					{
 						char			tchash[65];
 						struct string	app_path = { 0 };
+
+
+						bin_2_hex	(tx_hash, 32, tchash);
+						/*
 						n = 32;
 						while (n--)
 						{
@@ -3606,6 +3686,7 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 							tchash[n * 2 + 1] = hex_chars[tx_hash[n] & 0x0F];
 						}
 						tchash[64] = 0;
+						*/
 
 	
 						make_string							(&app_path, "apps");
@@ -3632,7 +3713,9 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 						struct string	app_path = { 0 };
 						unsigned int	typeID;
 
+						bin_2_hex(tx_hash, 32, tchash);
 
+						/*
 						n = 32;
 						while (n--)
 						{
@@ -3640,7 +3723,7 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 							tchash[n * 2 + 1] = hex_chars[tx_hash[n] & 0x0F];
 						}
 						tchash[64] = 0;
-
+						*/
 						
 						tree_manager_get_child_value_i32(tx, NODE_HASH("objType"), &typeID);
 
@@ -3832,6 +3915,10 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 			tree_manager_get_child_value_hash(tx,  NODE_HASH("newChild")	, child_obj);
 			tree_manager_get_child_value_istr(tx,  NODE_HASH("appChild")	, &app_name,	0);
 
+
+			bin_2_hex(pObjHash, 32, pObj);
+
+			/*
 			n = 0;
 			while (n<32)
 			{
@@ -3840,6 +3927,7 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 				n++;
 			}
 			pObj[64] = 0;
+			*/
 
 			make_string  (&child_path, "apps");
 			cat_cstring_p(&child_path, app_name.str);

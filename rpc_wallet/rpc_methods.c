@@ -3014,6 +3014,10 @@ OS_API_C_FUNC(int) getappfile(mem_zone_ref_const_ptr params, unsigned int rpc_mo
 			struct string appPath = { 0 };
 
 			tree_manager_get_child_value_hash(&file, NODE_HASH("dataHash"), fh);
+
+			bin_2_hex_r(fh, 32, fileh);
+
+			/*
 			n = 32;
 			while (n--)
 			{
@@ -3021,6 +3025,7 @@ OS_API_C_FUNC(int) getappfile(mem_zone_ref_const_ptr params, unsigned int rpc_mo
 				fileh[n * 2 + 1] = hex_chars[fh[31 - n] & 0x0F];
 			}
 			fileh[64] = 0;
+			*/
 
 			make_string(&appPath, "/app/");
 			cat_cstring(&appPath, app_name.str);
@@ -3970,6 +3975,10 @@ OS_API_C_FUNC(int) getprivaddr(mem_zone_ref_const_ptr params, unsigned int rpc_m
 	if (ret)
 	{
 		char hexk[129];
+
+		bin_2_hex(prvkey, 64, hexk);
+
+		/*
 		int  n = 0;
 		while (n < 64)
 		{
@@ -3978,6 +3987,7 @@ OS_API_C_FUNC(int) getprivaddr(mem_zone_ref_const_ptr params, unsigned int rpc_m
 			n++;
 		}
 		hexk[128] = 0;
+		*/
 		tree_manager_set_child_value_str(result, "privkey", hexk);
 	}
 		
@@ -4109,7 +4119,7 @@ OS_API_C_FUNC(int) getwork(mem_zone_ref_const_ptr params, unsigned int rpc_mode,
 
 	last_blk = get_last_block_height();
 
-	if (!block_pow(last_blk))
+	if (block_pow_limit())
 		return 0;
 
 	node_aquire_mining_lock();
@@ -4317,13 +4327,13 @@ OS_API_C_FUNC(int) getblocktemplate(mem_zone_ref_const_ptr params, unsigned int 
 	struct	string	param2 = { 0 };
 	mem_zone_ref	cbtx = { PTR_NULL }, txs = { PTR_NULL }, blk_txs = { PTR_NULL }, my_list = { PTR_NULL }, pn = { PTR_NULL }, caps = { PTR_NULL }, cap = { PTR_NULL };
 	mem_zone_ref_ptr tx = PTR_NULL;
-	unsigned int	version, time, n, bits, gen_new_block,now;
+	unsigned int	version, time, bits, gen_new_block,now;
 	uint64_t		height, total_fees;
 	uint64_t		last_blk;
 	
 	last_blk = get_last_block_height();
 
-	if (!block_pow(last_blk))
+	if (block_pow_limit())
 		return 0;
 
 	if ((cur_mining_height != 0) && (cur_mining_height != last_blk))
@@ -4358,14 +4368,15 @@ OS_API_C_FUNC(int) getblocktemplate(mem_zone_ref_const_ptr params, unsigned int 
 	}
 
 	default_RNG					(rnd, 6);
-
+	bin_2_hex					(rnd, 6, workid);
+	/*
 	for (n = 0; n < 6; n++)
 	{
 		workid[n * 2 + 0] = hex_chars[rnd[n] >> 4];
 		workid[n * 2 + 1] = hex_chars[rnd[n] & 0x0F];
 	}
 	workid[12] = 0;
-
+	*/
 
 
 	now = get_time_c();
@@ -4481,10 +4492,8 @@ OS_API_C_FUNC(int) submitblock(mem_zone_ref_const_ptr params, unsigned int rpc_m
 
 	last_blkh = get_last_block_height();
 
-	if (!block_pow(last_blkh))
-	{
+	if (block_pow_limit())
 		return 0;
-	}
 
 	if (!tree_manager_get_child_at(params, 0, &pn))return 0;
 	{

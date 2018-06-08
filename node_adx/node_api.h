@@ -38,7 +38,7 @@ NODE_API int			C_API_FUNC		is_same_node(mem_zone_ref_ptr node1, mem_zone_ref_ptr
 NODE_API int			C_API_FUNC		is_node_addr(mem_zone_ref_ptr node, mem_zone_ref_ptr p2p_addr);
 NODE_API int			C_API_FUNC		node_store_last_pow_hash(mem_zone_ref_ptr blk);
 NODE_API int			C_API_FUNC		node_store_last_pos_hash(mem_zone_ref_ptr blk);
-
+NODE_API int			C_API_FUNC		block_pow_limit();
 
 NODE_API int			C_API_FUNC		node_dump_memory(unsigned int flags);
 NODE_API int			C_API_FUNC		node_init_service(mem_zone_ref_ptr service, mem_zone_ref_ptr pos_mod_def);

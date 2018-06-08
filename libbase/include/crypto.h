@@ -13,8 +13,14 @@ typedef unsigned char dh_key_t[64];
 typedef int				C_API_FUNC crypto_extract_key_func	(dh_key_t pk, const dh_key_t sk);
 typedef int 			C_API_FUNC crypto_sign_open_func	(const struct string *sign, struct string *msg, const struct string *pk);
 
+typedef int 			C_API_FUNC compress_pubkey_func		(dh_key_t pk, dh_key_t cpk);
+typedef int				C_API_FUNC derive_key_func			(dh_key_t public_key, dh_key_t private_key, hash_t secret);
+
+
 typedef crypto_sign_open_func	*crypto_sign_open_func_ptr;
 typedef crypto_extract_key_func *crypto_extract_key_func_ptr;
+typedef compress_pubkey_func	*compress_pubkey_func_ptr;
+typedef derive_key_func			*derive_key_func_ptr;
 
 #ifdef FORWARD_CRYPTO
 	typedef struct string	C_API_FUNC crypto_sign_func(const struct string *msg, const dh_key_t sk);
