@@ -155,7 +155,7 @@
     <ClInclude Include="..\include\io.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
-    <ClInclude Include="..\std_base.h">
+    <ClInclude Include="..\base\std_base.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
   </ItemGroup>

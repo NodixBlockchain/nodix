@@ -109,12 +109,12 @@
     <ClCompile Include="..\zlibexp.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\base\std_base.h" />
     <ClInclude Include="..\include\connect.h" />
     <ClInclude Include="..\include\http.h" />
     <ClInclude Include="..\include\io.h" />
     <ClInclude Include="..\include\strs.h" />
     <ClInclude Include="..\include\upnp.h" />
-    <ClInclude Include="..\std_base.h" />
     <ClInclude Include="..\unix\include\sys_include.h" />
     <ClInclude Include="..\win32\include\sys_include.h" />
   </ItemGroup>

@@ -370,10 +370,10 @@ void ReadElfeImpExp(PEFile *PE)
 
 	for(i=0;i<PE->num_esection;i++)
 	{
-		sec			= PE->eSections[i];
 		Elf32_Sym	*SymTbl;
 		int			n, s_id;
 
+		sec			= PE->eSections[i];
 		//if(sec->shdr.sh_type==SHT_SYMTAB)
 		if (sec->shdr.sh_type != SHT_DYNSYM)continue;
 			

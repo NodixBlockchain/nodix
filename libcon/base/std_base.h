@@ -7,6 +7,8 @@
 	#define C_IMPORT			__declspec(dllimport)
 	typedef __int64				int64_t;
 	typedef unsigned __int64	uint64_t;
+	#define INLINE_C_FUNC		__inline
+
 	#define struct_packed 
 
 	#if defined(_M_X64) || defined(__amd64__)
@@ -23,6 +25,7 @@
 	#define C_IMPORT __attribute__ ((visibility ("default"))) 
 	#define struct_packed			__attribute__((packed))
 	#define _CRT_ALIGN(x)			__attribute__((aligned(x)))
+	#define INLINE_C_FUNC			inline
 
 	#if defined(_M_X64) || defined(__amd64__)
 
