@@ -151,3 +151,7 @@ debug/node_adx_d.dll
 export/vec3_d.dll
 export/vec3.dll
 export/anon_rpc.dll
+export/2015bins/libcon.dll
+export/2010bins/libcon.dll
+export/2010bins/launcher.exe
+export/2015bins/launcher.exe
