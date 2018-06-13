@@ -36,8 +36,6 @@ LIBC_API short			C_API_FUNC strtos_c					(const char *nptr, char **endptr, int b
 LIBC_API long			C_API_FUNC atol_c					(const char *str ); 
 LIBC_API void			C_API_FUNC dtoll_c					(double dAmount, uint64_t *nAmount);
 LIBC_API const char *	C_API_FUNC strstr_c					(const char *buf, const char *sub);
-LIBC_API unsigned int	C_API_FUNC get_new_kern_log_id		(const char *pref,unsigned char color);
-LIBC_API void			C_API_FUNC kernel_log				(unsigned int kern_log_id,const char *str);
 LIBC_API int			C_API_FUNC tolower_c				(int _c);
 LIBC_API int			C_API_FUNC toupper_c				(int _c);
 LIBC_API int			C_API_FUNC isprint_c				(int _c);
@@ -55,10 +53,12 @@ LIBC_API uint64_t		C_API_FUNC load_bigendian			(const unsigned char *x);
 LIBC_API void			C_API_FUNC strtod_c					(const char *str, double *d);
 LIBC_API void			C_API_FUNC strtof_c					(const char *str, float *f);
 
+LIBC_API int			C_API_FUNC b58tobin					(void *bin, size_t *binszp, const char *b58, size_t b58sz);
+
 
 static const char		hex_chars[]		=	{'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
-static INLINE_C_FUNC void bin_2_hex (const unsigned char *bin, size_t len, char *hex)
+static INLINE_C_FUNC void bin_2_hex(const unsigned char *bin, size_t len, char *hex)
 {
 	unsigned int b2hn, b2hnn;
 	for(b2hn = 0, b2hnn = 0; b2hn < len; b2hn++, b2hnn += 2)

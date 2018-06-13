@@ -381,7 +381,7 @@ OS_API_C_FUNC(int) listtransactions(mem_zone_ref_const_ptr params, unsigned int 
 			break;
 				
 		tree_manager_get_node_btcaddr	(addr, 0, my_addr);
-		load_tx_addresses				(my_addr, &tx_list);
+		load_tx_addresses				(my_addr, &tx_list, 0, 1000);
 
 		for (tree_manager_get_first_child(&tx_list, &my_tlist, &tx); ((tx != NULL) && (tx->zone != NULL)); tree_manager_get_next_child(&my_tlist, &tx))
 		{

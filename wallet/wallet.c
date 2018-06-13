@@ -1867,7 +1867,7 @@ OS_API_C_FUNC(int) add_keypair(struct string *username, const char *clabel, btc_
 			mem_zone_ref my_list = { PTR_NULL };
 			mem_zone_ref_ptr tx = PTR_NULL;
 
-			load_tx_addresses(pubaddr, &tx_list);
+			load_tx_addresses(pubaddr, &tx_list, 0, 1000);
 			for (tree_manager_get_first_child(&tx_list, &my_list, &tx); ((tx != NULL) && (tx->zone != NULL)); tree_manager_get_next_child(&my_list, &tx))
 			{
 				hash_t tx_hash;
@@ -2234,7 +2234,7 @@ OS_API_C_FUNC(int) rescan_addr(btc_addr_t pubaddr)
 
 	if (tree_manager_create_node("txs", NODE_BITCORE_HASH_LIST, &tx_list))
 	{
-		load_tx_addresses(pubaddr, &tx_list);
+		load_tx_addresses(pubaddr, &tx_list,0, 1000);
 		for (tree_manager_get_first_child(&tx_list, &txlist, &tx); ((tx != NULL) && (tx->zone != NULL)); tree_manager_get_next_child(&txlist, &tx))
 		{
 			hash_t						tx_hash;

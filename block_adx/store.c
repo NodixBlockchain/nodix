@@ -257,7 +257,7 @@ OS_API_C_FUNC(int) load_tx(mem_zone_ref_ptr tx, hash_t blk_hash, const hash_t tx
 	return ret;
 }
 
-OS_API_C_FUNC(int) load_tx_addresses(btc_addr_t addr, mem_zone_ref_ptr tx_hashes)
+OS_API_C_FUNC(int) load_tx_addresses(btc_addr_t addr, mem_zone_ref_ptr tx_hashes,size_t first, size_t num)
 {
 	btc_addr_t null_addr = { 0 };
 	unsigned char *data;
@@ -300,7 +300,7 @@ OS_API_C_FUNC(int) load_tx_addresses(btc_addr_t addr, mem_zone_ref_ptr tx_hashes
 			idx_sz = idx*(sizeof(btc_addr_t) + sizeof(uint64_t)) + sizeof(btc_addr_t);
 			first_tx = data + idx_sz + ftx*sizeof(hash_t);
 			nn = 0;
-			while (nn < ntx)
+			while ((num>0)&&(nn < ntx))
 			{
 				mem_zone_ref new_hash = { PTR_NULL };
 				uint64_t  height,time;
@@ -312,6 +312,7 @@ OS_API_C_FUNC(int) load_tx_addresses(btc_addr_t addr, mem_zone_ref_ptr tx_hashes
 					{
 						tree_manager_write_node_hash(&new_hash, 0, first_tx + nn*sizeof(hash_t));
 						release_zone_ref(&new_hash);
+						num--;
 					}
 				}
 				nn++;

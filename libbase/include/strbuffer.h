@@ -10,7 +10,7 @@ typedef int (*get_func)(void *data);
 typedef int64_t json_int_t;
 
 typedef struct {
-	char			value_ptr[1024];
+	char value_ptr[2048];
     size_t length;   /* bytes used */
     size_t size;     /* bytes allocated */
 } strbuffer_t;
@@ -35,14 +35,14 @@ typedef struct {
 
 
 typedef struct {
-    stream_t	stream;
+    stream_t stream;
     strbuffer_t saved_text;
-	char		value_buffer[1024];
-    int			token;
+	struct string value_string;
+    int	token;
     union {
-        char		*string;
-        json_int_t	integer;
-        double		real;
+		struct string	*string;
+        json_int_t		integer;
+        double			real;
     } value;
 } lex_t;
 
@@ -77,6 +77,7 @@ int strbuffer_append_bytes(strbuffer_t *strbuff, const char *data, size_t size);
 
 char strbuffer_pop(strbuffer_t *strbuff);
 
+int lex_set_value_string(lex_t *lex, struct string *str);
 int  lex_init		(lex_t *lex,  void *data);
 void lex_close		(lex_t *lex);
 int  lex_scan		(lex_t *lex);

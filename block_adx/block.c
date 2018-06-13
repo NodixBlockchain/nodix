@@ -42,8 +42,6 @@ extern  int				add_script_uivar	(mem_zone_ref_ptr script_node,uint64_t val);
 
 extern  int				get_script_file		(struct string *script, mem_zone_ref_ptr file);
 
-extern int				b58tobin			(void *bin, size_t *binszp, const char *b58, size_t b58sz);
-
 extern void				keyrh_to_addr		(unsigned char *pkeyh, btc_addr_t addr);
 
 extern struct string	get_next_script_var	(const struct string *script,size_t *offset);

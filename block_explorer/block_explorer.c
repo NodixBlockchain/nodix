@@ -617,7 +617,7 @@ OS_API_C_FUNC(int) addrbalance(const char *params, const struct http_req *req, m
 	memcpy_c(addr, params, sizeof(btc_addr_t));
 
 	tree_manager_create_node("txs", NODE_BITCORE_HASH_LIST, &txs);
-	load_tx_addresses(addr, &txs);
+	load_tx_addresses(addr, &txs, 0, 1000);
 	
 	recv = 0;
 	sent = 0;
@@ -693,7 +693,7 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 	else if ((hdr = find_key(req->query_vars, "address")) != PTR_NULL)
 	{
 		tree_manager_create_node("txs", NODE_BITCORE_HASH_LIST, &txs);
-		load_tx_addresses		(hdr->value.str, &txs);
+		load_tx_addresses		(hdr->value.str, &txs, 0, 1000);
 	}
 	else
 	{

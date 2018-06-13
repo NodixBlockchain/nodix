@@ -324,28 +324,7 @@ OS_API_C_FUNC(int) strcat_uint(struct string *str, size_t i)
 	str->len = new_len;
 	return (int)str->len;
 }
-/*
-OS_API_C_FUNC(int) strcat_float(struct string *str, double f)
-{
-	size_t		new_len,src_len;
-	char		buff[32];
 
-	dtoa_c				(buff,'f',32,10,f);
-
-	src_len				=	strlen_c(buff);
-	new_len				=	str->len+src_len;
-
-	str->size			=	new_len+1;
-	if(str->str!=NULL)
-		str->str=realloc_c(str->str,str->size);
-	else
-		str->str=malloc_c(str->size);
-
-	memcpy_c	(&str->str[str->len],buff,src_len+1);
-	str->len = new_len;
-	return (int)str->len;
-}
-*/
 OS_API_C_FUNC(int) strcat_int(struct string *str, int i)
 {
 	size_t		new_len,src_len;

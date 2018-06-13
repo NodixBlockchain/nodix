@@ -290,7 +290,7 @@ BLOCK_API int C_API_FUNC  load_tx_output_amount(const hash_t tx_hash, unsigned i
 BLOCK_API int C_API_FUNC  load_tx_input_vout(mem_zone_ref_const_ptr tx, unsigned int vin_idx, mem_zone_ref_ptr vout);
 
 /* load all tx hashes from an address */
-BLOCK_API int C_API_FUNC  load_tx_addresses(btc_addr_t addr, mem_zone_ref_ptr tx_hashes);
+BLOCK_API int C_API_FUNC  load_tx_addresses(btc_addr_t addr, mem_zone_ref_ptr tx_hashes,size_t first, size_t num);
 
 /*load app object */
 BLOCK_API int C_API_FUNC  load_obj(const char *app_name, const char *objHash, const char *objName, unsigned int opts, mem_zone_ref_ptr obj, btc_addr_t objAddr);

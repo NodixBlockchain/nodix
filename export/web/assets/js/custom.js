@@ -5,7 +5,6 @@ var rpc_base = '/jsonrpc'
 var anon_rpc_base = '/pubwal'
 var api_base_url = '';
 var site_base_url = '';
-
 var sessionid = null;
 
 
@@ -22,10 +21,53 @@ while (i < ALPHABET.length) {
     i++;
 }
 
+
+function encryptNodeKey(msg)
+{   
+    var mykey, myprivX;
+    
+    myprivX = sessionStorage.MyNodixKey;
+
+    if(!myprivX)
+    {
+        mykey           = ec.genKeyPair();
+        myprivX         = mykey.getPrivate('hex');
+        sessionStorage.MyNodixKey = myprivX;
+    }
+    else
+    {
+         mykey = ec.keyPair({ priv: myprivX, privEnc: 'hex' });
+    }
+
+    var mypub       = hex2b(mykey.getPublic().encodeCompressed('hex'));
+    var theirkey    = ec.keyPair({ pub: NodePubKey, pubEnc: 'hex' });
+    var theirpub    = theirkey.getPublic();
+    var thekey      = mykey.derive(theirpub);
+    var EArr        = rc4_cypher_ak (hex2b (thekey.toString(16)) , msg);
+    
+    console.log(EArr.toString(16));
+    console.log(thekey.toString(16));
+    console.log(mypub.toString(16));
+
+    return { 'pubkey': to_b58(mypub), 'msg': to_b58(EArr) };
+
+}
+
+
 function rpc_call(in_method, in_params, in_success) {
+
+    var encMsg = encryptNodeKey(JSON.stringify(in_params));
+
+    if (encMsg)
+    {
+        obj = { jsonrpc: '2.0', method: in_method, pubkey: encMsg.pubkey, params: encMsg.msg, id: 1 };
+    }
+    else
+        obj = { jsonrpc: '2.0', method: in_method, params: in_params, id: 1 };
+
     $.ajax({
         url: api_base_url + rpc_base,
-        data: JSON.stringify({ jsonrpc: '2.0', method: in_method, params: in_params, id: 1 }),  // id is needed !!
+        data: JSON.stringify({ jsonrpc: '2.0', method: in_method, pubkey: encMsg.pubkey, params: encMsg.msg, id: 1 }),  // id is needed !!
         contentType: "application/json; charset=utf-8",
         type: "POST",
         dataType: "json",
@@ -238,7 +280,8 @@ function from_b58(S,           //Base58 encoded string input
 
 
 function timeConverter(UNIX_timestamp) {
-    var a = new Date(UNIX_timestamp * 1000);
+    var offset = new Date().getTimezoneOffset();
+    var a = new Date(UNIX_timestamp * 1000 + (offset * 60000));
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     var year = a.getFullYear();
     var month = months[a.getMonth()];
@@ -252,7 +295,8 @@ function timeConverter(UNIX_timestamp) {
 
 
 function dateConverter(UNIX_timestamp) {
-    var a = new Date(UNIX_timestamp * 1000);
+    var offset = new Date().getTimezoneOffset();
+    var a = new Date(UNIX_timestamp * 1000 + (offset * 60000));
     var months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
     var year = a.getFullYear();
     var month = months[a.getMonth()];
