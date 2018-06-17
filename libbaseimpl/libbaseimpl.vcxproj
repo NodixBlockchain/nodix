@@ -54,6 +54,9 @@
   <ItemGroup>
     <ClCompile Include="funcs.c" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\libbase\include\tree.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

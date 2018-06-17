@@ -177,7 +177,7 @@ OS_API_C_FUNC(int)			tree_manager_copy_children_ref(mem_zone_ref_ptr dest_ref_pt
 
 
 OS_API_C_FUNC(void) free_http_infos(struct http_infos *infos){}
-OS_API_C_FUNC(  void )		tree_manager_init(size_t x, unsigned int flags){return ;}
+OS_API_C_FUNC(  void )		tree_manager_init(size_t size, size_t nzones, unsigned int flags) {return ;}
 OS_API_C_FUNC(  int	)	tree_manager_json_loadb(const char *buffer, size_t buflen, mem_zone_ref_ptr result){return 0;}
 OS_API_C_FUNC(  int	)	tree_manager_free_node_array(mem_zone_ref_ptr childs_ref_ptr){return 0;}
 OS_API_C_FUNC(  void)		log_message(const char *fmt, mem_zone_ref_const_ptr args){return ;}
