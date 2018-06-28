@@ -454,13 +454,13 @@ OS_API_C_FUNC(int) read_data(struct con *Con, size_t max)
 	if(Con->lastLine.str == NULL)
 	{
 		Con->lastLine.size	=	max+1;
-		Con->lastLine.str	=	malloc_c(Con->lastLine.size);
+		Con->lastLine.str	=	(char *)malloc_c(Con->lastLine.size);
 		Con->lastLine.len	=	0;
 	}
 	else if(Con->lastLine.size<(Con->lastLine.len+max+1))
 	{
 		Con->lastLine.size	=	Con->lastLine.len+max+1;
-		Con->lastLine.str	=	realloc_c(Con->lastLine.str,Con->lastLine.size);
+		Con->lastLine.str	=	(char *)realloc_c(Con->lastLine.str,Con->lastLine.size);
 	}
 	
 	read=0;

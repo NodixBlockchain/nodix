@@ -618,7 +618,7 @@ OS_API_C_FUNC(int) read_data(struct con *Con, size_t max)
 
 		get_system_time_c(&now);
 
-		if ((now - last) > 100)
+		if ((now - last) > 3000)
 		{
 			Con->last_rd = -1;
 			break;
