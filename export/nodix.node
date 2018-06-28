@@ -9,6 +9,7 @@ let NODE_GFX_OBJECT configuration = `
 		},
 		"magic":0xD9BEFECA, 		
 		"pubKeyVersion":0x19,
+		"privKeyVersion":0x55,
 		(NODE_MODULE_DEF) "sign_mod" : {"file":"modz/ecdsa.tpo"},
 		"staking":
 		 {
@@ -78,7 +79,7 @@ let NODE_BITCORE_NODE SelfNode = `
 		"docroot"   : "web",
 		"apppath"   : "/app/",
 		"name"		: "Nodix webservice",
-		"indexpage" : "/nodix.site",
+		"indexpage" : "/index.site",
 		"mimes"		: {"js":"text/javascript", "css" : "text/css", "woff" : "text/css", "woff2" : "text/css", "png" : "image/png", "pdf" : "application/pdf", "gif" : "image/gif", "svg" : "image/svg+xml", "html" : "text/html" },
 	
 		"defaultmime" : "text/plain",

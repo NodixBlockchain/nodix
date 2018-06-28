@@ -67,6 +67,7 @@ mem_zone_ref			blkobjs				= { PTR_INVALID };
 
 const char				*null_hash_str		= "0000000000000000000000000000000000000000000000000000000000000000";
 unsigned char			pubKeyPrefix		= 0xFF;
+unsigned char			privKeyPrefix		= 0xFF;
 static const uint64_t	one_coin			= ONE_COIN;
 tpo_mod_file			sign_tpo_mod		= { 0xCD };
 
@@ -178,8 +179,13 @@ OS_API_C_FUNC(int) init_blocks(mem_zone_ref_ptr node_config, mem_zone_ref_ptr tr
 
 	tree_manager_create_node	("apps", NODE_BITCORE_TX_LIST, &apps);
 	
-	tree_manager_get_child_value_i32(node_config, NODE_HASH("pubKeyVersion"), &i);
-	pubKeyPrefix = i;
+	if(tree_manager_get_child_value_i32(node_config, NODE_HASH("pubKeyVersion"), &i))
+		pubKeyPrefix = i;
+
+	if(tree_manager_get_child_value_i32(node_config, NODE_HASH("privKeyVersion"), &i))
+		privKeyPrefix = i;
+
+	
 
 	if (!tree_manager_find_child_node(node_config, NODE_HASH("sign_mod"), NODE_MODULE_DEF, &mod_def))
 	{

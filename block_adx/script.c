@@ -26,6 +26,7 @@
 #endif
 
 extern unsigned char	pubKeyPrefix;
+extern unsigned char	privKeyPrefix;
 
 char* base58(unsigned char *s, char *out) {
 	static const char *tmpl = "123456789"
@@ -52,7 +53,72 @@ char* base58(unsigned char *s, char *out) {
 	return out;
 }
 
+static const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
+int b58enc(const void *data, size_t binsz,struct string *out)
+{
+	const unsigned char *bin = data;
+	unsigned char *buf;
+	int carry;
+	size_t i, j, high, zcount = 0;
+	size_t size;
+
+	while (zcount < binsz && !bin[zcount])
+		++zcount;
+
+	size = (binsz - zcount) * 138 / 100 + 1;
+	buf  = malloc_c(size);
+	memset(buf, 0, size);
+
+	for (i = zcount, high = size - 1; i < binsz; ++i, high = j)
+	{
+		for (carry = bin[i], j = size - 1; (j > high) || carry; --j)
+		{
+			carry += 256 * buf[j];
+			buf[j] = carry % 58;
+			carry /= 58;
+			if (!j) {
+				// Otherwise j wraps to maxint which is > high
+				break;
+			}
+		}
+	}
+
+	/*
+	for (j = 0; j < size && !buf[j]; ++j);
+
+	if (*b58sz <= zcount + size - j)
+	{
+		*b58sz = zcount + size - j + 1;
+
+		free_c(buf);
+		return 0;
+	}
+	*/
+
+	out->len = size + 1;
+	out->size = out->len + 1;
+	out->str = malloc_c(out->size);
+
+	if (zcount)
+		memset(out->str, '1', zcount);
+
+	for (i = zcount; j < size; ++i, ++j)
+		out->str[i] = b58digits_ordered[buf[j]];
+	out->str[i] = '\0';
+
+	for (i = 0; out->str[i] == '1'; i++);
+	{
+		size_t l;
+
+		l = (out->len - 1) - i;
+		memmove_c(out->str, out->str + i, l);
+		out->str[l] = 0;
+	}
+
+	free_c(buf);
+	return 1;
+}
 
 int compute_script_size(mem_zone_ref_const_ptr script_node)
 {
@@ -364,6 +430,9 @@ void keyh_to_addr(unsigned char *pkeyh, btc_addr_t addr)
 	base58(hin, addr);
 }
 
+
+
+
 OS_API_C_FUNC(void) key_to_hash(const unsigned char *pkey, unsigned char *keyHash)
 {
 	hash_t			tmp_hash;
@@ -378,6 +447,28 @@ OS_API_C_FUNC(void) key_to_addr(const unsigned char *pkey,btc_addr_t addr)
 	keyh_to_addr	(tmp_hash, addr);
 }
 
+OS_API_C_FUNC(void) privkey_to_addr(const dh_key_t privkey, struct string *privAddr)
+{
+	hash_t			tmp_hash, fhash;
+	unsigned char	taddr[38];
+	unsigned int	n;
+
+	taddr[0] = privKeyPrefix;
+
+
+	for (n = 0; n < 32; n++)
+	{
+		taddr[1 + n] = privkey[31 - n];
+	}
+	taddr[33] = 0x01;
+
+	mbedtls_sha256	(taddr, 34, tmp_hash, 0);
+	mbedtls_sha256	(tmp_hash, 32, fhash, 0);
+	
+	memcpy_c		(&taddr[34], fhash, 4);
+	b58enc			(taddr, 38, privAddr);
+
+}
 
 struct string get_next_script_var(const struct string *script,size_t *offset)
 {

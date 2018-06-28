@@ -25,25 +25,7 @@ function privKeyAddr(username, addr, secret) {
 
     if (acName == "anonymous") {
         anon_rpc_call('dumpprivkey', [addr], function (keyData) {
-            var faddr, paddr, eaddr, crc;
-            var hexk = keyData.result.privkey.slice(0, 64);
-            var key = ec.keyPair({ priv: hexk, privEnc: 'hex' });
-            var xk = key.getPrivate('hex');
-            var pub = key.getPublic().encodeCompressed('hex');
-            var addr = private_prefix + hexk + '01';
-
-            console.log(xk);
-            console.log(hexk);
-            console.log(pub);
-            console.log(addr);
-
-            h = sha256(addr);
-            h2 = sha256(h);
-            crc = h2.slice(0, 8);
-            faddr = addr + crc;
-            paddr = hex2b(faddr);
-            eaddr = to_b58(paddr);
-            $('#privAddr').html(eaddr);
+            $('#privAddr').html(keyData.result.privkey);
         });
     }
     else {
@@ -1105,6 +1087,12 @@ class AccountList {
                 {
                     self.update_addrs_select(self.accountSelects[n]);
                 }
+
+
+                if (self.accountName == 'anonymous')
+                    $('#viewPrivSecret').attr('disabled', 'disabled');
+                else
+                    $('#viewPrivSecret').removeAttr('disabled');
             });
         }
     }

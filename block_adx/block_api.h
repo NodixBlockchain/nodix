@@ -232,6 +232,8 @@ BLOCK_API void C_API_FUNC   key_to_hash(const unsigned char *pkey, unsigned char
 /* public key  to addr */
 BLOCK_API void C_API_FUNC  key_to_addr(const unsigned char *pkey, btc_addr_t addr);
 
+BLOCK_API void C_API_FUNC  privkey_to_addr(const dh_key_t privkey, struct string *privAddr);
+
 BLOCK_API int C_API_FUNC   make_script_file(mem_zone_ref_ptr file, struct string *pKey, struct string *sign, mem_zone_ref_ptr script);
 
 BLOCK_API int C_API_FUNC   make_script_layout(mem_zone_ref_ptr file, mem_zone_ref_ptr script);
