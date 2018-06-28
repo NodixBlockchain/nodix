@@ -1882,6 +1882,20 @@ OS_API_C_FUNC(int) add_keypair(struct string *username, const char *clabel, btc_
 
 	return 1;
 }
+
+int has_valid_pw()
+{
+	if (!wallet_pw_set)
+		return 0;
+
+	if (get_time_c() > wallet_pw_timeout)
+	{
+		reset_anon_pw();
+		return 0;
+	}
+	return 1;
+}
+
 OS_API_C_FUNC(int) get_privkey(struct string *username, struct string *pubaddr,dh_key_t key)
 {
 	struct string user_key_file = { 0 }, adr_path = { 0 };
@@ -1964,36 +1978,70 @@ OS_API_C_FUNC(int) set_anon_pw(const char *pw,unsigned int timeout)
 
 
 
+
 OS_API_C_FUNC(int) generate_new_keypair(const char *clabel,btc_addr_t pubaddr)
 {
 	struct string		uname = { 0 };
-	dh_key_t			privkey, pubkey, enckey;
+	dh_key_t			privkey, pubkey, cpub, rcpub, enckey;
 	unsigned int		found;
 	int					ok = 0;
+	int					n;
 
-	if (!wallet_pw_set)
+	if (!has_valid_pw())
 		return 0;
 
-	if (get_time_c() > wallet_pw_timeout)
-	{
-		reset_anon_pw();
-		return 0;
-	}
+	memset_c(privkey, 0, sizeof(dh_key_t));
+	memset_c(pubkey, 0, sizeof(dh_key_t));
+	memset_c(cpub, 0, sizeof(dh_key_t));
+	memset_c(rcpub, 0, sizeof(dh_key_t));
 
 	while (!ok)
 	{
-		default_RNG		(privkey, sizeof(privkey));
-		ok=extract_key	(pubkey, privkey);
+		ok=extract_key	(privkey,pubkey);
 	}
 
+	compress_key		(pubkey,cpub);
+	rcpub[0] = cpub[0];
+	for (n = 1; n < 33; n++)
+	{
+		rcpub[(32 - n) + 1] = cpub[n];
+	}
+
+	key_to_addr			(rcpub, pubaddr);
+
 	RC4					(anon_wallet_pw, privkey, sizeof(dh_key_t), enckey);
-	key_to_addr			(pubkey, pubaddr);
 
 	make_string			(&uname,"anonymous");
 	add_keypair			(&uname, clabel, pubaddr, enckey, 0, &found);
 	free_string			(&uname);
 
 	return 1;
+}
+
+OS_API_C_FUNC(int) get_anon_key(btc_addr_t pubaddr,dh_key_t privkey)
+{
+	dh_key_t key;
+	struct string uname = { 0 }, strKey = { 0 };
+	int ret;
+
+	if (!has_valid_pw())
+		return 0;
+
+	make_string(&uname, "anonymous");
+	make_string(&strKey, pubaddr);
+
+	memset_c(key, 0, sizeof(dh_key_t));
+	memset_c(privkey, 0, sizeof(dh_key_t));
+	
+
+	ret = get_privkey(&uname, &strKey, key);
+
+	free_string(&uname);
+	free_string(&strKey);
+		
+
+	if(ret) RC4(anon_wallet_pw, key, sizeof(dh_key_t), privkey);
+	return ret;
 }
 
 OS_API_C_FUNC(int) get_account_list(mem_zone_ref_ptr accnt_list,unsigned int page_idx)

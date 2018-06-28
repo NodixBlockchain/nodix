@@ -89,13 +89,14 @@ LIBEC_API int			C_API_FUNC crypto_sign_open		(const struct string *sign, const s
 LIBEC_API struct string	C_API_FUNC crypto_sign			(struct string *msg, const dh_key_t sk);
 LIBEC_API int			C_API_FUNC compress_pub			(dh_key_t pk, dh_key_t cpk);
 LIBEC_API int			C_API_FUNC derive_key			(dh_key_t public_key, dh_key_t private_key, hash_t secret);
-
+LIBEC_API int			C_API_FUNC crypto_get_pub		(const dh_key_t sk, dh_key_t pk);
 #else
 
 crypto_extract_key_func_ptr crypto_extract_key = PTR_INVALID;
 crypto_sign_open_func_ptr	crypto_sign_open   = PTR_INVALID;
 compress_pubkey_func_ptr	compress_pub	   = PTR_INVALID;
 derive_key_func_ptr			derive_key		   = PTR_INVALID;
+crypto_get_pub_func_ptr		crypto_get_pub	   = PTR_INVALID;
 
 #ifdef FORWARD_CRYPTO
 crypto_sign_func_ptr		crypto_sign		   = PTR_INVALID;
@@ -122,6 +123,7 @@ int load_sign_module(mem_zone_ref_ptr mod_def, tpo_mod_file *tpo_mod)
 		crypto_sign_open = (crypto_sign_open_func_ptr)get_tpo_mod_exp_addr_name(tpo_mod, "crypto_sign_open", 0);
 		compress_pub = (compress_pubkey_func_ptr)get_tpo_mod_exp_addr_name(tpo_mod, "compress_pub", 0);
 		derive_key = (derive_key_func_ptr)get_tpo_mod_exp_addr_name(tpo_mod, "derive_key", 0);
+		crypto_get_pub = (crypto_get_pub_func_ptr)get_tpo_mod_exp_addr_name(tpo_mod, "crypto_get_pub", 0);
 
 #ifdef FORWARD_CRYPTO
 		crypto_sign = (crypto_sign_func_ptr)get_tpo_mod_exp_addr_name(tpo_mod, "crypto_sign", 0);
@@ -255,6 +257,11 @@ OS_API_C_FUNC(int) extract_key(dh_key_t priv,dh_key_t pub)
 OS_API_C_FUNC(int) compress_key(dh_key_t pub, dh_key_t cpub)
 {
 	return compress_pub(pub, cpub);
+}
+
+OS_API_C_FUNC(int) extract_pub(const dh_key_t priv, dh_key_t pub)
+{
+	return crypto_get_pub(priv, pub);
 }
 
 OS_API_C_FUNC(int) derive_secret(dh_key_t pub, dh_key_t priv,hash_t secret)

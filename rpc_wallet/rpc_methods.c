@@ -4235,10 +4235,13 @@ OS_API_C_FUNC(int) getwork(mem_zone_ref_const_ptr params, unsigned int rpc_mode,
 
 	if (mining_addr[0] == 0)
 	{
-		if (!generate_new_keypair("mining addr", mining_addr))
+		//if (!tree_manager_get_child_value_btcaddr(&my_node, NODE_HASH("coinbaseAddr"), mining_addr))
 		{
-			node_release_mining_lock();
-			return 0;
+			if (!generate_new_keypair("mining addr", mining_addr))
+			{
+				node_release_mining_lock();
+				return 0;
+			}
 		}
 	}
 

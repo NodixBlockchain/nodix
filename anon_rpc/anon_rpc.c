@@ -25,8 +25,26 @@ OS_API_C_FUNC(int) set_node_anon_wallet(mem_zone_ref_ptr node, tpo_mod_file *pos
 
 	return 1;
 }
+OS_API_C_FUNC(int) dumpprivkey(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
+{
+	dh_key_t	 key,ckey, pub,cpub;
+	char		 xkey[67];
+	btc_addr_t   pubaddr;
+	mem_zone_ref param = { PTR_NULL };
 
+	tree_manager_get_child_at		(params, 0, &param);
+	tree_manager_get_node_btcaddr	(&param, 0, pubaddr);
+	release_zone_ref				(&param);
 
+	if (!get_anon_key(pubaddr, key))
+		return 0;
+
+	bin_2_hex_r(key, 32, xkey);
+	tree_manager_set_child_value_str(result, "privkey", xkey);
+
+	return 1;
+
+}
 OS_API_C_FUNC(int) generatekeys(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
 {
 	

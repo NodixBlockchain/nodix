@@ -1583,6 +1583,15 @@ OS_API_C_FUNC(int) crypto_extract_key(dh_key_t pk, const dh_key_t sk)
 	return uECC_make_key(pk, sk, maincurve);
 }
 
+OS_API_C_FUNC(int) crypto_get_pub(const dh_key_t sk,dh_key_t pk)
+{
+	if (maincurve == PTR_INVALID)
+		maincurve = uECC_secp256k1();
+	return EccPoint_compute_public_key(pk, sk, maincurve);
+}
+
+
+
 OS_API_C_FUNC(int) compress_pub(dh_key_t pk, dh_key_t cpk)
 {
 	uECC_compress(pk, cpk, maincurve);

@@ -5,8 +5,6 @@ var paytxfee = 10000;
 var nSignedInput = 0;
 
 var anon_access = false;
-
-
 var stake_infos = {};
 var MyAccount = null;
 
@@ -24,19 +22,52 @@ function pubkey_to_addr(pubkey) {
 
 function privKeyAddr(username, addr, secret) {
     var acName = username.replace('@', '-');
-    rpc_call('getprivaddr', [acName, addr], function (keyData) {
-        var faddr, paddr, eaddr, crc;
-        var DecHexkey = strtoHexString(un_enc(secret, keyData.result.privkey.slice(0, 64)));
-        var addr = private_prefix + DecHexkey + '01';
 
-        h = sha256(addr);
-        h2 = sha256(h);
-        crc = h2.slice(0, 8);
-        faddr = addr + crc;
-        paddr = hex2b(faddr);
-        eaddr = to_b58(paddr);
-        $('#privAddr').html(eaddr);
-    });
+    if (acName == "anonymous") {
+        anon_rpc_call('dumpprivkey', [addr], function (keyData) {
+            var faddr, paddr, eaddr, crc;
+            var hexk = keyData.result.privkey.slice(0, 64);
+            var key = ec.keyPair({ priv: hexk, privEnc: 'hex' });
+            var xk = key.getPrivate('hex');
+            var pub = key.getPublic().encodeCompressed('hex');
+            var addr = private_prefix + hexk + '01';
+
+            console.log(xk);
+            console.log(hexk);
+            console.log(pub);
+            console.log(addr);
+
+            h = sha256(addr);
+            h2 = sha256(h);
+            crc = h2.slice(0, 8);
+            faddr = addr + crc;
+            paddr = hex2b(faddr);
+            eaddr = to_b58(paddr);
+            $('#privAddr').html(eaddr);
+        });
+    }
+    else {
+        rpc_call('getprivaddr', [acName, addr], function (keyData) {
+            var faddr, paddr, eaddr, crc;
+            var xk = keyData.result.privkey.slice(0, 64);
+            var DecHexkey = strtoHexString(un_enc(secret, xk));
+            var addr = private_prefix + DecHexkey + '01';
+
+
+            console.log(DecHexkey);
+            console.log(addr);
+
+
+
+            h = sha256(addr);
+            h2 = sha256(h);
+            crc = h2.slice(0, 8);
+            faddr = addr + crc;
+            paddr = hex2b(faddr);
+            eaddr = to_b58(paddr);
+            $('#privAddr').html(eaddr);
+        });
+    }
 }
 
 
@@ -179,6 +210,10 @@ function rc4_cypher_arr_ak(key, arr) {
 function un_enc(secret, HexKey) {
     var strKey;
     strKey = hex2a(HexKey);
+
+    console.log(strKey);
+    console.log(secret);
+
     return rc4_cypher(secret, strKey);
 }
 
@@ -196,6 +231,7 @@ function check_ecdsa() {
     // Verify signature
     console.log(key.verify(msg, derSign));
 }
+
 function generateKeys() {
     var ec = new EC('secp256k1');
     // Generate keys

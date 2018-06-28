@@ -29,3 +29,4 @@ WALLET_API int C_API_FUNC rescan_addr(btc_addr_t pubaddr);
 
 WALLET_API int C_API_FUNC set_anon_pw(const char *pw, unsigned int timeout);
 WALLET_API int C_API_FUNC generate_new_keypair(const char *clabel, btc_addr_t pubaddr);
+WALLET_API int C_API_FUNC get_anon_key(btc_addr_t pubaddr, dh_key_t privkey);

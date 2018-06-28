@@ -167,6 +167,7 @@ BLOCK_API  int	C_API_FUNC blk_find_last_pow_block		(mem_zone_ref_ptr pindex, uns
 BLOCK_API  int	C_API_FUNC get_pow_block_limit			(uint64_t *lastPowBlock);
 BLOCK_API  int	C_API_FUNC extract_key					(dh_key_t priv, dh_key_t pub);
 BLOCK_API  int	C_API_FUNC compress_key					(dh_key_t pub, dh_key_t cpub);
+BLOCK_API  int	C_API_FUNC extract_pub					(const dh_key_t priv, dh_key_t pub);
 BLOCK_API  int	C_API_FUNC derive_secret				(dh_key_t pub, dh_key_t priv, hash_t secret);
 
 
