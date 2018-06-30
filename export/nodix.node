@@ -89,8 +89,7 @@ let NODE_BITCORE_NODE SelfNode = `
 		[
 			{"base" : "/jsonrpc"  , "type" : "rpc", (NODE_MODULE_DEF) "rpc_wallet"     : {"file":"modz/rpc_wallet.tpo"}},
 			{"base" : "/pubwal"   , "allowed_ip":["127.0.0.1"] , "type" : "rpc", (NODE_MODULE_DEF) "anon_wallet"     : {"file":"modz/anon_rpc.tpo"}},
-			{"base" : "/api/"     , "type" : "cgi", (NODE_MODULE_DEF) "block_explorer" : {"file":"modz/block_explorer.tpo"}},
-			{"base" : "/siteapi/" , "type" : "cgi", (NODE_MODULE_DEF) "site_cgi"	   : {"file":"modz/site_cgi.tpo"}}
+			{"base" : "/api/"     , "type" : "cgi", (NODE_MODULE_DEF) "block_explorer" : {"file":"modz/block_explorer.tpo"}}
 		]
 	},
 	(NODE_BITCORE_NODE_LIST) "peer_nodes" : [],
