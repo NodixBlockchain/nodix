@@ -67,7 +67,6 @@ mem_zone_ref			blkobjs				= { PTR_INVALID };
 
 const char				*null_hash_str		= "0000000000000000000000000000000000000000000000000000000000000000";
 unsigned char			pubKeyPrefix		= 0xFF;
-unsigned char			privKeyPrefix		= 0xFF;
 static const uint64_t	one_coin			= ONE_COIN;
 tpo_mod_file			sign_tpo_mod		= { 0xCD };
 
@@ -182,8 +181,6 @@ OS_API_C_FUNC(int) init_blocks(mem_zone_ref_ptr node_config, mem_zone_ref_ptr tr
 	if(tree_manager_get_child_value_i32(node_config, NODE_HASH("pubKeyVersion"), &i))
 		pubKeyPrefix = i;
 
-	if(tree_manager_get_child_value_i32(node_config, NODE_HASH("privKeyVersion"), &i))
-		privKeyPrefix = i;
 
 	
 
@@ -253,6 +250,26 @@ OS_API_C_FUNC(int) init_blocks(mem_zone_ref_ptr node_config, mem_zone_ref_ptr tr
 		log_message("crypto sign error", PTR_NULL);
 #endif	
 	return 1;
+}
+
+OS_API_C_FUNC(int) sign_hash(const hash_t hash,const dh_key_t privkey,struct string *signature)
+{
+	struct string hashStr = { 0 }, sign = { 0 };
+	int	ret;
+
+	hashStr.str  = hash;
+	hashStr.len  = 32;
+	hashStr.size = 32;
+
+	sign = crypto_sign(&hashStr, privkey);
+
+	if ((sign.str == PTR_NULL) || (sign.len == 0))
+		return 0;
+	
+	(*signature) = sign;
+	
+	return 1;
+
 }
 
 OS_API_C_FUNC(int) extract_key(dh_key_t priv,dh_key_t pub)

@@ -67,7 +67,7 @@ char					anon_wallet_pw[1024] = { 0xFF };
 unsigned int			wallet_pw_set = 0xFFFFFFFF;
 unsigned int			wallet_pw_timeout = 0xFFFFFFFF;
 
-int reset_anon_pw()
+OS_API_C_FUNC(int) reset_anon_pw()
 {
 	memset_c(anon_wallet_pw, 0, sizeof(anon_wallet_pw));
 	wallet_pw_set = 0;
@@ -83,7 +83,6 @@ OS_API_C_FUNC(int) init_wallet(mem_zone_ref_ptr node, tpo_mod_file *pos_mod)
 	copy_zone_ref(&my_node, node);
 	
 	reset_anon_pw();
-
 	
 
 #ifndef _DEBUG
@@ -105,8 +104,6 @@ OS_API_C_FUNC(int) init_wallet(mem_zone_ref_ptr node, tpo_mod_file *pos_mod)
 	memset_c(nulladdr, '0', sizeof(btc_addr_t));
 	return 1;
 }
-
-
 
 OS_API_C_FUNC(int)  find_stake_hash(hash_t hash, unsigned char *stakes, unsigned int len)
 {
@@ -1715,7 +1712,9 @@ OS_API_C_FUNC(int) store_wallet_txs(mem_zone_ref_ptr tx_list)
 	return 1;
 }
 
-OS_API_C_FUNC(int) wallet_list_addrs(mem_zone_ref_ptr account_name, mem_zone_ref_ptr addr_list)
+
+
+OS_API_C_FUNC(int) wallet_list_addrs(mem_zone_ref_ptr account_name, mem_zone_ref_ptr addr_list,unsigned int balance)
 {
 	struct string username = { PTR_NULL };
 	struct string user_key_file = { PTR_NULL };
@@ -1748,11 +1747,10 @@ OS_API_C_FUNC(int) wallet_list_addrs(mem_zone_ref_ptr account_name, mem_zone_ref
 		return 0;
 	}
 
-	make_string(&user_key_file, "keypairs");
-	cat_cstring_p(&user_key_file, username.str);
-	free_string(&username);
+	make_string		(&user_key_file, "keypairs");
+	cat_cstring_p	(&user_key_file, username.str);
+	free_string		(&username);
 	
-
 	minconf = 1;
 	
 	if (get_file(user_key_file.str, &keys_data, &keys_data_len))
@@ -1762,16 +1760,27 @@ OS_API_C_FUNC(int) wallet_list_addrs(mem_zone_ref_ptr account_name, mem_zone_ref
 		{
 			mem_zone_ref new_addr = { PTR_NULL };
 
-			if (tree_manager_add_child_node(addr_list, "addr", NODE_GFX_OBJECT, &new_addr))
+			if(tree_manager_create_node("addr", NODE_GFX_OBJECT, &new_addr))
 			{
-				uint64_t	  conf_amount = 0, unconf_amount = 0;
+				tree_manager_set_child_value_str		(&new_addr, "label"  , keys_ptr->label);
+				tree_manager_set_child_value_btcaddr	(&new_addr, "address", keys_ptr->addr);
 
-				get_balance	(keys_ptr->addr, &conf_amount, &unconf_amount, minconf);
+				if (balance)
+				{
+					uint64_t conf_amount = 0, unconf_amount = 0;
 
-				tree_manager_set_child_value_str(&new_addr, "label", keys_ptr->label);
-				tree_manager_set_child_value_btcaddr(&new_addr, "address", keys_ptr->addr);
-				tree_manager_set_child_value_i64(&new_addr, "amount", conf_amount);
-				tree_manager_set_child_value_i64(&new_addr, "unconf_amount", unconf_amount);
+					get_balance						(keys_ptr->addr, &conf_amount, &unconf_amount, minconf);
+
+					if ((conf_amount > 0) || (unconf_amount > 0))
+					{
+						tree_manager_set_child_value_i64(&new_addr, "amount", conf_amount);
+						tree_manager_set_child_value_i64(&new_addr, "unconf_amount", unconf_amount);
+						tree_manager_node_add_child(addr_list, &new_addr);
+					}
+				}
+				else
+					tree_manager_node_add_child(addr_list, &new_addr);
+			
 				release_zone_ref(&new_addr);
 			}
 			keys_ptr++;
@@ -1976,7 +1985,37 @@ OS_API_C_FUNC(int) set_anon_pw(const char *pw,unsigned int timeout)
 }
 
 
+OS_API_C_FUNC(int) privkey_to_addr(const dh_key_t privkey, struct string *privAddr)
+{
+	struct string	in_addr;
+	hash_t			tmp_hash, fhash;
+	unsigned char	taddr[38];
+	unsigned int	n,i;
+	
 
+	if (!tree_manager_get_child_value_i32(&my_node, NODE_HASH("privKeyVersion"), &i))
+		return 0;
+	
+	taddr[0] = i;
+
+	for (n = 0; n < 32; n++)
+	{
+		taddr[1 + n] = privkey[31 - n];
+	}
+	taddr[33] = 0x01;
+
+	mbedtls_sha256(taddr, 34, tmp_hash, 0);
+	mbedtls_sha256(tmp_hash, 32, fhash, 0);
+
+	memcpy_c(&taddr[34], fhash, 4);
+
+	in_addr.str = taddr;
+	in_addr.len = 38;
+	in_addr.size = in_addr.len;
+
+	return b58enc(&in_addr, privAddr);
+
+}
 
 
 OS_API_C_FUNC(int) generate_new_keypair(const char *clabel,btc_addr_t pubaddr)
@@ -2298,4 +2337,66 @@ OS_API_C_FUNC(int) rescan_addr(btc_addr_t pubaddr)
 	rm_addr_scan(pubaddr);
 
 	return 1;
+}
+
+
+OS_API_C_FUNC(int) encode_DER_sig(const struct string *sig, struct string *sigseq, unsigned int rev, unsigned char hash_type)
+{
+	unsigned char S[32], R[32];
+	size_t		  slen, rlen, siglen;
+	unsigned int	n;
+
+	if (sig->len < 64)
+		return 0;
+
+	rlen = 32;
+	slen = 32;
+
+	if (rev)
+	{
+		for (n = 0; n < 32; n++)
+			R[31 - n] = sig->str[n];
+
+		for (n = 0; n < 32; n++)
+			S[31 - n] = sig->str[n + 32];
+	}
+	else
+	{
+		memcpy_c(R, sig->str, 32);
+		memcpy_c(S, sig->str + 32, 32);
+	}
+
+	while (R[0] == 0)
+	{
+		memcpy_c(R, R + 1, --rlen);
+	}
+
+	while (S[0] == 0)
+	{
+		memcpy_c(S, S + 1, --slen);
+	}
+
+	siglen = slen + rlen + 4;
+
+	sigseq->len = siglen + 2+1;
+	sigseq->size = sigseq->len + 1;
+	sigseq->str = malloc_c(sigseq->size);
+
+	sigseq->str[0] = 0x30;
+	sigseq->str[1] = siglen;
+	sigseq->str[2] = 0x02;
+	sigseq->str[3] = rlen;
+
+	memcpy_c(&sigseq->str[4], R, rlen);
+
+	sigseq->str[4 + rlen] = 0x02;
+	sigseq->str[4 + rlen + 1] = slen;
+
+	memcpy_c(&sigseq->str[4 + rlen + 2], S, slen);
+
+	sigseq->str[sigseq->len-1] = hash_type;
+
+	return 1;
+
+
 }

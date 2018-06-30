@@ -1206,7 +1206,7 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	break;
 	case NODE_BITCORE_BLK_HDR:
 
-		if ((read + 80) > len)return INVALID_SIZE;
+		if ((read + 76) > len)return INVALID_SIZE;
 
 		tree_manager_set_child_value_i32(key, "version"		, *((unsigned int *)(payload+read)));
 		read += 4;
@@ -1218,8 +1218,14 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		read += 4;
 		tree_manager_set_child_value_i32(key, "bits", *((unsigned int *)(payload + read)));
 		read += 4;
-		tree_manager_set_child_value_i32(key, "nonce", *((unsigned int *)(payload + read)));
-		read += 4;
+
+		if ((read + 4) <= len)
+		{
+			tree_manager_set_child_value_i32(key, "nonce", *((unsigned int *)(payload + read)));
+			read += 4;
+		}
+		else
+			tree_manager_set_child_value_i32(key, "nonce", 0);
 		
 	break;
 	case NODE_BITCORE_ADDR:
@@ -2319,4 +2325,3 @@ OS_API_C_FUNC(int) new_message(const struct string *data, mem_zone_ref_ptr msg)
 
 	return 1;
 }
- 

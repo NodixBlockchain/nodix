@@ -9,7 +9,6 @@ let NODE_GFX_OBJECT configuration = `
 		},
 		"magic":0xD9BEFECA, 		
 		"pubKeyVersion":0x19,
-		"privKeyVersion":0x55,
 		(NODE_MODULE_DEF) "sign_mod" : {"file":"modz/ecdsa.tpo"},
 		"staking":
 		 {
@@ -45,6 +44,7 @@ let NODE_GFX_OBJECT configuration = `
 let NODE_BITCORE_NODE SelfNode = `
 {
 	"user_agent" : "nodix",
+	"privKeyVersion":0x55,
 	(NODE_GFX_BINT)"paytxfee" : 0,
 	"block_height" : 0,
 	"useGC" : false,
@@ -54,7 +54,6 @@ let NODE_BITCORE_NODE SelfNode = `
 	(NODE_GFX_INT)"maxMsgSize":1024,
 	(NODE_GFX_INT)"checktxsign"  : 0,
 	(NODE_GFX_INT)"next_check"  : 0,
-	(NODE_BITCORE_WALLET_ADDR)"coinbaseAddr"  : "B8mPBEg2XbYSUwEh5a7yrfehvMNijpAm1P",
 	(NODE_GFX_INT)"scriptBlock" : 0,
 	(NODE_GFX_INT)"current_pos_diff" : 0,
 	(NODE_GFX_INT)"current_pow_diff" : 0,

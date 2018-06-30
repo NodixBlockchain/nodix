@@ -756,14 +756,34 @@ class AccountList {
 
         $('#div_newtxid').css('display', 'none');
 
-        rpc_call('maketxfrom', [this.SelectedAddrs, amount, dstAddr, fee], function (data) {
+        if (this.accountName == 'anonymous') {
 
-            my_tx = data.result.transaction;
+            anon_rpc_call('sendfrom', [this.accountName, dstAddr, amount], function (data) {
 
-            $('#sendtx_but').prop   ("disabled", false);
-            $('#total_tx').html     (data.result.total);
-            $('#newtx').html        (get_tmp_tx_html(my_tx));
-        });
+                $('#sendtx_but').prop("disabled", true);
+
+                $('#total_tx').empty();
+                $('#newtx').empty();
+
+                if (data.error) {
+
+                }
+                else {
+                    $('#div_newtxid').css('display', 'block');
+                    $('#newtxid').html(data.result.txid);
+                }
+            });
+        }
+        else {
+            rpc_call('maketxfrom', [this.SelectedAddrs, amount, dstAddr, fee], function (data) {
+
+                my_tx = data.result.transaction;
+
+                $('#sendtx_but').prop("disabled", false);
+                $('#total_tx').html(data.result.total);
+                $('#newtx').html(get_tmp_tx_html(my_tx));
+            });
+        }
     }
 
     
@@ -792,7 +812,7 @@ class AccountList {
     {
         var n;
 
-        if (this.opts.withSecret == false)
+        if ((this.opts.withSecret == false) || (this.accountName == 'anonymous'))
         {
             this.SelectedAddrs = new Array();
 
@@ -915,7 +935,7 @@ class AccountList {
                 cell.className  = "balance_unconfirmed";
                 cell.appendChild    (span);
 
-                if (this.opts.withSecret)
+                if ((this.opts.withSecret) && (this.accountName!='anonymous'))
                 {
                     input = document.createElement('input');
                     input.setAttribute("address", this.addrs[n].address);

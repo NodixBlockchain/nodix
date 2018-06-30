@@ -323,6 +323,8 @@ OS_API_C_FUNC(void) init_mem_system()
 
 	sys_add_tpo_mod_func_name("libcon", "realloc_zone",(void_func_ptr)realloc_zone, 0);
 	sys_add_tpo_mod_func_name("libcon", "malloc_c",(void_func_ptr)malloc_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "realloc_c", (void_func_ptr)realloc_c, 0);
+	
 	sys_add_tpo_mod_func_name("libcon", "calloc_c",(void_func_ptr)calloc_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memset_c",(void_func_ptr)memset_c, 0);
 
@@ -344,9 +346,6 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "memmove_c",(void_func_ptr)memmove_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memchr_c",(void_func_ptr)memchr_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memchr_32_c",(void_func_ptr)memchr_32_c, 0);
-
-
-
 
 	sys_add_tpo_mod_func_name("libcon", "empty_trash", (void_func_ptr)empty_trash, 0);
 
@@ -414,6 +413,8 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "dtoa_c",(void_func_ptr)dtoa_c, 0);
 
 	sys_add_tpo_mod_func_name("libcon", "b58tobin", (void_func_ptr)b58tobin, 0);
+	sys_add_tpo_mod_func_name("libcon", "b58enc", (void_func_ptr)b58enc, 0);
+	
 
 	sys_add_tpo_mod_func_name("libcon", "muldiv64",(void_func_ptr)muldiv64, 0);
 	sys_add_tpo_mod_func_name("libcon", "mul64",(void_func_ptr)mul64, 0);

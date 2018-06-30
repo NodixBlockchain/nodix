@@ -45,6 +45,16 @@
         $('#amount').val(amount / unit);
     }
 
+    function do_tx() {
+
+        var amount = Math.ceil((parseFloat($('#amount').val()) * unit));
+        var fee = Math.ceil((parseFloat($('#paytxfee').val()) * unit));
+        var dstAddr = $('#dstAddr').val();
+
+        MyAccount.maketx(amount, fee, dstAddr);
+        
+    }
+
     </script>
     <div class="container">
         <div class="row">
@@ -60,8 +70,10 @@
     </div>
 
     <section>
-        <h2 class="heading-md">Select your account</h2>
-        <div id="account_list"></div>
+        <div class="container">
+            <h2 class="heading-md">Select your account</h2>
+            <div id="account_list"></div>
+        </div>
     </section>
 
     <div class="container">
@@ -70,7 +82,7 @@
             <div class="col-md-2"><br /><span class="coin_unit"></span></div>
             <div class="col-md-2">tx fee : <input name="paytxfee" id="paytxfee" type="text" /> </div>
             <div class="col-md-2">to : <input type="text" id="dstAddr" name="dstAddr" /> </div>
-            <div class="col-md-2"><input type="button" value="view tx" onclick=" maketxfrom(MyAccount.getSelectedAddrs(), Math.ceil( (parseFloat($('#amount').val())*unit)), $('#dstAddr').val());" /></div>
+            <div class="col-md-2"><input type="button" value="view tx" onclick=" do_tx();" /></div>
         </div>
         <div class="row">
             <div class="col-md-6">Selected balance : <div id="selected_balance"></div></div>

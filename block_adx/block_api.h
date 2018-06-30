@@ -169,7 +169,7 @@ BLOCK_API  int	C_API_FUNC extract_key					(dh_key_t priv, dh_key_t pub);
 BLOCK_API  int	C_API_FUNC compress_key					(dh_key_t pub, dh_key_t cpub);
 BLOCK_API  int	C_API_FUNC extract_pub					(const dh_key_t priv, dh_key_t pub);
 BLOCK_API  int	C_API_FUNC derive_secret				(dh_key_t pub, dh_key_t priv, hash_t secret);
-
+BLOCK_API  int	C_API_FUNC sign_hash					(const hash_t hash, const dh_key_t privkey, struct string *signature);
 
 BLOCK_API  int	C_API_FUNC remove_tx_index				(hash_t tx_hash);
 
@@ -231,8 +231,6 @@ BLOCK_API void C_API_FUNC   key_to_hash(const unsigned char *pkey, unsigned char
 
 /* public key  to addr */
 BLOCK_API void C_API_FUNC  key_to_addr(const unsigned char *pkey, btc_addr_t addr);
-
-BLOCK_API void C_API_FUNC  privkey_to_addr(const dh_key_t privkey, struct string *privAddr);
 
 BLOCK_API int C_API_FUNC   make_script_file(mem_zone_ref_ptr file, struct string *pKey, struct string *sign, mem_zone_ref_ptr script);
 

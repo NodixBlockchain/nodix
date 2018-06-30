@@ -96,3 +96,6 @@ LIBC_API		int					C_API_FUNC vstr_to_str			(mem_ptr data_ptr, struct string *str
 
 /* find mem hash */
 LIBC_API		int					C_API_FUNC find_mem_hash		(hash_t hash, unsigned char *mem_hash, unsigned int num);
+
+LIBC_API		int					C_API_FUNC b58enc				(const struct string *in, struct string *out);
+

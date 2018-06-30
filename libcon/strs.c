@@ -8,6 +8,8 @@
 
 extern char path_sep;
 
+
+
 OS_API_C_FUNC(char *) my_strrev(char *str)
 {
     size_t i = strlen_c(str)-1,j=0;
@@ -543,3 +545,61 @@ OS_API_C_FUNC(int) find_mem_hash(hash_t hash, unsigned char *mem_hash, unsigned 
 	}
 	return 0;
 }
+
+
+static const char b58digits_ordered[] = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+OS_API_C_FUNC(int) b58enc(const struct string *in, struct string *out)
+{
+	const unsigned char *bin = in->str;
+	unsigned char *buf;
+	int carry;
+	size_t i, j, high, zcount = 0;
+	size_t size;
+
+	while (zcount < in->len && !bin[zcount])
+		++zcount;
+
+	size = (in->len - zcount) * 138 / 100 + 1;
+	buf = malloc_c(size);
+	memset(buf, 0, size);
+
+	for (i = zcount, high = size - 1; i < in->len; ++i, high = j)
+	{
+		for (carry = bin[i], j = size - 1; (j > high) || carry; --j)
+		{
+			carry += 256 * buf[j];
+			buf[j] = carry % 58;
+			carry /= 58;
+			if (!j) {
+				// Otherwise j wraps to maxint which is > high
+				break;
+			}
+		}
+	}
+
+	out->len = size+1;
+	out->size = out->len + 1;
+	out->str = malloc_c(out->size);
+
+	if (zcount)
+		memset(out->str, '1', zcount);
+
+	for (i = zcount; j < size; ++i, ++j)
+		out->str[i] = b58digits_ordered[buf[j]];
+
+	out->str[i] = 0;
+
+	for (i = 0; out->str[i] == '1'; i++);
+	{
+		zcount++;
+	}
+
+	out->len-= zcount;
+	memmove_c(out->str, out->str + zcount, out->len);
+	out->str[out->len] = 0;
+
+	free_c(buf);
+	return 1;
+}
+

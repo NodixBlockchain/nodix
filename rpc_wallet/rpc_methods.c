@@ -3975,19 +3975,7 @@ OS_API_C_FUNC(int) getprivaddr(mem_zone_ref_const_ptr params, unsigned int rpc_m
 	if (ret)
 	{
 		char hexk[129];
-
 		bin_2_hex(prvkey, 64, hexk);
-
-		/*
-		int  n = 0;
-		while (n < 64)
-		{
-			hexk[n * 2 + 0] = hex_chars[prvkey[n] >> 4];
-			hexk[n * 2 + 1] = hex_chars[prvkey[n] & 0x0F];
-			n++;
-		}
-		hexk[128] = 0;
-		*/
 		tree_manager_set_child_value_str(result, "privkey", hexk);
 	}
 		
@@ -4072,7 +4060,7 @@ OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_m
 		return 0;
 	}
 		
-	wallet_list_addrs		(&username_n, &addr_list);
+	wallet_list_addrs		(&username_n, &addr_list,1);
 	release_zone_ref		(&username_n);
 	release_zone_ref		(&addr_list);
 	
@@ -4137,6 +4125,8 @@ OS_API_C_FUNC(int) getwork(mem_zone_ref_const_ptr params, unsigned int rpc_mode,
 
 		tree_manager_get_node_istr	(&pn, 0, &xparam, 0);
 		release_zone_ref			(&pn);
+
+		tree_manager_dump_node_rec(params, 0, 16);
 
 		ok = 0;
 
@@ -4220,16 +4210,18 @@ OS_API_C_FUNC(int) getwork(mem_zone_ref_const_ptr params, unsigned int rpc_mode,
 					ok = 1;
 				else
 					ok = 0;
-				
+			}
+			else if (rd == 76)
+			{
+				ok = 1;
 			}
 			release_zone_ref(&new_blk);
 			release_zone_ref(&next_block);
 		}
 		tree_manager_create_node		("result", NODE_GFX_BOOL, result);
 		tree_manager_write_node_dword	(result,0,ok);
-
 		
-		node_release_mining_lock();
+		node_release_mining_lock		();
 		return 1;
 	}
 
@@ -4372,15 +4364,6 @@ OS_API_C_FUNC(int) getblocktemplate(mem_zone_ref_const_ptr params, unsigned int 
 
 	default_RNG					(rnd, 6);
 	bin_2_hex					(rnd, 6, workid);
-	/*
-	for (n = 0; n < 6; n++)
-	{
-		workid[n * 2 + 0] = hex_chars[rnd[n] >> 4];
-		workid[n * 2 + 1] = hex_chars[rnd[n] & 0x0F];
-	}
-	workid[12] = 0;
-	*/
-
 
 	now = get_time_c();
 
@@ -4426,14 +4409,15 @@ OS_API_C_FUNC(int) getblocktemplate(mem_zone_ref_const_ptr params, unsigned int 
 	SetCompact							(bits, diffHash);
 
 	tree_manager_set_child_value_hash	(result, "bits", diffHash);
+	tree_manager_set_child_value_hash	(result, "target", diffHash);
 	tree_manager_set_child_value_i32	(result, "curtime", time);
 	tree_manager_set_child_value_i64	(result, "height", height);
 	tree_manager_set_child_value_hash	(result, "previousblockhash",block_hash);
-	tree_manager_set_child_value_i32	(result, "version", version);
+	tree_manager_set_child_value_i32	(result, "version", 1);
 	tree_manager_set_child_value_str	(result, "workid", workid);
 
 	tree_manager_add_child_node		   (result, "capabilities", NODE_JSON_ARRAY, &caps);
-	tree_manager_add_child_node		   (&caps, "0", NODE_BITCORE_VSTR, &cap);
+	tree_manager_add_child_node		   (&caps, "0", NODE_GFX_STR, &cap);
 	tree_manager_write_node_str		   (&cap,0,"proposal");
 	release_zone_ref				   (&cap);
 	release_zone_ref				   (&caps);
