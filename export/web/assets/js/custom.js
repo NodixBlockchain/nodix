@@ -45,10 +45,6 @@ function encryptNodeKey(msg)
     var thekey      = mykey.derive(theirpub);
     var EArr        = rc4_cypher_ak (hex2b (thekey.toString(16)) , msg);
     
-    console.log(EArr.toString(16));
-    console.log(thekey.toString(16));
-    console.log(mypub.toString(16));
-
     return { 'pubkey': to_b58(mypub), 'msg': to_b58(EArr) };
 
 }
@@ -64,10 +60,11 @@ function rpc_call(in_method, in_params, in_success) {
     }
     else
         obj = { jsonrpc: '2.0', method: in_method, params: in_params, id: 1 };
+    console.log(in_params);
 
     $.ajax({
         url: api_base_url + rpc_base,
-        data: JSON.stringify({ jsonrpc: '2.0', method: in_method, pubkey: encMsg.pubkey, params: encMsg.msg, id: 1 }),  // id is needed !!
+        data: JSON.stringify(obj),  // id is needed !!
         contentType: "application/json; charset=utf-8",
         type: "POST",
         dataType: "json",
@@ -77,9 +74,19 @@ function rpc_call(in_method, in_params, in_success) {
 }
 
 function anon_rpc_call(in_method, in_params, in_success) {
+
+    var encMsg = encryptNodeKey(JSON.stringify(in_params));
+
+    if (encMsg) {
+        obj = { jsonrpc: '2.0', method: in_method, pubkey: encMsg.pubkey, params: encMsg.msg, id: 1 };
+    }
+    else
+        obj = { jsonrpc: '2.0', method: in_method, params: in_params, id: 1 };
+
+
     $.ajax({
         url: api_base_url + anon_rpc_base,
-        data: JSON.stringify({ jsonrpc: '2.0', method: in_method, params: in_params, id: 1 }),  // id is needed !!
+        data: JSON.stringify(obj),  // id is needed !!
         contentType: "application/json; charset=utf-8",
         type: "POST",
         dataType: "json",

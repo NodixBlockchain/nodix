@@ -4049,18 +4049,28 @@ OS_API_C_FUNC(int) listaccounts(mem_zone_ref_const_ptr params, unsigned int rpc_
 
 OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
 {
-	mem_zone_ref username_n = { PTR_NULL }, addr_list = { PTR_NULL };
+	mem_zone_ref username_n = { PTR_NULL }, param = { PTR_NULL }, addr_list = { PTR_NULL };
+	unsigned int shownull,flags;
 	
 	if (!tree_manager_get_child_at(params, 0, &username_n))
 		return 0;
 
+	if (tree_manager_get_child_at(params, 1, &param))
+	{
+		if(!tree_mamanger_get_node_dword(&param, 0, &shownull))
+			shownull = 0;
+		release_zone_ref(&param);
+	}
+	else
+		shownull = 0;
+		
 	if (!tree_manager_add_child_node(result, "addrs", NODE_JSON_ARRAY, &addr_list))
 	{
 		release_zone_ref(&username_n);
 		return 0;
 	}
 		
-	wallet_list_addrs		(&username_n, &addr_list,1);
+	wallet_list_addrs		(&username_n, &addr_list,shownull ? 3 : 1);
 	release_zone_ref		(&username_n);
 	release_zone_ref		(&addr_list);
 	

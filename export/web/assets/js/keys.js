@@ -36,8 +36,6 @@ function privKeyAddr(username, addr, secret) {
             var addr = private_prefix + DecHexkey + '01';
 
 
-            console.log(DecHexkey);
-            console.log(addr);
 
 
 
@@ -192,9 +190,6 @@ function rc4_cypher_arr_ak(key, arr) {
 function un_enc(secret, HexKey) {
     var strKey;
     strKey = hex2a(HexKey);
-
-    console.log(strKey);
-    console.log(secret);
 
     return rc4_cypher(secret, strKey);
 }
@@ -617,6 +612,8 @@ class AccountList {
         var old_tbody = this.TxTable.tBodies[0];
         var new_tbody = document.createElement('tbody');
         var thead;
+        this.total_selected = 0;
+        this.total_amount = 0;
 
 
         if (this.recvs == null) {
@@ -662,6 +659,8 @@ class AccountList {
             cell.className = "addr_amount";
             cell.innerHTML = this.recvs[n].amount / unit;
 
+            this.total_selected += this.recvs[n].amount;
+
             cell = row.insertCell(4);
             cell.className = "tx_conf";
             cell.innerHTML = this.recvs[n].confirmations;
@@ -700,6 +699,7 @@ class AccountList {
             cell = row.insertCell(3);
             cell.className = "addr_amount";
             cell.innerHTML = this.recvs[n].amount / unit;
+            this.total_amount += this.recvs[n].amount;
 
             cell = row.insertCell(4);
             cell.className = "tx_conf";
@@ -744,8 +744,8 @@ class AccountList {
             self.recvs.sort(function (a, b) { return (b.time - a.time); });
 
             self.update_recvs();
-
-            $('#txtotal').html(data.result.total / unit);
+            $('#selected_balance').html(self.total_selected / unit);
+            $('#txtotal').html(self.total_amount / unit);
             $('#total_tx').html(data.result.ntx);
 
             
@@ -1019,6 +1019,7 @@ class AccountList {
 
         rpc_call('rescanaddrs', [[address]], function (data) {
 
+
             rpc_call('getpubaddrs', [this.accountName], function (data) {
 
                 if ((typeof data.result.addrs === 'undefined') || (data.result.addrs.length == 0)) {
@@ -1084,14 +1085,14 @@ class AccountList {
         {
             var n;
             var self = this;
-
+            var shownull = $('#show_null').is(':checked') ? true : false;
 
             this.accountName         = accnt_name;
             this.input.disabled      = true;
             this.input.value         = this.accountName;
             this.input.style.display = 'inline';
             
-            rpc_call('getpubaddrs', [this.accountName], function (data) {
+            rpc_call('getpubaddrs', [this.accountName, shownull], function (data) {
 
                 $('#newaddr').css('display', 'block');
 
@@ -1270,7 +1271,7 @@ class AccountList {
     constructor(divName,listName,opts) {
         var self = this;
         var n;
-        var div, container, row, col1, col2, label, table,h2;
+        var input,span,div, container, row, col1, col2, label, table,h2;
         var ths = ["label", "balance", "uncomfirmed balance"];
         
         if (opts.withSecret)
@@ -1332,12 +1333,36 @@ class AccountList {
         col1.className               = "col-md-6";
         this.p.innerHTML             = 'Below are the addresses for your account.'
 
-        col1.appendChild           (this.p);
+        col1.appendChild           ( this.p);
         row.appendChild            (col1);
-        container.appendChild      (row);
+        container.appendChild(row);
+        span                       = document.createElement('span');
+        row                         = document.createElement('div');
+        col1                        = document.createElement('div');
+
+        row.className = "row";
+        col1.className = "col-md-4";
+        input = document.createElement('input');
+
+        input.id = "show_null";
+        input.name = "show_null";
+        input.value = '1';
+        input.style = 'display: inline';
+        input.type = "checkbox";
+        input.onchange = function () { self.accountselected(self.accountName); }
+      
+
+        span.innerHTML = 'show address with no balance';
+        col1.appendChild(span);
+        col1.appendChild(input);
+        row.appendChild(col1);
+        container.appendChild(row);
+        
 
         row                         = document.createElement('div');
         col1                        = document.createElement('div');
+
+
         this.AddrTable              = document.createElement('TABLE');
 
         row.className               = "row";
@@ -1405,16 +1430,16 @@ class AccountList {
             row                     = document.createElement('div');
             col1                    = document.createElement('div');
             row.className           = "row";
-            col1.className          = "col-md-6";
-            col1.innerHTML          = '<div class="info">total:<span id="txtotal"></span></div>';
+            col1.className          = "col-md-6 info";
+            col1.innerHTML          = 'total:<span id="txtotal"></span>';
             row.appendChild         (col1);
             container.appendChild   (row);
 
             row                     = document.createElement('div');
             col1                    = document.createElement('div');
             row.className           = "row";
-            col1.className          = "col-md-6";
-            col1.innerHTML          = '<div class="info">selected:<span id="selected_balance"></span></div>';
+            col1.className          = "col-md-6 info";
+            col1.innerHTML          = 'selected:<span id="selected_balance"></span>';
             row.appendChild         (col1);
             container.appendChild   (row);
 

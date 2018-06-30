@@ -1765,13 +1765,16 @@ OS_API_C_FUNC(int) wallet_list_addrs(mem_zone_ref_ptr account_name, mem_zone_ref
 				tree_manager_set_child_value_str		(&new_addr, "label"  , keys_ptr->label);
 				tree_manager_set_child_value_btcaddr	(&new_addr, "address", keys_ptr->addr);
 
-				if (balance)
+				if (balance & 0xF)
 				{
-					uint64_t conf_amount = 0, unconf_amount = 0;
+					uint64_t conf_amount = 0, unconf_amount = 0,total_amount;
+
 
 					get_balance						(keys_ptr->addr, &conf_amount, &unconf_amount, minconf);
 
-					if ((conf_amount > 0) || (unconf_amount > 0))
+					total_amount = conf_amount + unconf_amount;
+
+					if ( (balance & 2)||(total_amount>0))
 					{
 						tree_manager_set_child_value_i64(&new_addr, "amount", conf_amount);
 						tree_manager_set_child_value_i64(&new_addr, "unconf_amount", unconf_amount);
