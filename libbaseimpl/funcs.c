@@ -202,7 +202,8 @@ OS_API_C_FUNC(int) resolve_script_var(mem_zone_ref_ptr global_vars, mem_zone_ref
 OS_API_C_FUNC(int) tree_manager_set_child_value_vec3(mem_zone_ref	*p_node_ref, const char *name, float x, float y, float z){ return 0; }
 OS_API_C_FUNC(int) tree_manager_get_child_value_double(const mem_zone_ref	*p_node_ref, unsigned int crc_name, double *value){ return 0; }
 OS_API_C_FUNC(int) RC4(char *key, char *plaintext, size_t len, unsigned char *ciphertext){ return 0; }
-
+OS_API_C_FUNC(void) qsort_c(mem_ptr base, mem_size num, mem_size width, int(*comp)(const_mem_ptr, const_mem_ptr)) { return 0; }
+OS_API_C_FUNC(mem_ptr) tree_manager_expand_node_data_ptr(mem_zone_ref_ptr node_ref, mem_size ofset, mem_size size) { return 0; }
 #ifdef _WIN32
 C_EXPORT int _fltused = 0;
 C_EXPORT mod_name_decoration_t	 mod_name_deco_type = MOD_NAME_DECO;

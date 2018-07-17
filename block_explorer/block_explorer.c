@@ -15,16 +15,17 @@
 
 #include <crypto.h>
 #include "../block_adx/block_api.h"
+#include "../node_adx/node_api.h"
 
 C_IMPORT size_t			C_API_FUNC	  get_node_size(mem_zone_ref_ptr key);
 
 
-typedef int  C_API_FUNC get_blk_staking_infos_func(mem_zone_ref_ptr blk, const char *blk_hash, mem_zone_ref_ptr infos);
+typedef int  C_API_FUNC get_blk_staking_infos_func(mem_zone_ref_ptr blk, mem_zone_ref_ptr infos);
 typedef get_blk_staking_infos_func *get_blk_staking_infos_func_ptr;
 
 
 #ifdef _DEBUG
-	C_IMPORT int					C_API_FUNC get_blk_staking_infos(mem_zone_ref_ptr blk, const char *blk_hash, mem_zone_ref_ptr infos);
+	C_IMPORT int					C_API_FUNC get_blk_staking_infos(mem_zone_ref_ptr blk, mem_zone_ref_ptr infos);
 	get_blk_staking_infos_func_ptr  _get_blk_staking_infos = PTR_INVALID;
 #else
 	get_blk_staking_infos_func_ptr  get_blk_staking_infos = PTR_INVALID;
@@ -48,24 +49,6 @@ OS_API_C_FUNC(int) set_node_block_explorer(mem_zone_ref_ptr node, tpo_mod_file *
 	return 1;
 }
 
-int node_get_hash_idx(uint64_t block_idx, hash_t hash)
-{
-	mem_zone_ref	block_index_node = { PTR_NULL};
-	uint64_t		nblks;
-
-	if (!tree_manager_get_child_value_i64(&my_node, NODE_HASH("block_height"), &nblks))
-		nblks = 0;
-
-	if (block_idx > nblks)return 0;
-
-	if (tree_manager_find_child_node(&my_node, NODE_HASH("block_index"), NODE_BITCORE_HASH, &block_index_node))
-	{
-		tree_manager_get_node_hash(&block_index_node,mul64(block_idx , 32), hash);
-		release_zone_ref(&block_index_node);
-	}
-	return 1;
-
-}
 double GetDifficulty(unsigned int nBits)
 {
 	int nShift   = (nBits >> 24) & 0xff;
@@ -92,7 +75,7 @@ OS_API_C_FUNC(int) block_index(const char *params, const struct http_req *req, m
 	idx = strtoul_c(params, PTR_NULL, 10);
 	
 
-	if (!node_get_hash_idx( idx, hash))return 0;
+	if (!get_block_hash( idx, hash))return 0;
 	tree_manager_set_child_value_hash(result, "blockHash", hash);
 	return 1;
 }
@@ -103,108 +86,63 @@ OS_API_C_FUNC(int) test(const char *params, const struct http_req *req, mem_zone
 	return 1;
 }
 
-OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zone_ref_ptr result)
+int get_block_infos(mem_zone_ref_ptr block, const struct http_req *req, mem_zone_ref_ptr result)
 {
-	char   chash[65];
-	hash_t merkle, proof, nullhash, nexthash, rdiff, hdiff, prev;
 	hash_t block_hash;
-	mem_zone_ref block = { PTR_NULL }, txs = { PTR_NULL };
+	hash_t merkle, proof, nullhash, nexthash, rdiff, hdiff, prev;
+	mem_zone_ref txs = { PTR_NULL };
 	size_t		n = 0;
-	size_t		size,qv;
+	size_t		size, qv;
 	unsigned int version, time, bits, nonce;
 	uint64_t	 height;
-	size_t		 nxt_prm_pos;
 	uint64_t	nblks;
 	uint64_t reward;
+	tree_manager_get_child_value_i64(&my_node, NODE_HASH("block_height"), &nblks);
 	
-	nblks = get_last_block_height();
 
-	nxt_prm_pos = strlpos_c(params, 0, '/');
-	if (nxt_prm_pos == INVALID_SIZE)
-		nxt_prm_pos = strlen_c(params);
+	tree_manager_get_child_value_hash(block, NODE_HASH("blkHash"), block_hash);
 
-	memset_c(nullhash, 0, 32);
-
-	if (nxt_prm_pos >= 64)
-	{
-		n = 0;
-		while (n < 32)
-		{
-			char    hex[3];
-
-			chash[(31 - n) * 2 + 0] = params[n * 2 + 0];
-			chash[(31 - n) * 2 + 1] = params[n * 2 + 1];
-
-			hex[0] = params[n * 2 + 0];
-			hex[1] = params[n * 2 + 1];
-			hex[2] = 0;
-			block_hash[31-n] = strtoul_c(hex, PTR_NULL, 16);
-			n++;
-		}
-		chash[64] = 0;
-	}
-	else
-	{
-		if ((nblks>0) && (node_get_hash_idx( nblks - 1, block_hash)))
-		{
-			bin_2_hex(block_hash, 32, chash);
-			/*
-			n = 0;
-			while (n < 32)
-			{
-				chash[n * 2 + 0] = hex_chars[block_hash[n] >> 4];
-				chash[n * 2 + 1] = hex_chars[block_hash[n] & 0x0F];
-				n++;
-			}
-			chash[64] = 0;
-			*/
-		}
-
-	}
-	if (!load_blk_hdr(&block, chash))return 0;
-
-	if (!get_block_size(chash, &size))
+	if (!get_block_size(block_hash, &size))
 		size = 0;
 
-	tree_manager_get_child_value_i64(&block,NODE_HASH("height"),&height);
+	tree_manager_get_child_value_i64(block, NODE_HASH("height"), &height);
 
-	if(tree_manager_find_child_node(&block,NODE_HASH("blk pow"),NODE_BITCORE_HASH,PTR_NULL))
+	if (tree_manager_find_child_node(block, NODE_HASH("blk pow"), NODE_BITCORE_HASH, PTR_NULL))
 	{
-		get_blockreward					(height,&reward);
+		get_blockreward(height, &reward);
 		tree_manager_set_child_value_i64(result, "reward", reward);
 	}
 	else
 	{
-		get_blk_staking_infos(&block, chash, result);
+		get_blk_staking_infos(block, result);
 	}
 
-	tree_manager_get_child_value_hash(&block, NODE_HASH("merkle_root"), merkle);
-	tree_manager_get_child_value_hash(&block, NODE_HASH("prev"), prev);
-	tree_manager_get_child_value_i32(&block, NODE_HASH("version"), &version);
-	tree_manager_get_child_value_i32(&block, NODE_HASH("time"), &time);
-	tree_manager_get_child_value_i32(&block, NODE_HASH("bits"), &bits);
-	tree_manager_get_child_value_i32(&block, NODE_HASH("nonce"), &nonce);
+	tree_manager_get_child_value_hash(block, NODE_HASH("merkle_root"), merkle);
+	tree_manager_get_child_value_hash(block, NODE_HASH("prev"), prev);
+	tree_manager_get_child_value_i32(block, NODE_HASH("version"), &version);
+	tree_manager_get_child_value_i32(block, NODE_HASH("time"), &time);
+	tree_manager_get_child_value_i32(block, NODE_HASH("bits"), &bits);
+	tree_manager_get_child_value_i32(block, NODE_HASH("nonce"), &nonce);
 
 
 	tree_manager_set_child_value_i64(result, "height", height);
 	tree_manager_set_child_value_i32(result, "size", size);
 	tree_manager_set_child_value_hash(result, "hash", block_hash);
-	tree_manager_set_child_value_i32(result, "confirmations", nblks-height);
+	tree_manager_set_child_value_i32(result, "confirmations", nblks - height);
 	tree_manager_set_child_value_i32(result, "time", time);
 	tree_manager_set_child_value_i32(result, "version", version);
 	tree_manager_set_child_value_i32(result, "bits", bits);
 	tree_manager_set_child_value_i32(result, "nonce", nonce);
-	
-	for (qv = 0; req->query_vars[qv].value.len > 0; qv++)
+	if (req != PTR_NULL)
 	{
-		if (!tree_node_keval_i64(result, &req->query_vars[qv]))
+		for (qv = 0; req->query_vars[qv].value.len > 0; qv++)
 		{
-			release_zone_ref(&block);
-			return 0;
+			if (!tree_node_keval_i64(result, &req->query_vars[qv]))
+				return 0;
 		}
 	}
 
-	if (node_get_hash_idx(height, nexthash) <= 0)
+	if (get_block_hash(height, nexthash) <= 0)
 		memcpy_c(nexthash, nullhash, sizeof(hash_t));
 
 	tree_manager_set_child_value_hash(result, "merkleroot", merkle);
@@ -213,15 +151,15 @@ OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zon
 	tree_manager_set_child_value_float(result, "difficulty", GetDifficulty(bits));
 
 
-	if(tree_manager_get_child_value_hash(&block,NODE_HASH("blk pow"),proof))
+	if (tree_manager_get_child_value_hash(block, NODE_HASH("blk pow"), proof))
 	{
-		SetCompact					(bits, hdiff);
+		SetCompact(bits, hdiff);
 		n = 32;
 		while (n--)
 		{
 			rdiff[n] = hdiff[31 - n];
 		}
-		
+
 		tree_manager_set_child_value_hash(result, "proofhash", proof);
 		tree_manager_set_child_value_hash(result, "hbits", rdiff);
 		tree_manager_set_child_value_bool(result, "isCoinbase", 1);
@@ -232,13 +170,53 @@ OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zon
 	}
 
 
-	if(tree_manager_add_child_node	(result, "tx", NODE_JSON_ARRAY, &txs))
-		get_blk_txs					(chash, &txs,1000);	
-	
-	release_zone_ref(&txs);
-	release_zone_ref(&block);
+	if (tree_manager_add_child_node(result, "tx", NODE_JSON_ARRAY, &txs))
+	{
+		get_blk_txs(block_hash, nblks, &txs, 1000);
+		release_zone_ref(&txs);
+	}
 
 	return 1;
+
+}
+
+OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zone_ref_ptr result)
+{
+	hash_t		block_hash;
+	mem_zone_ref	blk = { PTR_NULL };
+	size_t		n = 0;
+	size_t		 nxt_prm_pos;
+	int			ret;
+	uint64_t	nblks;
+
+	tree_manager_get_child_value_i64(&my_node, NODE_HASH("block_height"), &nblks);
+	
+	nxt_prm_pos = strlpos_c(params, 0, '/');
+	if (nxt_prm_pos == INVALID_SIZE)
+		nxt_prm_pos = strlen_c(params);
+
+	if (nxt_prm_pos >= 64)
+	{
+		n = 0;
+		while (n < 32)
+		{
+			char    hex[3];
+			hex[0] = params[n * 2 + 0];
+			hex[1] = params[n * 2 + 1];
+			hex[2] = 0;
+			block_hash[31-n] = strtoul_c(hex, PTR_NULL, 16);
+			n++;
+		}
+	}
+	else
+	{
+		get_block_hash(nblks - 1, block_hash);
+	}
+	if (!load_blk_hdr(&blk, block_hash))return 0;
+	ret=get_block_infos(&blk, PTR_NULL, result);
+	release_zone_ref(&blk);
+
+	return ret;
 	/*
 	{   
 		"chainwork" : "0000000000000000000000000000000000000000000998b7adec271cd0ea7258", 
@@ -255,8 +233,8 @@ int		get_tx	(mem_zone_ref_ptr my_tx,mem_zone_ref_ptr result)
 	char			hexscript[2048];
 	hash_t			tx_hash, nullhash, app_root_hash;
 	mem_zone_ref	txout_list = { PTR_NULL }, txin_list = { PTR_NULL }, appRootHash = { PTR_NULL };
-	uint64_t		height, blk_time;
-	unsigned int	version, locktime, nblks, n, tx_time,has_app_root;
+	uint64_t		height, nblks, blk_time;
+	unsigned int	version, locktime, tx_time,has_app_root;
 	size_t			size;
 
 	size = get_node_size(my_tx);
@@ -267,7 +245,10 @@ int		get_tx	(mem_zone_ref_ptr my_tx,mem_zone_ref_ptr result)
 	tree_manager_set_child_value_hash(my_tx,"txid",tx_hash);
 
 	get_tx_blk_height(tx_hash, &height, &blk_time, &tx_time);
-	nblks = get_last_block_height();
+
+	tree_manager_get_child_value_i64(&my_node, NODE_HASH("block_height"), &nblks);
+
+
 
 	tree_manager_get_child_value_i32(my_tx, NODE_HASH("version")	, &version);
 	tree_manager_get_child_value_i32(my_tx, NODE_HASH("locktime")	, &locktime);
@@ -330,21 +311,7 @@ int		get_tx	(mem_zone_ref_ptr my_tx,mem_zone_ref_ptr result)
 					tree_manager_get_child_value_istr(in, NODE_HASH("script"), &script,0);
 
 					if ((script.len > 0)&&(script.len<1024))
-					{
 						bin_2_hex(script.str, script.len, hexscript);
-
-						/*
-						unsigned char *p = (unsigned char *)script.str;
-						n = 0;	
-						while (n<script.len)
-						{
-							hexscript[n * 2 + 0] = hex_chars[p[n] >> 4];
-							hexscript[n * 2 + 1] = hex_chars[p[n] & 0x0F];
-							n++;
-						}
-						hexscript[n * 2] = 0;
-						*/
-					}
 					else
 						hexscript[0] = 0;
 
@@ -474,18 +441,6 @@ int		get_tx	(mem_zone_ref_ptr my_tx,mem_zone_ref_ptr result)
 							if (script.len < 1024)
 							{
 								bin_2_hex(script.str, script.len, hexscript);
-
-								/*
-								unsigned char *p = (unsigned char *)script.str;
-								n = 0;
-								while (n < script.len)
-								{
-									hexscript[n * 2 + 0] = hex_chars[p[n] >> 4];
-									hexscript[n * 2 + 1] = hex_chars[p[n] & 0x0F];
-									n++;
-								}
-								hexscript[n * 2] = 0;
-								*/
 							}
 							else
 								hexscript[0] = 0;
@@ -536,7 +491,7 @@ OS_API_C_FUNC(int) tx(const char *params, const struct http_req *req, mem_zone_r
 	hash_t			blk_hash, tx_hash;
 	mem_zone_ref	my_tx = { PTR_NULL };
 	size_t			nxt_prm_pos;
-	int				n;
+	int				ret,n;
 
 	nxt_prm_pos = strlpos_c(params, 0, '/');
 	if (nxt_prm_pos == INVALID_SIZE)
@@ -557,8 +512,10 @@ OS_API_C_FUNC(int) tx(const char *params, const struct http_req *req, mem_zone_r
 	if (!load_tx(&my_tx, blk_hash, tx_hash))return 0;
 
 	tree_manager_set_child_value_hash(result, "blockhash", blk_hash);
+	ret=get_tx(&my_tx, result);
+	release_zone_ref(&my_tx);
 	
-	return get_tx(&my_tx,result);
+	return ret;
 	/*
 	{	
 		"txid":"5756ff16e2b9f881cd15b8a7e478b4899965f87f553b6210d0f8e5bf5be7df1d", 
@@ -627,7 +584,6 @@ OS_API_C_FUNC(int) addrbalance(const char *params, const struct http_req *req, m
 	{
 		hash_t			txhash, blk_hash;
 		mem_zone_ref	tx = { PTR_NULL };
-		int				n;
 
 		tree_manager_get_node_hash(ptx, 0, txhash);
 		if (!load_tx(&tx, blk_hash, txhash))continue;
@@ -655,7 +611,7 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 	mem_zone_ref	  txs		= { PTR_NULL };
 	mem_zone_ref_ptr  ptx		= PTR_NULL;
 	size_t			  ntx,cur,idx,page_num, limit;
-
+	uint64_t			nblks;
 	tree_manager_add_child_node(result, "txs", NODE_JSON_ARRAY, &tx_list);
 
 	if ((hdr = find_key(req->query_vars, "pageNum")) != PTR_NULL)
@@ -668,27 +624,18 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 	else
 		limit = 10;
 
+	tree_manager_get_child_value_i64(&my_node, NODE_HASH("block_height"), &nblks);
+
 	if ((hdr = find_key(req->query_vars, "block")) != PTR_NULL)
 	{
-		char chash[65];
 		hash_t block_hash;
-		int		n;
-		n = 0;
-		while (n < 32)
-		{
-			char    hex[3];
 
-			chash[(31 - n) * 2 + 0] = hdr->value.str[n * 2 + 0];
-			chash[(31 - n) * 2 + 1] = hdr->value.str[n * 2 + 1];
-			hex[0] = hdr->value.str[n * 2 + 0];
-			hex[1] = hdr->value.str[n * 2 + 1];
-			hex[2] = 0;
-			block_hash[31 - n] = strtoul_c(hex, PTR_NULL, 16);
-			n++;
+		if (hdr->value.len == 64)
+		{
+			hex_2_bin_r(hdr->value.str, block_hash);
+			tree_manager_create_node("txs", NODE_BITCORE_HASH_LIST, &txs);
+			get_blk_txs(block_hash, nblks, &txs, limit);
 		}
-		chash[64] = 0;
-		tree_manager_create_node	("txs", NODE_BITCORE_HASH_LIST, &txs);
-		get_blk_txs					(chash, &txs,limit);
 	}
 	else if ((hdr = find_key(req->query_vars, "address")) != PTR_NULL)
 	{
@@ -697,16 +644,16 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 	}
 	else
 	{
-		char			chash[65], prm[65];
-		mem_zone_ref	time_index_node = { PTR_NULL },block_index_node = { PTR_NULL };
-		unsigned int		nblks;
-		unsigned int	tidx;
-		unsigned int	 time;
-		unsigned int	 block_time;
+		hash_t		 hash;
+		
+		unsigned int tidx;
+		unsigned int time;
+		unsigned int block_time;
 
-		tree_manager_get_child_value_i32(&my_node, NODE_HASH("block_height"), &nblks);
-		tree_manager_find_child_node	(&my_node, NODE_HASH("block_index"), NODE_BITCORE_HASH, &block_index_node);
-		tree_manager_find_child_node	(&my_node, NODE_HASH("block time"), NODE_GFX_INT, &time_index_node);
+		
+
+
+		
 		block_time = 0xFFFFFFFF;
 		idx = nblks-1;
 		if ((hdr = find_key(req->query_vars, "BlockDate")) != PTR_NULL)
@@ -714,15 +661,13 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 			time = parseDate(hdr->value.str);
 			while ((block_time > (time + 24 * 3600)) && (idx > 1))
 			{
-				if (!tree_mamanger_get_node_dword(&time_index_node, idx * 4, &block_time))
+				if (!get_block_time(idx, &block_time))
 					break;
 
 				idx--;
 			}
 			if (idx <= 1)
 			{
-				release_zone_ref(&time_index_node);
-				release_zone_ref(&block_index_node);
 				release_zone_ref(&tx_list);
 				return 1;
 			}
@@ -730,7 +675,7 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 		else
 		{
 			time = 0;
-			tree_mamanger_get_node_dword(&time_index_node, idx * 4, &block_time);
+			get_block_time(idx, &block_time);
 		}
 			
 
@@ -742,20 +687,24 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 		tidx = 0;
 		cur = 0;
 		
+	
+		
 		while ((block_time >= time) && (idx>1))
 		{
 			int ntx;
-			tree_manager_get_node_str	(&block_index_node, idx * 32, chash, 65, 0);
-			ntx = get_blk_ntxs			(chash);
+			
+			get_block_hash				(idx,hash);
+			ntx = get_blk_ntxs			(hash, nblks);
 
 			if (((tidx + ntx) >= page_num*limit) && (cur<limit))
 			{
 				if (tree_manager_create_node("txs", NODE_BITCORE_HASH_LIST, &txs))
 				{
-					get_blk_txs(chash, &txs, limit - cur);
+					get_blk_txs(hash, nblks,&txs, limit - cur);
+					
 					for (tree_manager_get_first_child(&txs, &my_list, &ptx); ((ptx != PTR_NULL) && (ptx->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &ptx), tidx++)
 					{
-						char			tx_hash[65];
+						char			prm[65],tx_hash[65];
 						mem_zone_ref	my_tx = { PTR_NULL };
 						unsigned int	n;
 
@@ -764,12 +713,10 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 						if (tidx < page_num*limit)continue;
 						if (cur >= limit)continue;
 						if (!tree_manager_get_node_str(ptx, 0, tx_hash, 65, 16))continue;
-						n = 0;
-						while (n < 32)
+						for(n = 0;n < 32; n++)
 						{
 							prm[(31 - n) * 2 + 0] = tx_hash[n * 2 + 0];
 							prm[(31 - n) * 2 + 1] = tx_hash[n * 2 + 1];
-							n++;
 						}
 						prm[64] = 0;
 
@@ -780,22 +727,24 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 						}
 						cur++;
 					}
+
 					release_zone_ref(&txs);
+				
 				}
 			}
 			else
+		
 				tidx += ntx;
-
+			
 			if ((time == 0) && (cur>=limit))
 				break;
 
 			idx--;
 
-			if (!tree_mamanger_get_node_dword(&time_index_node, idx * 4, &block_time))
+			if (!get_block_time(idx, &block_time))
 				break;
 		}
-		release_zone_ref(&block_index_node);
-		release_zone_ref(&time_index_node);
+	
 		release_zone_ref(&tx_list);
 
 		tree_manager_set_child_value_i32(result, "limit", limit);
@@ -846,8 +795,8 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zone_ref_ptr result)
 {
 	hash_t			nullhash;
-	char			chash[65], prm[65];
-	mem_zone_ref	time_index_node = { PTR_NULL }, block_index_node = { PTR_NULL }, new_block = { PTR_NULL }, block_list = { PTR_NULL };
+	char			prm[65];
+	mem_zone_ref	new_block = { PTR_NULL }, block_list = { PTR_NULL };
 	struct string	blk_path = { PTR_NULL };
 	ctime_t			time;
 	uint64_t		nblks=0;
@@ -855,8 +804,6 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 	unsigned int	 block_time, limit, num, idx,tidx,n,start_time,cur_time;
 	const struct key_val *blockdate, *pageNum, *sinceblock, *beforeblock, *txl;
 
-	tree_manager_find_child_node		(&my_node, NODE_HASH("block_index"), NODE_BITCORE_HASH, &block_index_node);
-	tree_manager_find_child_node		(&my_node, NODE_HASH("block time"), NODE_GFX_INT, &time_index_node);
 	tree_manager_get_child_value_i64	(&my_node, NODE_HASH("block_height"), &nblks);
 	
 	memset_c(nullhash, 0, sizeof(hash_t));
@@ -882,66 +829,29 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 	if ((blockdate = find_key(req->query_vars, "BlockDate")) != PTR_NULL)
 	{
 		ctime_t		next_day;
+		mem_zone_ref	my_blocks = { PTR_NULL }, my_list = { PTR_NULL };
+		mem_zone_ref_ptr my_block = PTR_NULL;
+		tidx = 0;
 		time		= parseDate(blockdate->value.str);
 		block_time	= 0xFFFFFFFF;
 		next_day	= time + 24 * 3600;
-		idx			= nblks-1;
-
-		while (idx > 1)
-		{
-			if (!tree_mamanger_get_node_dword(&time_index_node, idx * 4, &block_time))
-				break;
-
-			if (block_time <= next_day)break;
-
-			idx--;
-		}
-				
-		if (idx <= 1)
-		{
-			release_zone_ref(&block_list);
-			release_zone_ref(&block_index_node);
-			release_zone_ref(&time_index_node);
-			return 1;
-		}
+		tree_manager_create_node		("blocks", NODE_BITCORE_BLK_HDR_LIST, &my_blocks);
 		
-		num = 0;
-		tidx = 0;
-		while ((block_time >= time)&&(idx>1))
+		if (load_block_time_range(time, next_day, page_num*limit, limit, &tidx, &my_blocks))
 		{
-			if (num < limit)
+			for (tree_manager_get_first_child(&my_blocks, &my_list, &my_block); ((my_block != PTR_NULL) && (my_block->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &my_block))
 			{
-				if (tree_manager_create_node("block", NODE_GFX_OBJECT, &new_block))
+				if (tree_manager_add_child_node(&block_list, "block", NODE_GFX_OBJECT, &new_block))
 				{
-					tree_manager_get_node_str(&block_index_node, idx * 32, chash, 65, 16);
-					n = 0;
-					while (n < 32)
-					{
-						prm[(31 - n) * 2 + 0] = chash[n * 2 + 0];
-						prm[(31 - n) * 2 + 1] = chash[n * 2 + 1];
-						n++;
-					}
-					prm[64] = 0;
-
-					if (block(prm, req, &new_block))
-					{
-						if (tidx >= page_num*limit)
-						{
-							tree_manager_node_add_child(&block_list, &new_block);
-							num++;
-						}
-					}
+					get_block_infos(my_block, req, &new_block);
 					release_zone_ref(&new_block);
 				}
 			}
-			tidx++;
-			idx--;
-
-			if (!tree_mamanger_get_node_dword(&time_index_node, idx * 4, &block_time))
-				break;
-
-		
 		}
+
+		release_zone_ref(&my_blocks);
+
+
 		tree_manager_set_child_value_i32(result, "limit", limit);
 		tree_manager_set_child_value_i32(result, "page_num", page_num);
 		tree_manager_set_child_value_i32(result, "numblocks", tidx);
@@ -995,9 +905,8 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 			{
 				hash_t block_hash;
 
-				if (!tree_manager_get_node_hash(&block_index_node, (idx)* 32, block_hash))
+				if (!get_block_hash(idx,block_hash))
 					break;
-
 				if (!memcmp_c(block_hash, bhash,32))
 					break;
 			}
@@ -1024,7 +933,7 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 					case CMP_L:
 						while ((--idx) > 1)
 						{
-							if (!tree_mamanger_get_node_dword(&time_index_node, (idx)* 4, &block_time))
+							if(!get_block_time(idx,&block_time))
 								break;
 
 							if (block_time < vtime)break;
@@ -1034,7 +943,7 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 					case CMP_E:
 						while ((--idx) > 1)
 						{
-							if (!tree_mamanger_get_node_dword(&time_index_node, (idx)* 4, &block_time))
+							if (!get_block_time(idx, &block_time))
 								break;
 
 							if (block_time == vtime)break;
@@ -1046,7 +955,7 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 						idx = 0;
 						while ((++idx) < nblks)
 						{
-							if (!tree_mamanger_get_node_dword(&time_index_node, (idx)* 4, &block_time))
+							if (!get_block_time(idx, &block_time))
 								break;
 
 							if (block_time > vtime)
@@ -1071,7 +980,7 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 			if ((idx_inc < 0) && (idx < min_idx))break;
 			if ((idx_inc > 0) && (idx > max_idx))break;
 
-			if (!tree_manager_get_node_hash(&block_index_node, ((idx) * 32), hash))break;
+			if (!get_block_hash(idx, hash))break;
 			if ((sinceblock != PTR_NULL) && (!memcmp_c(hash, phash, sizeof(hash_t))))break;
 			
 			ok = 1;
@@ -1079,22 +988,8 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 			{
 				int		ntx, ival;
 
-
-				bin_2_hex(hash, 32, chash);
-
-				/*
-				n = 0;
-				while (n < 32)
-				{
-					chash[n * 2 + 0] = hex_chars[hash[n] >> 4];
-					chash[n * 2 + 1] = hex_chars[hash[n] & 0x0F];
-					n++;
-				}
-				chash[64] = 0;
-				*/
-
 				ival = strtol_c		(txl->value.str, PTR_NULL, 10);
-				ntx  = get_blk_ntxs	(chash);
+				ntx  = get_blk_ntxs	(hash,nblks);
 				switch (txl->op)
 				{
 					case CMPL_N:ok = (ntx != ival); break;
@@ -1110,17 +1005,6 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 				if (tree_manager_create_node("block", NODE_GFX_OBJECT, &new_block))
 				{
 					bin_2_hex_r(hash, 32, prm);
-
-					/*
-					n = 0;
-					while (n < 32)
-					{
-						prm[n * 2 + 0] = hex_chars[hash[31 - n] >> 4];
-						prm[n * 2 + 1] = hex_chars[hash[31 - n] & 0x0F];
-						n++;
-					}
-					prm[64] = 0;
-					*/
 					if (block(prm, req, &new_block))
 					{
 						if ((num >= page_num*limit) && (cur < limit))
@@ -1142,8 +1026,7 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 		tree_manager_set_child_value_i32(result, "numblocks", num);
 	}
 	release_zone_ref(&block_list);
-	release_zone_ref(&block_index_node);
-	release_zone_ref(&time_index_node);
+	
 
 	return 1;
 }

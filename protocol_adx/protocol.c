@@ -1515,12 +1515,16 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		tree_manager_set_child_value_i32(key, "time", *((unsigned int *)(payload + read)));
 		read += 4;
 
-		tree_manager_find_child_node(key, NODE_HASH_txsin, NODE_BITCORE_VINLIST, &txin_list);
+		if (!tree_manager_find_child_node(key, NODE_HASH_txsin, NODE_BITCORE_VINLIST, &txin_list))
+			tree_manager_add_child_node(key, "txsin", NODE_BITCORE_VINLIST, &txin_list);
+
 		if ((rd = read_node(&txin_list, payload + read, len - read)) == INVALID_SIZE){ release_zone_ref(&txin_list); return rd; }
 		read += rd;
 		release_zone_ref(&txin_list);
 
-		tree_manager_find_child_node(key, NODE_HASH_txsout, NODE_BITCORE_VOUTLIST, &txin_list);
+		if (!tree_manager_find_child_node(key, NODE_HASH_txsout, NODE_BITCORE_VOUTLIST, &txin_list))
+			tree_manager_add_child_node(key, "txsout", NODE_BITCORE_VOUTLIST, &txin_list);
+
 		if ((rd = read_node(&txin_list, payload + read, len - read)) == INVALID_SIZE){ release_zone_ref(&txin_list); return rd; }
 		read += rd;
 		release_zone_ref(&txin_list);
@@ -1531,13 +1535,21 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	break;
 
 	case NODE_BITCORE_TX_LIST:
+	{
+		unsigned int ntx;
 
 		if ((read + 1) > len)return INVALID_SIZE;
 
-		if (*((unsigned char *)(payload+read)) < 0xFD)
+		if (*((unsigned char *)(payload + read)) < 0xFD)
+		{
+			ntx = *((unsigned char *)(payload + read));
 			sz = 1;
+		}
 		else if (*((unsigned char *)(payload + read)) == 0xFD)
+		{
+			ntx = *((unsigned short *)(payload + read+1));
 			sz = 3;
+		}
 		else if (*((unsigned char *)(payload + read)) == 0xFE)
 			sz = 5;
 		else if (*((unsigned char *)(payload + read)) == 0xFF)
@@ -1547,6 +1559,23 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 
 		read += sz;
 
+		for (n = 0; n < ntx; n++)
+		{
+			mem_zone_ref tx = { PTR_NULL };
+
+			if (!tree_manager_get_child_at(key, n, &tx))
+				tree_manager_add_child_node(key,"tx", NODE_BITCORE_TX, &tx);
+
+			rd = read_node(&tx, payload + read, len - read);
+			release_zone_ref(&tx);
+
+			if (rd == INVALID_SIZE)
+				return rd;
+
+			read += rd;
+		}
+
+		/*
 		for (tree_manager_get_first_child(key, &my_list, &sub); ((sub != NULL) && (sub->zone != NULL)); tree_manager_get_next_child(&my_list, &sub))
 		{
 			if ((rd = read_node(sub, payload + read, len - read)) == INVALID_SIZE)
@@ -1557,6 +1586,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 			}
 			read += rd;
 		}
+		*/
+	}
 		break;
 	}
 
@@ -2061,14 +2092,21 @@ OS_API_C_FUNC(int) new_message(const struct string *data, mem_zone_ref_ptr msg)
 	size_t				cnt = 0;
 	size_t				elSz = 0;
 	unsigned int		elType = 0;
+	unsigned int		priority = 0;
 	int					ret,nc;
 
 	if (!strncmp_c(&data->str[4], "version", 7))
 		make_string(&pack_str, "{(\"payload\",0x0B000010) (0x02)\"proto_ver\" : 0,\"services\" : 0, \"timestamp\" : 0, (0x0B000040)\"their_addr\":\"\", (0x0B000040)\"my_addr\":\"\",\"nonce\":0,(0x0B000100)\"user_agent\":\"\", (0x02)\"last_blk\":0}");
 	else if (!strncmp_c(&data->str[4], "ping", 4))
+	{
 		make_string(&pack_str, "{(\"payload\",0x0B000010) \"nonce\":0}");
+		priority = 1;
+	}
 	else if (!strncmp_c(&data->str[4], "pong", 4))
+	{
 		make_string(&pack_str, "{(\"payload\",0x0B000010) \"nonce\":0}");
+		priority = 1;
+	}
 	else if (!strncmp_c(&data->str[4], "addr", 4))
 	{
 		unsigned int    first, n;
@@ -2314,6 +2352,7 @@ OS_API_C_FUNC(int) new_message(const struct string *data, mem_zone_ref_ptr msg)
 	tree_manager_set_child_value_si32(msg, "handled", -1);
 	tree_manager_set_child_value_i32 (msg, "done"	, 0);
 	tree_manager_set_child_value_i32 (msg, "elSz"	, elSz);
+	tree_manager_set_child_value_i32 (msg, "priority", priority);
 	tree_manager_set_child_value_i32 (msg, "elType"	, elType);
 	tree_manager_node_add_child		 (msg, &payload_node);
 	

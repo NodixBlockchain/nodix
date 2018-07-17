@@ -9,7 +9,7 @@ NODE_API int			C_API_FUNC		node_log_addr_infos(mem_zone_ref_ptr addr);
 NODE_API int			C_API_FUNC		update_peernodes();
 NODE_API int			C_API_FUNC		is_node_addr(mem_zone_ref_ptr node, mem_zone_ref_ptr p2p_addr);
 
-NODE_API int			C_API_FUNC		node_add_block_index(hash_t hash, unsigned int time);
+
 NODE_API int			C_API_FUNC		node_add_tx_to_mempool(mem_zone_ref_ptr tx);
 NODE_API int			C_API_FUNC		node_get_mempool_hashes(mem_zone_ref_ptr hash_list);
 NODE_API int			C_API_FUNC		node_fill_block_from_mempool(mem_zone_ref_ptr block);
@@ -18,7 +18,7 @@ NODE_API int			C_API_FUNC		node_del_txs_from_mempool(mem_zone_ref_ptr tx_list);
 NODE_API int			C_API_FUNC		node_del_btree_from_mempool();
 NODE_API int			C_API_FUNC		node_get_hash_idx(uint64_t block_idx, hash_t hash);
 NODE_API int			C_API_FUNC		node_get_last_block_time(ctime_t *otime);
-NODE_API int			C_API_FUNC		node_truncate_chain(uint64_t height);
+
 NODE_API int			C_API_FUNC		node_remove_last_block();
 NODE_API int			C_API_FUNC		node_rewrite_txs(uint64_t nums);
 NODE_API int			C_API_FUNC		node_check_chain(mem_zone_ref_ptr node, mem_zone_ref_ptr hdr);
@@ -26,13 +26,11 @@ NODE_API int			C_API_FUNC		node_zip_self(struct string *out_data, mem_zone_ref_p
 NODE_API int			C_API_FUNC	    node_get_script_modules(mem_zone_ref_ptr modules);
 NODE_API int			C_API_FUNC	    node_get_script_msg_handlers(mem_zone_ref_ptr handlers);
 NODE_API int			C_API_FUNC		node_set_script(mem_zone_ref_ptr script);
-NODE_API int			C_API_FUNC		remove_block(hash_t blk_hash);
 NODE_API int			C_API_FUNC		node_list_accounts(mem_zone_ref_ptr account_list);
 NODE_API int			C_API_FUNC		node_list_addrs(mem_zone_ref_ptr account_name, mem_zone_ref_ptr addr_list);
 NODE_API int			C_API_FUNC		set_next_check(mem_zone_ref_ptr nSecs);
 NODE_API int			C_API_FUNC		node_check_new_connections();
 NODE_API int			C_API_FUNC		node_get_pow_spacing(mem_zone_ref_ptr lastPOW, mem_zone_ref_ptr Spacing);
-NODE_API int			C_API_FUNC		compute_last_pow_diff(mem_zone_ref_ptr blk, mem_zone_ref_ptr nBits);
 NODE_API int			C_API_FUNC		get_bitcore_addr(mem_zone_ref_ptr node, ipv4_t ip, unsigned short *port, uint64_t *services);
 NODE_API int			C_API_FUNC		is_same_node(mem_zone_ref_ptr node1, mem_zone_ref_ptr node2);
 NODE_API int			C_API_FUNC		is_node_addr(mem_zone_ref_ptr node, mem_zone_ref_ptr p2p_addr);
@@ -80,7 +78,7 @@ NODE_API int			C_API_FUNC		node_mempool_has_tx(mem_zone_ref_ptr tx_hash);
 NODE_API int			C_API_FUNC		node_check_mempool_unique(mem_zone_ref_const_ptr node_txs, const char *appName, unsigned int typeID, mem_zone_ref_const_ptr obj);
 
 NODE_API int			C_API_FUNC		node_create_pow_block(mem_zone_ref_ptr newBlock,btc_addr_t addr);
-
+NODE_API int			C_API_FUNC		node_compute_pow_diff_after(mem_zone_ref_ptr newPOWBlock);
 NODE_API int			C_API_FUNC		node_bookmark_check_addr(mem_zone_ref_ptr p2p_addr);
 NODE_API int			C_API_FUNC		node_find_peers_node(mem_zone_ref_ptr addr);
 NODE_API int			C_API_FUNC		node_set_bookmark(mem_zone_ref_ptr p2p_addr, mem_zone_ref_ptr state_node);
@@ -98,4 +96,9 @@ NODE_API int			C_API_FUNC		 node_aquire_mining_lock();
 
 NODE_API int			C_API_FUNC		 node_aquire_mempool_lock(mem_zone_ref_ptr mempool);
 NODE_API int			C_API_FUNC		 node_release_mempool_lock();
+
+NODE_API int			C_API_FUNC		 node_dec_pow_blocks();
+NODE_API int			C_API_FUNC		 node_inc_pow_blocks();
+NODE_API int			C_API_FUNC		 store_last_pow_hash(hash_t hash);
+NODE_API int			C_API_FUNC		 store_last_pos_hash(hash_t hash);
 

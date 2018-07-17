@@ -457,8 +457,8 @@ class BlockExplorer
     update_filter_list() {
         var html = 'filters : <br/>';
         
-        for (var i = 0; i < blk_filters.length; i++) {
-            html += '<div><span onclick="remove_filter(' + i + ');" style="color:red;">X</span>' + blk_filters[i] + '</div>';
+        for (var i = 0; i < this.blk_filters.length; i++) {
+            html += '<div><span onclick="remove_filter(' + i + ');" style="color:red;">X</span>' + this.blk_filters[i] + '</div>';
         }
         this.blk_filts.innerHTML=html;
     }

@@ -45,7 +45,7 @@ struct thread
 };
 
 
-struct thread threads[MAX_THREADS] = { PTR_INVALID };
+struct thread threads[MAX_THREADS+1] = { PTR_INVALID };
 
 
 OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
@@ -324,48 +324,6 @@ OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data
 }
 
 
-OS_API_C_FUNC(int) get_file_chunk(const char *path, size_t ofset, unsigned char **data, size_t *data_len)
-{
-	HANDLE hFile;
-	size_t len,filesize;
-
-	if ((hFile = CreateFile(path, FILE_READ_DATA|FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
-	{
-		struct string t;
-		clone_string		(&t, &exe_path);
-		cat_cstring_p		(&t, path);
-		hFile = CreateFile	(t.str, FILE_READ_DATA|FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
-		free_string(&t);
-		if (hFile == INVALID_HANDLE_VALUE)
-		{
-			*data_len = 0;
-			return -1;
-		}
-	}
-	len		 = 0;
-	filesize = GetFileSize(hFile, NULL);
-
-	if (filesize>=(ofset+4))
-	{
-		unsigned int	chunk_size;
-		SetFilePointer	(hFile, ofset, 0, FILE_BEGIN);
-		ReadFile		(hFile, &chunk_size, 4, &len, PTR_NULL);
-
-		if (filesize>=(ofset+4+chunk_size))
-		{
-			(*data_len)	= chunk_size;
-			(*data)		= (unsigned char *)malloc_c( (*data_len) + 1);
-			if ((*data) != PTR_NULL)
-			{
-				ReadFile		(hFile, (*data), (*data_len), &len, PTR_NULL);
-				(*data)[*data_len] = 0;
-			}
-		}
-	}
-	CloseHandle	(hFile);
-	return (int)len;
-}
-
 
 OS_API_C_FUNC(int) get_file_len(const char *path, size_t size, unsigned char **data, size_t *data_len)
 {
@@ -410,32 +368,6 @@ OS_API_C_FUNC(int) get_file_len(const char *path, size_t size, unsigned char **d
 	return (int)len;
 }
 
-OS_API_C_FUNC(int) get_hash_idx(const char *path, size_t idx, hash_t hash)
-{
-
-	HANDLE hFile;
-	size_t len;
-
-	if ((hFile = CreateFile(path, FILE_READ_ATTRIBUTES | FILE_READ_DATA, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
-		return 0;
-
-	len = GetFileSize(hFile, NULL);
-
-	if ((idx * 32 + 32) <= len)
-	{
-		SetFilePointer	(hFile, idx*sizeof(hash_t), 0, FILE_BEGIN);
-		ReadFile		(hFile, hash,  sizeof(hash_t), &len, PTR_NULL);
-	}
-	else
-		len = 0;
-	
-	CloseHandle(hFile);
-
-	return (int)len;
-
-
-}
-
 OS_API_C_FUNC(int) put_file(const char *path, void *data, size_t data_len)
 {
 	HANDLE		hFile;
@@ -453,35 +385,114 @@ OS_API_C_FUNC(int) put_file(const char *path, void *data, size_t data_len)
 	return len;
 
 }
+
+OS_API_C_FUNC(int) get_file_range(const char *path, size_t ofset, size_t last, unsigned char **data, size_t *data_len)
+{
+	HANDLE hFile;
+	uint64_t start, end;
+	size_t len, filesize;
+
+
+	while ((hFile = CreateFile(path, FILE_READ_DATA | FILE_READ_ATTRIBUTES, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	{
+		DWORD error;
+		error = GetLastError();
+		if (error != ERROR_SHARING_VIOLATION)
+		{
+			*data_len = 0;
+			return -1;
+		}
+	}
+
+	len = 0;
+	start = mul64(ofset, 512);
+	filesize = GetFileSize(hFile, NULL);
+
+	if(start<filesize)
+	{
+		
+		end = mul64(last, 512);
+
+		if (end > filesize)
+			end = filesize;
+
+		SetFilePointer(hFile, start, 0, FILE_BEGIN);
+
+		(*data_len) = end - start;
+		(*data) = (unsigned char *)malloc_c((*data_len));
+		if ((*data) != PTR_NULL)
+			ReadFile(hFile, (*data), (*data_len), &len, PTR_NULL);
+		else
+			len = 0;
+
+		(*data_len) = len;
+		
+	}
+	CloseHandle(hFile);
+	return (int)len;
+}
+
+OS_API_C_FUNC(int) get_file_chunk(const char *path, size_t ofset, unsigned char **data, size_t *data_len)
+{
+	HANDLE hFile;
+	size_t len, filesize;
+
+	while ((hFile = CreateFile(path, FILE_READ_DATA | FILE_READ_ATTRIBUTES, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	{
+		DWORD error;
+		error = GetLastError();
+		if (error != ERROR_SHARING_VIOLATION)
+		{
+			*data_len = 0;
+			return -1;
+		}
+	}
+
+	len = 0;
+	filesize = GetFileSize(hFile, NULL);
+
+	if (filesize >= (ofset + 4))
+	{
+		unsigned int	chunk_size;
+		SetFilePointer(hFile, ofset, 0, FILE_BEGIN);
+		ReadFile(hFile, &chunk_size, 4, &len, PTR_NULL);
+
+		if (filesize >= (ofset + 4 + chunk_size))
+		{
+			(*data_len) = chunk_size;
+			(*data) = (unsigned char *)malloc_c((*data_len) + 1);
+			if ((*data) != PTR_NULL)
+			{
+				ReadFile(hFile, (*data), (*data_len), &len, PTR_NULL);
+				(*data)[*data_len] = 0;
+			}
+		}
+		else
+			len = 0;
+	}
+	CloseHandle(hFile);
+	return (int)len;
+}
+
 OS_API_C_FUNC(int) append_file(const char *path, const void *data, size_t data_len)
 {
 	HANDLE		hFile;
 	size_t		len;
 
+	if (data_len == 0)return 1;
 
-	if ((hFile = CreateFile(path, FILE_APPEND_DATA, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)) == INVALID_HANDLE_VALUE)
-		return 0;
-
-	if (data_len > 0)
+	while ((hFile = CreateFile(path, FILE_APPEND_DATA | FILE_READ_ATTRIBUTES, FILE_SHARE_READ , NULL, OPEN_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS, NULL)) == INVALID_HANDLE_VALUE)
 	{
-		SetFilePointer		(hFile, 0, NULL, FILE_END);
-		WriteFile			(hFile, data, data_len, &len, PTR_NULL);
+		DWORD error;
+		error = GetLastError();
+		if (error != ERROR_SHARING_VIOLATION)
+			return 0;
 	}
-	else
-		len = 1;
 
-	CloseHandle(hFile);
-	
+	SetFilePointer		(hFile, 0, NULL, FILE_END);
+	WriteFile			(hFile, data, data_len, &len, PTR_NULL);
+	CloseHandle			(hFile);
 	return len;
-
-	/*
-	ret = fopen_s(&f, path, "ab+");
-	if (f == NULL)return 0;
-	fseek(f, 0, SEEK_END);
-	len = fwrite(data, data_len, 1, f);
-	fclose(f);
-	return 1;
-	*/
 
 }
 
@@ -496,8 +507,13 @@ OS_API_C_FUNC(int) truncate_file(const char *path, size_t ofset, const void *dat
 		return 1;
 	}
 
-	if ((hFile = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0)) == INVALID_HANDLE_VALUE)
-		return 0;
+	while ((hFile = CreateFile(path, GENERIC_WRITE, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0)) == INVALID_HANDLE_VALUE)
+	{
+		DWORD error;
+		error = GetLastError();
+		if (error != ERROR_SHARING_VIOLATION)
+			return 0;
+	}
 
 	if (SetFilePointer(hFile, ofset, 0, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
 	{
@@ -598,6 +614,8 @@ OS_API_C_FUNC(int) daemonize(const char *name)
 	init_string (&log_file_name);
 	make_string	(&log_file_name,name);
 	cat_cstring	(&log_file_name,".log");
+
+	log_output("Nodix starting ...\n\n");
 	return 1;
 }
 
@@ -635,6 +653,20 @@ unsigned int get_current_thread(unsigned int h)
 	return 0xFFFFFFFF;
 
 }
+int get_my_thread_flag(unsigned int *flag)
+{
+	DWORD  h;
+	unsigned int cur;
+	h = GetCurrentThreadId();
+	cur = get_current_thread(h);
+	if (cur == 0xFFFFFFFF)
+		cur = new_thread(h);
+
+	(*flag) = 1 << cur;
+
+	return 1;
+}
+
 
 
 OS_API_C_FUNC(int) set_tree_mem_area_id(unsigned int area_id)
@@ -683,7 +715,8 @@ OS_API_C_FUNC(unsigned int) get_mem_area_id()
 
 	return threads[cur].mem_area_id;
 }
-
+unsigned int next_ttid = 1;
+extern ASM_API_FUNC scan_stack_c(mem_ptr lower, mem_ptr upper, mem_ptr stack_frame, mem_ptr stack);
 extern mem_ptr ASM_API_FUNC get_stack_frame_c();
 
 DWORD WINAPI thread_start(void *p)
@@ -711,8 +744,7 @@ DWORD WINAPI thread_start(void *p)
 	return ret;
 }
 
-unsigned int next_ttid=1;
-extern ASM_API_FUNC scan_stack_c(mem_ptr lower, mem_ptr upper, mem_ptr stack_frame, mem_ptr stack);
+
 
 void scan_threads_stack(mem_ptr lower, mem_ptr upper)
 {
@@ -948,5 +980,6 @@ OS_API_C_FUNC(void) snooze_c(size_t n)
 {
 	SleepEx(n/1000, 1);
 }
+
 
 

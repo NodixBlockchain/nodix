@@ -26,7 +26,7 @@ BLOCK_API  int	C_API_FUNC is_trusted_app(const char *appName);
 BLOCK_API  void	C_API_FUNC mul_compact(unsigned int nBits, uint64_t op, hash_t hash);
 
 /* compare 256 bits hash */
-BLOCK_API  int	C_API_FUNC cmp_hashle(hash_t hash1, hash_t hash2);
+BLOCK_API  int	C_API_FUNC cmp_hashle(const hash_t hash1, const hash_t hash2);
 
 /* compute difficulty retargeting */
 BLOCK_API unsigned int	C_API_FUNC calc_new_target(unsigned int nActualSpacing, unsigned int TargetSpacing, unsigned int nTargetTimespan, unsigned int pBits);
@@ -164,6 +164,8 @@ BLOCK_API  int	C_API_FUNC get_block_tree				(node **blktree);
 BLOCK_API  int	C_API_FUNC get_tx_data					(mem_zone_ref_ptr tx, mem_zone_ref_ptr txData);
 
 BLOCK_API  int	C_API_FUNC blk_find_last_pow_block		(mem_zone_ref_ptr pindex, unsigned int *block_time);
+
+BLOCK_API  int	C_API_FUNC blk_find_last_pos_block		(mem_zone_ref_ptr pindex, unsigned int *block_time);
 BLOCK_API  int	C_API_FUNC get_pow_block_limit			(uint64_t *lastPowBlock);
 BLOCK_API  int	C_API_FUNC extract_key					(dh_key_t priv, dh_key_t pub);
 BLOCK_API  int	C_API_FUNC compress_key					(dh_key_t pub, dh_key_t cpub);
@@ -211,6 +213,16 @@ BLOCK_API  int	C_API_FUNC load_obj_type				(const char *app_name, const char *ob
 BLOCK_API  int	C_API_FUNC check_app_obj_unique			(const char *appName, unsigned int type_id, mem_zone_ref_ptr obj);
 
 
+
+BLOCK_API  int	C_API_FUNC  get_block_hash_str(uint64_t height, char *hash, size_t len);
+BLOCK_API  int	C_API_FUNC get_block_hash(uint64_t height, hash_t hash);
+BLOCK_API  int	C_API_FUNC get_block_time(uint64_t height, unsigned int *time);
+BLOCK_API  int	C_API_FUNC  block_add_index(hash_t hash, uint64_t nblks, unsigned int time);
+BLOCK_API  int	C_API_FUNC find_block_hash(const hash_t h, uint64_t block_height, uint64_t *height);
+BLOCK_API  int	C_API_FUNC block_load_index(uint64_t *block_height);
+BLOCK_API  int	C_API_FUNC write_block_index(uint64_t height);
+BLOCK_API  int	C_API_FUNC rebuild_time_index(uint64_t height);
+BLOCK_API  int	C_API_FUNC create_sorted_block_index(uint64_t height);
 /*
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
 script.c
@@ -251,29 +263,27 @@ BLOCK_API int C_API_FUNC get_last_block_height();
 /* find block hash from tx hash */
 BLOCK_API int C_API_FUNC  find_blk_hash(const hash_t tx_hash, hash_t blk_hash,uint64_t *height,unsigned int *ofset,unsigned int *tx_time);
 
-/* find block hash in local store */
-BLOCK_API int C_API_FUNC  find_hash(hash_t hash);
-
-/* find hash in block index */
-BLOCK_API int C_API_FUNC  find_index_hash(hash_t h);
+/* load block header from local store */
+BLOCK_API int C_API_FUNC  load_blk_hdr(mem_zone_ref_ptr hdr, const hash_t blk_hash);
 
 /* load block header from local store */
-BLOCK_API int C_API_FUNC  load_blk_hdr(mem_zone_ref_ptr hdr, const char *blk_hash);
+BLOCK_API int C_API_FUNC  block_check_last(uint64_t num, uint64_t *last_good);
 
-/* load block height from local store */
-BLOCK_API int C_API_FUNC  get_blk_height(const char *blk_hash, uint64_t *height);
+/* load block header from local store */
+BLOCK_API int C_API_FUNC  load_blk_hdr_at(mem_zone_ref_ptr hdr, int64_t height);
 
 /* load block header infos from tx hash */
 BLOCK_API int C_API_FUNC  get_tx_blk_height(const hash_t tx_hash, uint64_t *height, uint64_t *block_time, unsigned int *tx_time);
 
 /* check if block is pow */
-BLOCK_API int C_API_FUNC  is_pow_block(const char *blk_hash);
+BLOCK_API int C_API_FUNC  is_pow_block(const hash_t blk_hash);
+BLOCK_API int C_API_FUNC  is_pow_block_at(uint64_t height);
 
 /* store block in local storage */
 BLOCK_API int C_API_FUNC  store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list);
 
 /* load tx from a block based on the tx ofset */
-BLOCK_API int C_API_FUNC  blk_load_tx_ofset(const char *blk_hash, unsigned int ofset, mem_zone_ref_ptr tx);
+BLOCK_API int C_API_FUNC  blk_load_tx_ofset(unsigned int ofset, mem_zone_ref_ptr tx);
 
 /* load tx from its hash */
 BLOCK_API int C_API_FUNC  load_tx(mem_zone_ref_ptr tx, hash_t blk_hash, const hash_t tx_hash);
@@ -282,7 +292,7 @@ BLOCK_API int C_API_FUNC  load_tx(mem_zone_ref_ptr tx, hash_t blk_hash, const ha
 BLOCK_API int C_API_FUNC  load_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr	vin, mem_zone_ref_ptr tx_out);
 
 /* load input from block hash and tx hash + input id */
-BLOCK_API int C_API_FUNC  load_blk_tx_input(const char *blk_hash, unsigned int tx_ofset, unsigned int vin_idx, mem_zone_ref_ptr vout);
+BLOCK_API int C_API_FUNC  load_blk_tx_input(const hash_t blk_hash, unsigned int tx_ofset, unsigned int vin_idx, mem_zone_ref_ptr vout);
 
 /* get amount of tx output*/
 BLOCK_API int C_API_FUNC  load_tx_output_amount(const hash_t tx_hash, unsigned int idx, uint64_t *amount);
@@ -309,19 +319,20 @@ BLOCK_API int C_API_FUNC  get_app_obj_hashes(const char *app_name, mem_zone_ref_
 OS_API_C_FUNC(int) get_app_type_last_objs_hashes(const char *app_name, unsigned int type_id, size_t first, size_t max, size_t *total, mem_zone_ref_ptr hash_list);
 
 /* load block size from local store */
-BLOCK_API int C_API_FUNC  get_block_size(const char *blk_hash, size_t *size);
+BLOCK_API int C_API_FUNC  get_block_size(const hash_t blk_hash, size_t *size);
 
 /* load tx hashes from block hash */
-BLOCK_API int C_API_FUNC  get_blk_txs(const char* blk_hash, mem_zone_ref_ptr txs, size_t max);
+BLOCK_API int C_API_FUNC  get_blk_txs(const hash_t blk_hash,uint64_t block_height, mem_zone_ref_ptr txs, size_t max);
 
 /* load number of tx from block */
-BLOCK_API unsigned int C_API_FUNC  get_blk_ntxs(const char* blk_hash);
+BLOCK_API unsigned int C_API_FUNC  get_blk_ntxs(const hash_t blk_hash,uint64_t	block_height);
 
 /* load tx hashes from block hash */
-BLOCK_API int C_API_FUNC  load_blk_txs(const char* blk_hash, mem_zone_ref_ptr txs);
+BLOCK_API int C_API_FUNC  load_blk_txs(const hash_t blk_hash, mem_zone_ref_ptr txs);
 
 /* load block time from local store */
-BLOCK_API int C_API_FUNC  get_block_time(const char *blkHash, ctime_t *time);
+BLOCK_API int C_API_FUNC  load_block_time(const hash_t blkHash, ctime_t *time);
+BLOCK_API int C_API_FUNC  load_block_time_range(unsigned int start, unsigned int end, size_t first, size_t max, size_t *total, mem_zone_ref_ptr blocks);
 
 /*store tx inputs */
 BLOCK_API int C_API_FUNC  store_tx_inputs(mem_zone_ref_ptr tx);
@@ -361,14 +372,14 @@ BLOCK_API  int	C_API_FUNC get_app_missing_files(struct string *app_name, mem_zon
 
 /* staking API definition */
 
-typedef int C_API_FUNC get_blk_staking_infos_func	(mem_zone_ref_ptr blk, const char *blk_hash, mem_zone_ref_ptr infos);
+typedef int C_API_FUNC get_blk_staking_infos_func	(mem_zone_ref_ptr blk, mem_zone_ref_ptr infos);
 typedef int	C_API_FUNC store_tx_staking_func		(mem_zone_ref_ptr tx, hash_t tx_hash, btc_addr_t stake_addr, uint64_t	stake_in);
 typedef int	C_API_FUNC get_tx_pos_hash_data_func	(mem_zone_ref_ptr hdr, const hash_t txHash, unsigned int OutIdx, struct string *hash_data, uint64_t *amount, hash_t out_diff);
 typedef int	C_API_FUNC get_target_spacing_func		(unsigned int *target);
 typedef int	C_API_FUNC get_stake_reward_func		(uint64_t height, uint64_t *reward);
 typedef int	C_API_FUNC get_last_stake_modifier_func	(mem_zone_ref_ptr pindex, hash_t nStakeModifier, unsigned int *nModifierTime);
 typedef int	C_API_FUNC compute_tx_pos_func			(mem_zone_ref_ptr tx, hash_t StakeModifier, unsigned int txTime, hash_t pos_hash, uint64_t *weight);
-typedef int	C_API_FUNC create_pos_block_func		(hash_t pHash, mem_zone_ref_ptr tx, mem_zone_ref_ptr newBlock);
+typedef int	C_API_FUNC create_pos_block_func		(uint64_t height, mem_zone_ref_ptr tx, mem_zone_ref_ptr newBlock);
 typedef int	C_API_FUNC check_tx_pos_func			(mem_zone_ref_ptr blk, mem_zone_ref_ptr tx);
 typedef int	C_API_FUNC get_min_stake_depth_func		(unsigned int *depth);
 typedef unsigned int C_API_FUNC	get_current_pos_difficulty_func();

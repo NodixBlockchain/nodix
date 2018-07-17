@@ -38,7 +38,7 @@ struct thread
 	pid_t				h;
 };
 
-struct thread threads[MAX_THREADS] = { PTR_INVALID };
+struct thread threads[MAX_THREADS+1] = { PTR_INVALID };
 
 OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
 {
@@ -159,7 +159,19 @@ OS_API_C_FUNC(unsigned int) get_tree_mem_area_id()
 
 	return threads[cur].tree_area_id;
 }
+int get_my_thread_flag(unsigned int *flag)
+{
+	pid_t  h;
+	unsigned int cur;
+	h = gettid();
+	cur = get_current_thread(h);
+	if (cur == 0xFFFFFFFF)
+		cur = new_thread(h);
 
+	(*flag) = 1 << cur;
+
+	return 1;
+}
 
 OS_API_C_FUNC(unsigned int) get_mem_area_id()
 {
@@ -321,10 +333,6 @@ OS_API_C_FUNC(int) set_home_path(const char *name)
 	cat_cstring_p	(&home_path, name);
 	create_dir		(home_path.str);
 	set_cwd			(home_path.str);
-
-	log_output		("set home path : '");
-	log_output		(home_path.str);
-	log_output		("'\n");
 	return 1;
 
 }
@@ -460,22 +468,154 @@ OS_API_C_FUNC(int) put_file(const char *path, void *data, size_t data_len)
 
 	fclose(f);
 	return len;
+}
 
+
+OS_API_C_FUNC(int) get_file_range(const char *path, size_t ofset, size_t last, unsigned char **data, size_t *data_len)
+{
+	struct string	cpath = { PTR_NULL };
+	FILE			*f;
+	size_t			filesize, len = 0;
+	int				ret;
+
+	f = fopen(path, "rb");
+	if (f == NULL)
+	{
+		*data_len = 0;
+		return -1;
+	}
+
+	fseek(f, 0, SEEK_END);
+	filesize = ftell(f);
+
+	if (ofset < filesize)
+	{
+		unsigned int chunk_size;
+
+		if (last > filesize)
+			last = filesize;
+
+		(*data_len) = last - ofset;
+		(*data) = malloc_c((*data_len) + 1);
+		if ((*data) != PTR_NULL)
+		{
+			ret = fread((*data), 1, (*data_len), f);
+			if (ret>0)
+				len = (*data_len);
+			else
+				len = 0;
+
+			(*data)[*data_len] = 0;
+		}
+	}
+
+	fclose(f);
+
+	return len;
+}
+
+OS_API_C_FUNC(int) get_file_chunk(const char *path, size_t ofset, unsigned char **data, size_t *data_len)
+{
+	struct string	cpath = { PTR_NULL };
+	FILE			*f;
+	size_t			filesize, len = 0;
+	int				ret;
+
+	f = fopen(path, "rb");
+	if (f == NULL)
+	{
+		*data_len = 0;
+		return -1;
+	}
+
+	fseek(f, 0, SEEK_END);
+	filesize = ftell(f);
+
+	if ((ofset + 4) <= filesize)
+	{
+		unsigned int chunk_size;
+
+		fseek(f, ofset, SEEK_SET);
+		fread(&chunk_size, 1, 4, f);
+		if (filesize >= (ofset + 4 + chunk_size))
+		{
+			(*data_len) = chunk_size;
+			(*data) = malloc_c((*data_len) + 1);
+			if ((*data) != PTR_NULL)
+			{
+				ret = fread((*data), 1, (*data_len), f);
+				if (ret>0)
+					len = (*data_len);
+				else
+					len = 0;
+
+				(*data)[*data_len] = 0;
+			}
+		}
+	}
+
+	fclose(f);
+
+	return len;
 }
 
 OS_API_C_FUNC(int) append_file(const char *path, const void *data, size_t data_len)
 {
 	FILE		*f;
-	size_t		len;
-	int			ret;
-	f = fopen( path, "ab+");
-	if (f == NULL)return 0;
+	int			ret,len;
+	f = fopen(path, "ab+");
+
+	if (f == NULL)
+		return 0;
+
 	fseek(f, 0, SEEK_END);
-	len = fwrite(data, data_len, 1, f);
+	len = fwrite(data, 1, data_len, f);
 	fflush(f);
 	fclose(f);
-	return 1;
+	
+	if (len > 0)
+		return data_len;
+	else
+		return 0;
 }
+
+OS_API_C_FUNC(int) truncate_file(const char *path, size_t ofset, const void *data, size_t data_len)
+{
+	FILE		*f;
+	size_t		len;
+	uint64_t	offset;
+	int			ret;
+
+	if ((ofset == 0) && (data_len == 0))
+	{
+		del_file(path);
+		return 1;
+	}
+
+	ret = truncate(path, ofset);
+
+	if (ret != 0)
+		return 0;
+
+	if ((data != PTR_NULL)&&(data_len>0))
+	{
+		f = fopen(path, "ab+");
+		if (f != NULL)
+		{
+			fseek(f, 0, SEEK_END);
+			len = fwrite(data, data_len, 1, f);
+			ret = (len > 0) ? 1 : 0;
+
+			fflush(f);
+			fclose(f);
+		}
+		else
+			ret = -1;
+	}
+
+	return ret;
+}
+
 
 OS_API_C_FUNC(size_t) file_size(const char *path)
 {
@@ -581,61 +721,7 @@ OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data
 
 }
 
-OS_API_C_FUNC(int) get_file_chunk(const char *path, size_t ofset, unsigned char **data, size_t *data_len)
-{
-	struct string	cpath = { PTR_NULL };
-	FILE			*f;
-	size_t			filesize,len = 0;
-	int				ret;
-		
-	f = fopen(path, "rb");
-	if (f == NULL)
-	{
-		init_string		(&cpath);
-		if (!make_string(&cpath, exe_path.str))
-			return -1;
 
-		cat_cstring_p	(&cpath, path);
-		f = fopen		(cpath.str, "rb");
-		free_string		(&cpath);
-
-		if (f == NULL)
-		{
-			*data_len = 0;
-			return -1;
-		}
-	}
-
-	fseek(f, 0, SEEK_END);
-	filesize = ftell(f);
-
-	if((ofset+4)<=filesize)
-	{
-		unsigned int chunk_size;
-
-		fseek	(f, ofset, SEEK_SET);
-		fread	(&chunk_size,1,4,f);
-		if (filesize>=(ofset+4+chunk_size))
-		{
-			(*data_len)	= chunk_size;
-			(*data)		= malloc_c( (*data_len) + 1);
-			if ((*data) != PTR_NULL)
-			{
-				ret = fread	((*data), 1,(*data_len), f);
-				if(ret>0)
-					len = (*data_len);
-				else
-					len = 0;
-
-				(*data)[*data_len] = 0;
-			}
-		}
-	}
-
-	fclose(f);
-
-	return len;
-}
 
 OS_API_C_FUNC(int) get_file_len(const char *path, size_t size, unsigned char **data, size_t *data_len)
 {
@@ -687,37 +773,6 @@ OS_API_C_FUNC(int) get_file_len(const char *path, size_t size, unsigned char **d
 	}
 	fclose(f);
 	return (int)len;
-}
-
-
-OS_API_C_FUNC(int) truncate_file(const char *path, size_t ofset, const void *data, size_t data_len)
-{
-	FILE		*f;
-	size_t		len;
-	uint64_t	offset;
-	int			ret;
-
-	if ((ofset == 0) && (data_len == 0))
-	{
-		del_file(path);
-		return 1;
-	}
-
-	ret=truncate(path, ofset);
-
-	if (data != PTR_NULL)
-	{
-		f = fopen(path, "ab+");
-		if (f != NULL)
-		{
-			fseek(f, 0, SEEK_END);
-			len = fwrite(data, data_len, 1, f);
-			ret = (len > 0) ? 1 : 0;
-		}
-		fclose(f);
-	}
-		
-	return ret;
 }
 
 OS_API_C_FUNC(void *) kernel_memory_map_c(unsigned int size)
@@ -784,6 +839,8 @@ OS_API_C_FUNC(int) aquire_lock_file(const char *name)
    if (log_output("init log\n") < 0)
 	   return -1;
       
+   log_output("Nodix starting ...\n\n");
+
    /* Fork off the parent process  */
    tid = gettid();
    pid = fork();
@@ -836,7 +893,7 @@ OS_API_C_FUNC(void) console_print(const char *msg)
 }
 
 
-
+/*
 OS_API_C_FUNC(int) get_hash_idx(const char *path, size_t idx, hash_t hash)
 {
 	FILE		*f;
@@ -858,6 +915,7 @@ OS_API_C_FUNC(int) get_hash_idx(const char *path, size_t idx, hash_t hash)
 	fclose(f);
 	return len;
 }
+*/
 
 OS_API_C_FUNC(int) log_output(const char *data)
 {

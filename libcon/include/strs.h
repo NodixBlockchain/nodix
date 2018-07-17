@@ -99,3 +99,11 @@ LIBC_API		int					C_API_FUNC find_mem_hash		(hash_t hash, unsigned char *mem_has
 
 LIBC_API		int					C_API_FUNC b58enc				(const struct string *in, struct string *out);
 
+#define STRBUFFER_MIN_SIZE  16
+#define STRBUFFER_FACTOR    2
+#define STRBUFFER_SIZE_MAX  ((size_t)-1)
+
+LIBC_API		int					C_API_FUNC strbuffer_append_bytes(struct string *strbuff, const char *data, size_t size);
+LIBC_API		int					C_API_FUNC strbuffer_append_byte(struct string *strbuff, char byte);
+LIBC_API		int					C_API_FUNC strbuffer_append(struct string *strbuff, const char *string);
+

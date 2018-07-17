@@ -20,7 +20,7 @@
 
 
 #ifdef _DEBUG
-	LIBEC_API int	C_API_FUNC			crypto_sign_open(const struct string *sign, struct string *msgh, struct string *pk);
+	LIBEC_API int	C_API_FUNC			crypto_sign_open(const struct string *sign, const hash_t msgh, struct string *pk);
 #else
 	extern	crypto_sign_open_func_ptr	crypto_sign_open;
 #endif
@@ -918,29 +918,24 @@ int check_sign(const struct string *sign, const struct string *pubK, const hash_
 
 	if (pubK->len == 33)
 	{
+		hash_t h;
 		struct string ppk = { PTR_NULL };
-		struct string msg = { PTR_NULL };
-		unsigned char *mp,*p,*dp;
+		unsigned char *p,*dp;
 		int n = 32;
 		
-		msg.len = 32;
-		msg.str = malloc_c(32);
 		ppk.str = malloc_c(33);
 		
 		ppk.len = 33;
 		p		= pubK->str;
 		dp      = ppk.str;
-		mp		= msg.str;
 		
 		dp[0] = p[0];
 		while (n--)
 		{
-			mp[n]		= txh[31-n];
+			h[n]		= txh[31-n];
 			dp[n + 1]	= p[(31 - n) + 1];
 		}
-		ret = crypto_sign_open(sign, &msg, &ppk);
-		
-		free_string(&msg);
+		ret = crypto_sign_open(sign, h, &ppk);
 		free_string(&ppk);
 	}
 	return ret;

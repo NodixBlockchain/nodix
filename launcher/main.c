@@ -11,10 +11,6 @@
 #include <tpo_mod.h>
 #include <fsio.h>
 
-#ifdef NDEBUG
-#undef _DEBUG
-#endif
-
 typedef int C_API_FUNC app_func(mem_zone_ref_ptr params);
 
 typedef void C_API_FUNC	tree_manager_init_func(size_t size, size_t  nzones, unsigned int flags);
@@ -41,9 +37,7 @@ execute_script_proc_func_ptr		execute_script_proc = PTR_INVALID;
 tree_manager_init_func_ptr			tree_manager_init = PTR_INVALID;
 
 app_func_ptr						app_init = PTR_INVALID, app_start = PTR_INVALID, app_loop = PTR_INVALID, app_stop = PTR_INVALID;
-
 tpo_mod_file libbase_mod = { 0xDEF00FED };
-
 
 
 int main(int argc, const char **argv)
@@ -54,7 +48,7 @@ int main(int argc, const char **argv)
 	const_mem_ptr			*params_ptr;
 	tpo_mod_file			*nodix_mod;
 	int						done = 0,n,withGC;
-	
+
 	init_mem_system			();
 	init_default_mem_area	(24 * 1024 * 1024, 128*1024);
 	set_exe_path			();
@@ -86,12 +80,15 @@ int main(int argc, const char **argv)
 		(*params_ptr) = PTR_NULL;
 	}
 			
+#ifndef _DEBUG
 	load_script				 = (load_script_func_ptr)get_tpo_mod_exp_addr_name(&libbase_mod, "load_script", 0);
 	resolve_script_var		 = (resolve_script_var_func_ptr)get_tpo_mod_exp_addr_name(&libbase_mod, "resolve_script_var", 0);
 	get_script_var_value_str = (get_script_var_value_str_func_ptr)get_tpo_mod_exp_addr_name(&libbase_mod, "get_script_var_value_str", 0);;
 	get_script_var_value_ptr = (get_script_var_value_ptr_func_ptr)get_tpo_mod_exp_addr_name(&libbase_mod, "get_script_var_value_ptr", 0);;
 	execute_script_proc		 = (execute_script_proc_func_ptr)get_tpo_mod_exp_addr_name(&libbase_mod, "execute_script_proc", 0);;
 	tree_manager_init		 = (tree_manager_init_func_ptr)get_tpo_mod_exp_addr_name(&libbase_mod, "tree_manager_init", 0);;
+#endif
+
 
 	if(withGC == 1 )
 		tree_manager_init		(32 * 1024 * 1024, 128*1024, 0x10);
@@ -131,10 +128,12 @@ int main(int argc, const char **argv)
 	
 	resolve_script_var(&script_vars, PTR_NULL, "init_node", 0xFFFFFFFF, &init_node_proc, PTR_NULL);
 
+#ifndef _DEBUG
 	app_init = (app_func_ptr)get_tpo_mod_exp_addr_name(nodix_mod, "app_init", 0);
 	app_start = (app_func_ptr)get_tpo_mod_exp_addr_name(nodix_mod, "app_start", 0);
 	app_loop = (app_func_ptr)get_tpo_mod_exp_addr_name(nodix_mod, "app_loop", 0);
 	app_stop = (app_func_ptr)get_tpo_mod_exp_addr_name(nodix_mod, "app_stop", 0);
+#endif
 
 	if (!app_init(&script_vars))
 	{

@@ -562,7 +562,7 @@ OS_API_C_FUNC(int) b58enc(const struct string *in, struct string *out)
 
 	size = (in->len - zcount) * 138 / 100 + 1;
 	buf = malloc_c(size);
-	memset(buf, 0, size);
+	memset_c(buf, 0, size);
 
 	for (i = zcount, high = size - 1; i < in->len; ++i, high = j)
 	{
@@ -603,3 +603,43 @@ OS_API_C_FUNC(int) b58enc(const struct string *in, struct string *out)
 	return 1;
 }
 
+
+OS_API_C_FUNC(int) strbuffer_append(struct string *strbuff, const char *string)
+{
+	return strbuffer_append_bytes(strbuff, string, strlen_c(string));
+}
+
+OS_API_C_FUNC(int) strbuffer_append_byte(struct string *strbuff, char byte)
+{
+	return strbuffer_append_bytes(strbuff, &byte, 1);
+}
+
+OS_API_C_FUNC(int) strbuffer_append_bytes(struct string *strbuff, const char *data, size_t size)
+{
+	if ((strbuff->len + size) >= strbuff->size)
+	{
+		size_t new_size;
+
+		// avoid integer overflow 
+		if (strbuff->size > STRBUFFER_SIZE_MAX / STRBUFFER_FACTOR
+			|| size > STRBUFFER_SIZE_MAX - 1
+			|| strbuff->len > STRBUFFER_SIZE_MAX - 1 - size)
+			return -1;
+
+		if ((strbuff->size * STRBUFFER_FACTOR)>(strbuff->len + size + 1))
+			new_size = strbuff->size * STRBUFFER_FACTOR;
+		else
+			new_size = strbuff->len + size + 1;
+
+
+		strbuff->size = new_size;
+		strbuff->str = realloc_c(strbuff->str, strbuff->size);
+	}
+
+
+	memcpy_c(strbuff->str + strbuff->len, data, size);
+	strbuff->len += size;
+	strbuff->str[strbuff->len] = '\0';
+
+	return 0;
+}

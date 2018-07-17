@@ -93,13 +93,6 @@ typedef module_rproc *module_rproc_ptr;
 typedef int C_API_FUNC module_rwproc(mem_zone_ref_ptr input, mem_zone_ref_ptr output);
 typedef module_rwproc *module_rwproc_ptr;
 
-#ifdef _DEBUG
-LIBC_API int C_API_FUNC set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, module_rwproc_ptr  c, module_rwproc_ptr  d, module_rwproc_ptr e, module_rproc_ptr f, module_rwproc_ptr g, module_rproc_ptr h, module_rproc_ptr i, module_rproc_ptr j, module_rproc_ptr k, module_rproc_ptr l, module_rproc_ptr m, module_rproc_ptr n, module_rproc_ptr o, module_rwproc_ptr p, module_rwproc_ptr q, module_rproc_ptr r, module_rproc_ptr s, module_rproc_ptr t, module_rproc_ptr u, module_rproc_ptr v, module_rproc_ptr w, module_rproc_ptr x, module_rwproc_ptr y, module_rwproc_ptr z, module_rproc_ptr zz, module_rwproc_ptr zz2, module_rproc_ptr zz3, module_rwproc_ptr zz4, module_rwproc_ptr  zz5, module_rproc_ptr  zz6, module_proc_ptr zz7, module_rproc_ptr zz8, module_rwproc_ptr zz9, module_rwproc_ptr zz10, module_rwproc_ptr zz11, module_rwproc_ptr zz12, module_rwproc_ptr zz13, module_rproc_ptr zz14, module_rwproc_ptr zz15, module_rwproc_ptr zz16, module_proc_ptr zz17, module_rwproc_ptr zz18, module_rwproc_ptr zz19);
-LIBC_API int C_API_FUNC set_dbg_ptr(module_rproc_ptr a, module_rwproc_ptr b, module_rproc_ptr c, module_proc_ptr d, module_rwproc_ptr  e, module_proc_ptr f, module_rproc_ptr  g, module_rproc_ptr h, module_rproc_ptr  i, module_rproc_ptr  j, module_rproc_ptr  k, module_rproc_ptr  l, module_rwproc_ptr  m, module_rwproc_ptr  n, module_rwproc_ptr o, module_rproc_ptr p, module_rwproc_ptr q, module_rproc_ptr r, module_rproc_ptr s, module_rproc_ptr t, module_rproc_ptr u, module_rproc_ptr v, module_rproc_ptr w, module_rproc_ptr x, module_rproc_ptr y, module_rproc_ptr z);
-LIBC_API int C_API_FUNC set_pos_dbg_ptr(module_rproc_ptr a, module_rproc_ptr b, module_rproc_ptr c, module_rproc_ptr d, module_rwproc_ptr e, module_rproc_ptr f, module_rwproc_ptr g);
-#endif
-
-
 #ifndef KERNEL_API
 #define KERNEL_API	C_IMPORT
 #endif

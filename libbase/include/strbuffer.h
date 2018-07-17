@@ -9,11 +9,13 @@ typedef int (*get_func)(void *data);
 
 typedef int64_t json_int_t;
 
+/*
 typedef struct {
-	char value_ptr[2048];
-    size_t length;   /* bytes used */
-    size_t size;     /* bytes allocated */
-} strbuffer_t;
+	char *value_ptr;
+    size_t length;   // bytes used 
+    size_t size;     // bytes allocated 
+} struct string;
+*/
 
 typedef struct
 {
@@ -36,7 +38,7 @@ typedef struct {
 
 typedef struct {
     stream_t stream;
-    strbuffer_t saved_text;
+    struct string saved_text;
 	struct string value_string;
     int	token;
     union {
@@ -61,21 +63,17 @@ typedef struct {
 #define STREAM_STATE_EOF      -1
 #define STREAM_STATE_ERROR    -2
 
-int strbuffer_init(strbuffer_t *strbuff);
-void strbuffer_close(strbuffer_t *strbuff);
+int strbuffer_init(struct string *strbuff);
+void strbuffer_close(struct string *strbuff);
 
-void strbuffer_clear(strbuffer_t *strbuff);
+void strbuffer_clear(struct string *strbuff);
 
-const char *strbuffer_value(const strbuffer_t *strbuff);
+const char *strbuffer_value(const struct string *strbuff);
 
 /* Steal the value and close the strbuffer */
-char *strbuffer_steal_value(strbuffer_t *strbuff);
+char *strbuffer_steal_value(struct string *strbuff);
 
-int strbuffer_append(strbuffer_t *strbuff, const char *string);
-int strbuffer_append_byte(strbuffer_t *strbuff, char byte);
-int strbuffer_append_bytes(strbuffer_t *strbuff, const char *data, size_t size);
-
-char strbuffer_pop(strbuffer_t *strbuff);
+char strbuffer_pop(struct string *strbuff);
 
 int lex_set_value_string(lex_t *lex, struct string *str);
 int  lex_init		(lex_t *lex,  void *data);

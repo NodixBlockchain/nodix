@@ -288,7 +288,7 @@ function from_b58(S,           //Base58 encoded string input
 
 function timeConverter(UNIX_timestamp) {
     var offset = new Date().getTimezoneOffset();
-    var a = new Date(UNIX_timestamp * 1000 + (offset * 60000));
+    var a = new Date(UNIX_timestamp * 1000);
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     var year = a.getFullYear();
     var month = months[a.getMonth()];

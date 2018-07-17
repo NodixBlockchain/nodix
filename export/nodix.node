@@ -47,6 +47,7 @@ let NODE_BITCORE_NODE SelfNode = `
 	"privKeyVersion":0x55,
 	(NODE_GFX_BINT)"paytxfee" : 0,
 	"block_height" : 0,
+	"data_dir" : "d:\nodix",
 	"useGC" : false,
 	(NODE_GFX_INT)"version"  : 60018,
 	(NODE_GFX_BOOL)"uPnP":false,
@@ -59,6 +60,8 @@ let NODE_BITCORE_NODE SelfNode = `
 	(NODE_GFX_INT)"current_pow_diff" : 0,
 	(NODE_GFX_BINT)"pos_reward" : 0,
 	(NODE_GFX_BINT)"pow_reward" : 0,
+	(NODE_GFX_BINT)"n_pow_blocks" : 0,
+	
 	(NODE_GFX_SIGNED_BINT)"ping_delay" : 0,
 	(NODE_GFX_INT)"last_block_time" : 0,
 	(NODE_BITCORE_BLK_HDR) "last_block" : {},
@@ -89,7 +92,8 @@ let NODE_BITCORE_NODE SelfNode = `
 		[
 			{"base" : "/jsonrpc"  , "type" : "rpc", (NODE_MODULE_DEF) "rpc_wallet"     : {"file":"modz/rpc_wallet.tpo"}},
 			{"base" : "/pubwal"   , "allowed_ip":["127.0.0.1"] , "type" : "rpc", (NODE_MODULE_DEF) "anon_wallet"     : {"file":"modz/anon_rpc.tpo"}},
-			{"base" : "/api/"     , "type" : "cgi", (NODE_MODULE_DEF) "block_explorer" : {"file":"modz/block_explorer.tpo"}}
+			{"base" : "/api/"     , "type" : "cgi", (NODE_MODULE_DEF) "block_explorer" : {"file":"modz/block_explorer.tpo"}},
+			{"base" : "/siteapi/" , "type" : "cgi", (NODE_MODULE_DEF) "site_cgi"	   : {"file":"modz/site_cgi.tpo"}}
 		]
 	},
 	(NODE_BITCORE_NODE_LIST) "peer_nodes" : [],
@@ -117,6 +121,9 @@ let NODE_GFX_INT			ping_nonce  = 1
 let NODE_GFX_BINT			block_reward = 0
 let NODE_GFX_BINT			lost_reward = 0
 let NODE_GFX_BINT			cur_len = 0
+
+let NODE_GFX_BINT			checkNum = 200
+let NODE_GFX_BINT			LastGood = 0
 
 let NODE_GFX_SHORT			one = 1
 
@@ -186,14 +193,8 @@ handler on_block(node, payload) = `
 		sub cur_len, node.testing_chain;
 		
 		if (node.block_headers* > cur_len)
-			
-			set lost_reward  =  0;
 
-			accumulate add_reward(lost_reward) node.testing_chain,SelfNode.block_height;
-
-			node_adx.node_truncate_chain_to							(node.testing_chain) : success endor
-			node_adx.sub_moneysupply								(lost_reward)
-			configuration.staking.pos_kernel.compute_last_pos_diff	(SelfNode.last_pos_block, SelfNode.current_pos_diff) : set SelfNode.current_pos_diff = configuration.staking.limit; endor
+			nodix.truncate_chain_to (node.testing_chain) : success endor
 
 			set node.testing_chain = 0 ;
 		endif
@@ -202,8 +203,6 @@ handler on_block(node, payload) = `
 	node_adx.node_is_next_block(payload.header) :
 		node_adx.node_check_chain(node, payload.header) : success endor
 	endor
-
-	node_adx.remove_stored_block(payload.header)
 
 	set payload.header.signature = payload.signature;
 
@@ -217,7 +216,7 @@ handler on_block(node, payload) = `
 	log "new block added"
 	
 	block_adx.block_has_pow(payload.header.blkHash) ?
-		nodix.compute_pow_diff						(payload.header, SelfNode.current_pow_diff)
+		node_adx.node_compute_pow_diff_after		(payload.header)
 		block_adx.get_pow_reward					(SelfNode.block_height, block_reward)
 		set SelfNode.pow_reward = block_reward;
 	endor
@@ -239,6 +238,8 @@ handler on_block(node, payload) = `
 	
 `
 
+let NODE_GFX_BINT	truncate = 110795
+
 proc init_node = `
 
 	protocol_adx.init_protocol	(configuration)
@@ -247,15 +248,21 @@ proc init_node = `
 	
 	loadmod(configuration.staking.pos_kernel)
 	configuration.staking.pos_kernel.init_pos(configuration.staking)
+	nodix.init_staking()
 
 	
-	node_adx.node_load_block_indexes		()
+	node_adx.node_check_block_index		(checkNum,LastGood) ?
+		nodix.truncate_chain_to (LastGood)	
+	endor
+
+	node_adx.node_load_block_indexes	()
+
 	
 	block_adx.make_genesis_block(configuration.genesis, genesis_blk)
 	
 	if (SelfNode.block_height = 0)
 		node_adx.node_set_last_block						(genesis_blk)
-		nodix.compute_pow_diff								(genesis_blk, SelfNode.current_pow_diff)
+		node_adx.node_compute_pow_diff_after				(genesis_blk)
 		configuration.staking.pos_kernel.store_blk_staking  (genesis_blk)
 	endif
 	

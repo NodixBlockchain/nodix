@@ -927,7 +927,7 @@ static uECC_word_t regularize_k(const uECC_word_t * const k,
 }
 
 static uECC_word_t EccPoint_compute_public_key(uECC_word_t *result,
-	uECC_word_t *private_key,
+	const uECC_word_t *private_key,
 	uECC_Curve curve) {
 	uECC_word_t tmp1[uECC_MAX_WORDS];
 	uECC_word_t tmp2[uECC_MAX_WORDS];
@@ -1599,19 +1599,19 @@ OS_API_C_FUNC(int) compress_pub(dh_key_t pk, dh_key_t cpk)
 	return 1;
 }
 
-OS_API_C_FUNC(struct string) crypto_sign(const struct string *msg, const dh_key_t sk)
+OS_API_C_FUNC(struct string) crypto_sign(const hash_t msgh, const dh_key_t sk)
 {
 	struct string sign = { PTR_NULL };
 	if (maincurve == PTR_INVALID)
 		maincurve = uECC_secp256k1();
 
-	sign.len	= msg->len + 32;
+	sign.len	= 32 + 32;
 	sign.size	= sign.len + 1;
 	sign.str	= malloc_c(sign.size);
-	uECC_sign(sk, msg->str, msg->len, sign.str, maincurve);
+	uECC_sign(sk, msgh, 32, sign.str, maincurve);
 	return sign;
 }
-OS_API_C_FUNC(int) crypto_sign_open(const struct string *sign, const struct string *msg, const struct string *pk)
+OS_API_C_FUNC(int) crypto_sign_open(const struct string *sign, const hash_t msg, const struct string *pk)
 {
 	uint8_t npk[64];
 	uint8_t *p = pk->str;
@@ -1624,7 +1624,7 @@ OS_API_C_FUNC(int) crypto_sign_open(const struct string *sign, const struct stri
 		memcpy_c(npk, pk->str, pk->len);
 	else
 		return 0;
-	return uECC_verify(npk, msg->str, msg->len, sign->str, maincurve);
+	return uECC_verify(npk, msg, 32, sign->str, maincurve);
 }
 
 OS_API_C_FUNC(int) derive_key(dh_key_t public_key, dh_key_t private_key, hash_t secret)

@@ -19,7 +19,7 @@ NODE_API int			C_API_FUNC		node_add_block_index(hash_t hash, unsigned int time){
 NODE_API int			C_API_FUNC		node_add_tx_to_mempool(mem_zone_ref_ptr tx){return 0;}
 NODE_API int			C_API_FUNC		node_fill_block_from_mempool(mem_zone_ref_ptr block){return 0;}
 NODE_API int			C_API_FUNC		node_del_txs_from_mempool(mem_zone_ref_ptr tx_list){return 0;}
-NODE_API int			C_API_FUNC		node_get_hash_idx(uint64_t block_idx, hash_t hash){return 0;}
+
 NODE_API int			C_API_FUNC		node_get_last_block_time(ctime_t *otime){return 0;}
 NODE_API int			C_API_FUNC		node_truncate_chain(uint64_t height){return 0;}
 NODE_API int			C_API_FUNC		node_remove_last_block(){return 0;}
@@ -31,7 +31,8 @@ NODE_API int			C_API_FUNC	    node_get_script_msg_handlers(mem_zone_ref_ptr hand
 NODE_API int			C_API_FUNC		node_set_script(mem_zone_ref_ptr script){return 0;}
 NODE_API int			C_API_FUNC		remove_block(hash_t blk_hash){return 0;}
 NODE_API int			C_API_FUNC		block_pow_limit() { return 0; }
-
+NODE_API int			C_API_FUNC		node_inc_pow_blocks() { return 0; }
+NODE_API int			C_API_FUNC		node_dec_pow_blocks() { return 0; }
 NODE_API int			C_API_FUNC		node_init_service(mem_zone_ref_ptr service, mem_zone_ref_ptr pos_mod_def){ return 0; }
 NODE_API int			C_API_FUNC		proccess_http_reqs(mem_zone_ref_ptr service){ return 0; }
 NODE_API int			C_API_FUNC		get_file_mime(mem_zone_ref_const_ptr service, const char *filepath, struct string *mime){ return 0; }
@@ -66,7 +67,7 @@ NODE_API int			C_API_FUNC		node_check_new_connections(){ return 0; }
 
 
 NODE_API int			C_API_FUNC		node_release_mining_lock(){ return 0; }
-NODE_API int			C_API_FUNC		node_store_last_pow_hash(mem_zone_ref_ptr blk){ return 0; }
+
 NODE_API int			C_API_FUNC		queue_addr_message(mem_zone_ref_ptr node, mem_zone_ref_ptr addrs){ return 0; }
 NODE_API int			C_API_FUNC		node_release_mempool_lock(){ return 0; }
 NODE_API int			C_API_FUNC		node_aquire_mining_lock(){ return 0; }
@@ -74,10 +75,13 @@ NODE_API int			C_API_FUNC		node_del_btree_from_mempool(){ return 0; }
 NODE_API int			C_API_FUNC		node_aquire_mempool_lock(mem_zone_ref_ptr mempool){ return 0; }
 NODE_API int			C_API_FUNC		node_store_tmp_file(struct string *app_name, mem_zone_ref_ptr file){ return 0; }
 NODE_API int			C_API_FUNC		node_create_pow_block(mem_zone_ref_ptr newBlock, btc_addr_t coinbaseAddr){ return 0; }
-NODE_API int			C_API_FUNC		compute_last_pow_diff(mem_zone_ref_ptr blk, mem_zone_ref_ptr nBits){ return 0; }
+NODE_API int			C_API_FUNC		node_compute_pow_diff_after(mem_zone_ref_ptr newPOWBlock) { return 0; }
 NODE_API int			C_API_FUNC		node_get_types_def(mem_zone_ref_ptr types){ return 0; }
 NODE_API int			C_API_FUNC		node_rm_tmp_file(struct string *app_name, mem_zone_ref_ptr file){ return 0; }
 NODE_API int			C_API_FUNC		get_bitcore_addr(mem_zone_ref_ptr node, ipv4_t ip, unsigned short *port, uint64_t *services) { return 0; }
 NODE_API int			C_API_FUNC		is_same_node(mem_zone_ref_ptr node1, mem_zone_ref_ptr node2) { return 0; }
 NODE_API int			C_API_FUNC		node_check_mempool_unique(mem_zone_ref_const_ptr node_txs, const char *appName, unsigned int typeID, mem_zone_ref_const_ptr obj) { return 0; }
 
+NODE_API int			C_API_FUNC		store_last_pow_hash(hash_t hash) { return 0; }
+NODE_API int			C_API_FUNC		store_last_pos_hash(hash_t hash) { return 0; }
+NODE_API int			C_API_FUNC		node_get_hash_idx(uint64_t block_idx, hash_t hash) { return 0; }

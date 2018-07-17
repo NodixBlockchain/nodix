@@ -37,6 +37,8 @@ extern void init_funcs(void);
 extern void resume_threads();
 extern void init_exit();
 
+extern int get_my_thread_flag(unsigned int *flag);
+
 LIBC_API void	*	C_API_FUNC kernel_memory_map_c				(unsigned int size);
 LIBC_API void		C_API_FUNC kernel_memory_free_c				(mem_ptr ptr);
  
@@ -318,6 +320,13 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "set_tree_mem_area_id",(void_func_ptr)set_tree_mem_area_id, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_mem_area_id",(void_func_ptr)get_mem_area_id, 0);
 	sys_add_tpo_mod_func_name("libcon", "free_mem_area",(void_func_ptr)free_mem_area, 0);
+	
+	 
+	sys_add_tpo_mod_func_name("libcon", "aquire_lock_excl", (void_func_ptr)aquire_lock_excl, 0);
+	sys_add_tpo_mod_func_name("libcon", "release_lock_excl", (void_func_ptr)release_lock_excl, 0);
+	
+
+	 
 
 	sys_add_tpo_mod_func_name("libcon", "dtoll_c", (void_func_ptr)dtoll_c, 0);
 
@@ -424,6 +433,7 @@ OS_API_C_FUNC(void) init_mem_system()
 
 	sys_add_tpo_mod_func_name("libcon", "calc_crc32_c",(void_func_ptr)calc_crc32_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "compare_z_exchange_c",(void_func_ptr)compare_z_exchange_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "compare_exchange_c", (void_func_ptr)compare_exchange_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "fetch_add_c",(void_func_ptr)fetch_add_c, 0);
 
 	sys_add_tpo_mod_func_name("libcon", "init_string",(void_func_ptr)init_string, 0);
@@ -451,6 +461,11 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "free_host_def",(void_func_ptr)free_host_def, 0);
 	sys_add_tpo_mod_func_name("libcon", "strcat_uint",(void_func_ptr)strcat_uint, 0);
 	sys_add_tpo_mod_func_name("libcon", "copy_host_def",(void_func_ptr)copy_host_def, 0);
+
+	sys_add_tpo_mod_func_name("libcon", "strbuffer_append_bytes", (void_func_ptr)strbuffer_append_bytes, 0);
+	sys_add_tpo_mod_func_name("libcon", "strbuffer_append_byte", (void_func_ptr)strbuffer_append_byte, 0);
+	sys_add_tpo_mod_func_name("libcon", "strbuffer_append", (void_func_ptr)strbuffer_append, 0);
+
 
 	sys_add_tpo_mod_func_name("libcon", "find_mem_hash",(void_func_ptr)find_mem_hash, 0);
 
@@ -1231,10 +1246,12 @@ OS_API_C_FUNC(void) dec_zone_ref(mem_zone_ref *zone_ref)
 
 OS_API_C_FUNC(void) release_zone_ref(mem_zone_ref *zone_ref)
 {
+	mem_area *area;
 	if (zone_ref == PTR_NULL)return;
 	if (zone_ref->zone == PTR_NULL)return;
 
-	if ((get_area(((mem_zone *)(zone_ref->zone))->area_id)->type & 0x10) != 0)
+	area = get_area(((mem_zone *)(zone_ref->zone))->area_id);
+	if((area->type & 0x10) != 0)
 		return;
 
 	dec_zone_ref(zone_ref);
@@ -1720,9 +1737,30 @@ OS_API_C_FUNC(void) free_c(mem_ptr ptr)
 	m_ptr		=	mem_dec(ptr,16);
 	ref.zone	=	*((mem_ptr *)(m_ptr));
 	release_zone_ref(&ref);
-	
-	
+}
 
+OS_API_C_FUNC(void) dump_ptr(mem_ptr ptr)
+{
+	mem_zone_ref	ref;
+
+	if (ptr != PTR_NULL)
+	{
+		struct string	log = { 0 };
+		unsigned int	mptr;
+
+		mptr		= *((unsigned int *)(mem_dec(ptr, 16)));
+		
+		
+
+		make_string	(&log, "ptr : 0x");
+		strcat_int	(&log, mptr);
+		cat_cstring(&log, "\n");
+
+		log_output(log.str);
+		free_string(&log);
+		
+	}
+	
 }
 
 OS_API_C_FUNC(mem_ptr) calloc_c(mem_size sz,mem_size blk)
@@ -1916,6 +1954,39 @@ OS_API_C_FUNC(size_t) dump_mem_used(unsigned int area_id)
 	return mem_size;
 }
 
+OS_API_C_FUNC(void) aquire_lock_excl(volatile unsigned int *lock, unsigned int excl)
+{
+	unsigned int	old_flag, new_flag, my_flag;
+
+	get_my_thread_flag(&my_flag);
+
+	old_flag = (*lock) & (~excl);
+	new_flag = old_flag | my_flag;
+
+
+	while (!compare_exchange_c(lock, old_flag, new_flag))
+	{
+		old_flag = (*lock) & (~excl);
+		new_flag = old_flag | my_flag;
+	}
+}
+
+OS_API_C_FUNC(void) release_lock_excl(volatile unsigned int *lock)
+{
+	unsigned int	old_flag, new_flag, my_flag;
+
+	get_my_thread_flag(&my_flag);
+
+	old_flag = (*lock);
+	new_flag = old_flag & (~my_flag);
+
+	while (!compare_exchange_c(lock, old_flag, new_flag))
+	{
+		old_flag = (*lock);
+		new_flag = old_flag & (~my_flag);
+	}
+
+}
 
 /*
 OS_API_C_FUNC(int) 	align_zone_memory(mem_zone_ref *zone_ref, mem_size align)

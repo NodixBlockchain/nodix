@@ -33,3 +33,7 @@ WALLET_API int C_API_FUNC get_anon_key(btc_addr_t pubaddr, dh_key_t privkey);
 WALLET_API int C_API_FUNC privkey_to_addr(const dh_key_t privkey, struct string *privAddr);
 WALLET_API int C_API_FUNC reset_anon_pw();
 WALLET_API int C_API_FUNC encode_DER_sig(const struct string *sig, struct string *sigseq, unsigned int rev, unsigned char hash_type);
+WALLET_API int C_API_FUNC generate_staking_block(const struct string *account_name, unsigned int iminconf, mem_zone_ref_ptr mempool, mem_zone_ref_ptr newBlock);
+WALLET_API int C_API_FUNC sign_staking_block(struct string *account_name, mem_zone_ref_ptr block);
+WALLET_API int C_API_FUNC create_signature_script(const struct string *signature, dh_key_t pubkey, struct string *script);
+

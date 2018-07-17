@@ -40,13 +40,13 @@ void init_funcs()
 	sys_add_tpo_mod_func_name("libcon", "get_file", (void_func_ptr)get_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_file_len", (void_func_ptr)get_file_len, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_file_chunk", (void_func_ptr)get_file_chunk, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_file_range", (void_func_ptr)get_file_range, 0);
 	
 
 	sys_add_tpo_mod_func_name("libcon", "get_file_to_memstream", (void_func_ptr)get_file_to_memstream, 0);
 	sys_add_tpo_mod_func_name("libcon", "del_file", (void_func_ptr)del_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "move_file", (void_func_ptr)move_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "file_size", (void_func_ptr)file_size, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_hash_idx", (void_func_ptr)get_hash_idx, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_sub_dirs", (void_func_ptr)get_sub_dirs, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_sub_files", (void_func_ptr)get_sub_files, 0);
 	sys_add_tpo_mod_func_name("libcon", "log_output", (void_func_ptr)log_output, 0);
@@ -56,6 +56,8 @@ void init_funcs()
 	sys_add_tpo_mod_func_name("libcon", "set_home_path", (void_func_ptr)set_home_path, 0);
 	sys_add_tpo_mod_func_name("libcon", "set_cwd", (void_func_ptr)set_cwd, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_cwd", (void_func_ptr)get_cwd, 0);
+
+	
 	
 	sys_add_tpo_mod_func_name("libcon", "background_func", (void_func_ptr)background_func, 0);
 

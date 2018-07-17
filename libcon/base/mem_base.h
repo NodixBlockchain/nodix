@@ -81,6 +81,9 @@ LIBC_API void			C_API_FUNC swap_zone_ref					(mem_zone_ref_ptr dest_zone_ref, me
 
 LIBC_API int			C_API_FUNC set_mem_area_id					(unsigned int area_id);
 LIBC_API int			C_API_FUNC set_tree_mem_area_id				(unsigned int area_id);
+LIBC_API void			C_API_FUNC aquire_lock_excl					(volatile unsigned int *lock, unsigned int excl);
+LIBC_API void			C_API_FUNC release_lock_excl				(volatile unsigned int *lock);
+
 LIBC_API unsigned int	C_API_FUNC get_mem_area_id					();
 LIBC_API unsigned int	C_API_FUNC get_tree_mem_area_id				();
 LIBC_API int			C_API_FUNC background_func					(thread_func_ptr func, mem_zone_ref_ptr params);
