@@ -1916,7 +1916,7 @@ OS_API_C_FUNC(int) generate_staking_block(const struct string *username, unsigne
 			mem_zone_ref			newtx = { PTR_NULL };
 			uint64_t				amount, half_am;
 			
-			log_output	("x7\n");
+			
 			
 			ret = 0;
 
@@ -1926,8 +1926,7 @@ OS_API_C_FUNC(int) generate_staking_block(const struct string *username, unsigne
 		
 			if (ret)ret = new_transaction(&newtx, new_time);
 
-			log_output("x8\n");
-
+			
 			if (ret)
 			{
 				if (sPubk.str == PTR_NULL)
@@ -1970,7 +1969,7 @@ OS_API_C_FUNC(int) generate_staking_block(const struct string *username, unsigne
 				}
 			}
 
-			log_output("x9\n");
+			
 
 			if (ret)
 			{
@@ -1981,25 +1980,20 @@ OS_API_C_FUNC(int) generate_staking_block(const struct string *username, unsigne
 				tx_add_output(&newtx, half_am, &oscript);
 			}
 
-			log_output("x10\n");
+			
 
 			free_string(&oscript);
 			free_string(&sPubk);
 			free_string(&script);
 
-			log_output("x11\n");
+			
 
 			if (ret)ret = create_pos_block(lb, &newtx, newBlock);
 
 			if (ret)
 				log_message("found new staking block %blkHash%", newBlock);
 
-			log_output("x12\n");
 			release_zone_ref(&newtx);
-			
-
-
-		
 		}
 	
 		release_zone_ref(&unspents);
@@ -2015,7 +2009,7 @@ OS_API_C_FUNC(int) generate_staking_block(const struct string *username, unsigne
 
 	release_zone_ref(&addrs);
 	release_zone_ref(&last_blk);
-	log_output("x13\n");
+	
 	return ret;
 
 }
@@ -2027,29 +2021,26 @@ OS_API_C_FUNC(int) sign_staking_block(struct string *account_name, mem_zone_ref_
 	dh_key_t privkey;
 	hash_t blkMerkle, blkHash;
 	struct string inPk = { PTR_NULL }, sign = { PTR_NULL }, sig_seq = { PTR_NULL };
-	mem_zone_ref tx_list = { PTR_NULL }, tx = { PTR_NULL }, input = { 0 }, blkSig = { PTR_NULL };;
+	mem_zone_ref tx_list = { PTR_NULL }, tx = { PTR_NULL }, input = { 0 }, blkSig = { PTR_NULL };
 	
 	int ret;
 	int n;
 
-	log_output("1\n");
+	
 
 	if (!has_valid_pw())
 		return 0;
 
-	log_output("2\n");
+	
 
 	if (!tree_manager_find_child_node(block, NODE_HASH("txs"), NODE_BITCORE_TX_LIST, &tx_list))
 		return 0;
-
-	log_output("3\n");
 
 	ret = tree_manager_get_child_at(&tx_list, 0, &tx);
 	if (ret)ret = is_tx_null(&tx);
 	if (ret)ret = tree_manager_get_child_at(&tx_list, 1, &tx);
 	if (ret)ret = is_vout_null(&tx, 0);
 
-	log_output("4\n");
 	if (!ret)
 	{
 		release_zone_ref(&tx);
@@ -2059,7 +2050,7 @@ OS_API_C_FUNC(int) sign_staking_block(struct string *account_name, mem_zone_ref_
 
 	ret = get_tx_input(&tx, 0, &input);
 
-	log_output("5\n");
+	
 	if (ret)
 	{
 		hash_t  signH, ptxHash;
@@ -2087,7 +2078,7 @@ OS_API_C_FUNC(int) sign_staking_block(struct string *account_name, mem_zone_ref_
 			ret = sign_hash(rh, privkey, &sign);
 		}
 	}
-	log_output("6\n");
+	
 
 	if (ret)
 	{

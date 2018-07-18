@@ -1699,6 +1699,7 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 
 	//truncate_chain(110380);
 
+
 	if (rebuild_tx)
 		node_rewrite_txs(100);
 	

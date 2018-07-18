@@ -890,7 +890,7 @@ OS_API_C_FUNC(int) load_blk_txs(const hash_t blk_hash, mem_zone_ref_ptr txs)
 
 	block_height = get_last_block_height();
 
-	if (!find_block_hash(blk_hash, block_height-1, &height))
+	if (!find_block_hash(blk_hash, block_height, &height))
 		return 0;
 
 	if (get_file_chunk("blocks", mul64(height, 512), &data, &len) <= 0)

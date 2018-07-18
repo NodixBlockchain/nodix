@@ -142,7 +142,7 @@ int get_block_infos(mem_zone_ref_ptr block, const struct http_req *req, mem_zone
 		}
 	}
 
-	if (get_block_hash(height, nexthash) <= 0)
+	if (get_block_hash(height+1, nexthash) <= 0)
 		memcpy_c(nexthash, nullhash, sizeof(hash_t));
 
 	tree_manager_set_child_value_hash(result, "merkleroot", merkle);

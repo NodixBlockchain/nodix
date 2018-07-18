@@ -30,5 +30,8 @@
     <ClCompile Include="..\store.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\app_store.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

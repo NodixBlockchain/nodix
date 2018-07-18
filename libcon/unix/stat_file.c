@@ -475,7 +475,8 @@ OS_API_C_FUNC(int) get_file_range(const char *path, size_t ofset, size_t last, u
 {
 	struct string	cpath = { PTR_NULL };
 	FILE			*f;
-	size_t			filesize, len = 0;
+	size_t			filesize, len;
+	uint64_t		start, end;
 	int				ret;
 
 	f = fopen(path, "rb");
@@ -488,24 +489,27 @@ OS_API_C_FUNC(int) get_file_range(const char *path, size_t ofset, size_t last, u
 	fseek(f, 0, SEEK_END);
 	filesize = ftell(f);
 
-	if (ofset < filesize)
+	start = mul64(ofset, 512);
+	
+	if (start<filesize)
 	{
-		unsigned int chunk_size;
+		end = mul64(last, 512);
 
-		if (last > filesize)
-			last = filesize;
+		if (end > filesize)
+			end = filesize;
 
-		(*data_len) = last - ofset;
-		(*data) = malloc_c((*data_len) + 1);
+		(*data_len) = end - start;
+		(*data) = (unsigned char *)malloc_c((*data_len));
 		if ((*data) != PTR_NULL)
 		{
-			ret = fread((*data), 1, (*data_len), f);
-			if (ret>0)
+			int rd;
+			fseek(f, start, SEEK_SET);
+			rd = fread((*data), 1, (*data_len), f);
+			if (rd>0)
 				len = (*data_len);
 			else
 				len = 0;
 
-			(*data)[*data_len] = 0;
 		}
 	}
 
@@ -839,8 +843,6 @@ OS_API_C_FUNC(int) aquire_lock_file(const char *name)
    if (log_output("init log\n") < 0)
 	   return -1;
       
-   log_output("Nodix starting ...\n\n");
-
    /* Fork off the parent process  */
    tid = gettid();
    pid = fork();
