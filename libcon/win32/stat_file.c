@@ -614,8 +614,6 @@ OS_API_C_FUNC(int) daemonize(const char *name)
 	init_string (&log_file_name);
 	make_string	(&log_file_name,name);
 	cat_cstring	(&log_file_name,".log");
-
-	log_output("Nodix starting ...\n\n");
 	return 1;
 }
 

@@ -53,6 +53,9 @@
   <ItemGroup>
     <ClCompile Include="node_impl.c" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\node_adx\node_api.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

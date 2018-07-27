@@ -37,7 +37,7 @@ LIBC_API mem_ptr		C_API_FUNC memset_32_c			(mem_ptr ptr,unsigned int v,mem_size 
 LIBC_API int			C_API_FUNC memcmp_c				(const_mem_ptr ptr1,const_mem_ptr ptr2,size_t size);
 LIBC_API const_mem_ptr	C_API_FUNC memchr_c				(const_mem_ptr ptr,int value,mem_size size);
 LIBC_API size_t			C_API_FUNC memchr_32_c			(const_mem_ptr ptr,unsigned int value,mem_size size);
-LIBC_API void			C_API_FUNC qsort_c				(mem_ptr base, mem_size num, mem_size width, int(*comp)(const_mem_ptr, const_mem_ptr));
+LIBC_API void			C_API_FUNC qsort_c				(mem_ptr base, mem_size num, mem_size width,  int ( *comp)(const_mem_ptr,const_mem_ptr));
 
 LIBC_API mem_ptr		C_API_FUNC realloc_c			(mem_ptr ptr,mem_size sz);
 LIBC_API void			C_API_FUNC free_c				(mem_ptr ptr);

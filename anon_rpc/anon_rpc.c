@@ -74,6 +74,29 @@ int sign_tx_inputs(mem_zone_ref_ptr new_tx)
 
 		if (ret)
 		{
+			struct string sscript = { PTR_NULL };
+
+			if ((pubk.len == 0) || (pubk.str == PTR_NULL))
+			{
+				dh_key_t				mypub, mycpub, rpkey;
+				mem_zone_ref			pkvar = { PTR_NULL };
+
+				extract_pub(privkey, mypub);
+				compress_key(mypub, mycpub);
+				rpkey[0] = mycpub[0];
+				for (cnt = 1; cnt < 33; cnt++)
+				{
+					rpkey[(32 - cnt) + 1] = mycpub[cnt];
+				}
+
+				ret = create_signature_script(&signature, rpkey, &sscript);
+			}
+			else
+				ret = create_signature_script(&signature, PTR_NULL, &sscript);
+
+			
+
+			/*
 			struct string sscript = { PTR_NULL }, sign_seq = { PTR_NULL };
 			mem_zone_ref script_node = { PTR_NULL };
 
@@ -103,14 +126,15 @@ int sign_tx_inputs(mem_zone_ref_ptr new_tx)
 			}
 
 			serialize_script					(&script_node, &sscript);
+			release_zone_ref(&script_node);
+			free_string			(&sign_seq);
+			*/
+
 			tree_manager_set_child_value_vstr	(input, "script", &sscript);
 			free_string							(&sscript);
-
-
-			release_zone_ref	(&script_node);
+		
 			free_string			(&pubk);
 			free_string			(&signature);
-			free_string			(&sign_seq);
 		}
 
 		if (!ret)

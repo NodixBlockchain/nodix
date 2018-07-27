@@ -44,6 +44,8 @@ NODE_API int			C_API_FUNC		new_peer_node(mem_zone_ref_ptr node_def){return 0;}
 NODE_API int			C_API_FUNC		read_node_msg(mem_zone_ref_ptr node){return 0;}
 NODE_API int			C_API_FUNC		send_node_messages(mem_zone_ref_ptr node){return 0;}
 NODE_API int			C_API_FUNC		node_add_block_header(mem_zone_ref_ptr node, mem_zone_ref_ptr hdr){return 0;}
+NODE_API int			C_API_FUNC		node_clear_block_headers(mem_zone_ref_ptr node) { return 0; }
+NODE_API int			C_API_FUNC		broadcast_block_inv(mem_zone_ref_ptr from_node, mem_zone_ref_ptr block) { return 0; }
 NODE_API int			C_API_FUNC		queue_version_message(mem_zone_ref_ptr node){return 0;}
 NODE_API int			C_API_FUNC		queue_verack_message(mem_zone_ref_ptr node){return 0;}
 NODE_API int			C_API_FUNC		queue_ping_message(mem_zone_ref_ptr node){return 0;}

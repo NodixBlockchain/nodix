@@ -364,7 +364,8 @@ OS_API_C_FUNC(int) blk_find_last_pos_block(mem_zone_ref_ptr pindex, unsigned int
 	{
 		if (load_blk_hdr(pindex, hash))
 		{
-			tree_manager_get_child_value_i32(pindex, NODE_HASH("time"), block_time);
+			if(block_time!=PTR_NULL)
+				tree_manager_get_child_value_i32(pindex, NODE_HASH("time"), block_time);
 			return 1;
 		}
 		else

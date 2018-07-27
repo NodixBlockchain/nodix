@@ -143,7 +143,7 @@ OS_API_C_FUNC(int) truncate_chain(uint64_t to_height)
 		current_height = (file_size("blocks") / 512) - 1;
 	}
 
-	create_sorted_block_index(current_height);
+	create_sorted_block_index		(current_height + 1);
 
 
 	//copy new last block
@@ -153,7 +153,7 @@ OS_API_C_FUNC(int) truncate_chain(uint64_t to_height)
 	release_zone_ref				(&blk);
 
 	tree_manager_set_child_value_i32(&self_node, "last_block_time", time);
-	tree_manager_set_child_value_i32(&self_node, "block_height", current_height);
+	tree_manager_set_child_value_i64(&self_node, "block_height", current_height);
 
 	
 	
@@ -1001,9 +1001,8 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 	size_t				nz1 = 0, nz2 = 0;
 	struct string		signature = { PTR_NULL }, msg_str = { PTR_NULL };
 	int					ret = 1;
-	uint64_t			block_height;
-	int					testing=0;
-	unsigned int		keep_block, cur_len;
+	uint64_t			testing,block_height, cur_len;
+	unsigned int		keep_block;
 
 	tree_manager_set_child_value_i32(&self_node, "next_check", get_time_c() + 5);
 	
@@ -1059,7 +1058,8 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 	*/
 	node_aquire_mining_lock();
 	
-	tree_manager_get_child_value_i32	(node, NODE_HASH("testing_chain"), &testing);
+	if (!tree_manager_get_child_value_i64(node, NODE_HASH("testing_chain"), &testing))
+		testing = 0;
 		
 	if (testing>0)
 	{
@@ -1068,12 +1068,11 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 
 		log_output("testing chain\n");
 
-		if (!tree_manager_get_child_value_i32(node, NODE_HASH("bestChainDepth"), &bestChainDepth))
+		if (!tree_manager_get_child_value_i32(&self_node, NODE_HASH("bestChainDepth"), &bestChainDepth))
 			bestChainDepth = 0;
 		
-		
 		if (!tree_manager_get_child_value_hash(node, NODE_HASH("last_header_hash"), lh))
-			node_get_hash_idx(testing-1, lh);
+			get_block_hash(testing, lh);
 
 		tree_manager_create_node			("log", NODE_LOG_PARAMS, &log);
 		tree_manager_set_child_value_hash	(&log, "ph", prevHash);
@@ -1089,7 +1088,7 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 			return 0;
 		}
 
-		new_len	=	node_add_block_header(node, &header);
+		new_len	= node_add_block_header(node, &header);
 		
 
 		tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
@@ -1104,9 +1103,8 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 			{ 
 				log_output						("switching to new chain \n");
 				tree_manager_set_child_value_i32(node, "testing_chain", 0);
+				node_clear_block_headers		(node);
 			}
-
-			
 		}
 		release_zone_ref(&tx_list);
 		release_zone_ref(&header);
@@ -1137,17 +1135,19 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 		if (!tree_manager_get_child_value_i32(&header, NODE_HASH("keep_block"), &keep_block))
 			keep_block = 1;
 
+		free_string			(&signature);
+		release_zone_ref	(&header);
+		release_zone_ref	(&tx_list);
+		node_release_mining_lock();
+
 		if (!ret)
 		{
-			log_output("not check chain\n");
-
-			free_string		(&signature);
-			release_zone_ref(&header);
-			release_zone_ref(&tx_list);
-			node_release_mining_lock();
+			log_output		("not check chain\n");
 			return (keep_block==1)?0:1;
 		}
 		log_output("check chain\n");
+
+		return 1;
 	}
 
 	if (pos_kernel != PTR_NULL)
@@ -1160,9 +1160,6 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 		tree_manager_write_node_sig(&sig, 0, signature.str, signature.len);
 		release_zone_ref(&sig);
 	}
-
-
-	
 
 	if (find_block_hash(blk_hash, block_height,PTR_NULL))
 	{
@@ -1205,7 +1202,11 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 		return 1;
 	}
 
-	
+	if (ret)
+	{
+		broadcast_block_inv(node,&header);
+	}
+
 	
 	if (ret)
 	{
@@ -1269,6 +1270,8 @@ int handle_message(mem_zone_ref_ptr node,const char *cmd,mem_zone_ref_ptr payloa
 
 	if (!strncmp_c(cmd, "headers", 7))return handle_headers(node, payload);
 	if (!strncmp_c(cmd, "block", 5))return handle_block(node, payload);
+	if (!strncmp_c(cmd, "getdata", 7))return handle_getdata(node, payload);
+	if (!strncmp_c(cmd, "getblocks", 9))return handle_getblocks(node, payload);
 	//if (!strncmp_c(cmd, "inv", 3))return handle_inv(node, payload);
 
 	tree_manager_get_child_value_i32(node, NODE_HASH("testing_chain"), &testing);
@@ -1284,8 +1287,6 @@ int handle_message(mem_zone_ref_ptr node,const char *cmd,mem_zone_ref_ptr payloa
 	
 	
 	if (!strncmp_c(cmd, "getaddr", 7))return handle_getaddr(node, payload);
-	if (!strncmp_c(cmd, "getdata", 7))return handle_getdata(node, payload);
-	if (!strncmp_c(cmd, "getblocks", 9))return handle_getblocks(node, payload);
 	if (!strncmp_c(cmd, "file", 4))return handle_file(node, payload);
 
 	

@@ -7,9 +7,8 @@
 	#define C_IMPORT			__declspec(dllimport)
 	typedef __int64				int64_t;
 	typedef unsigned __int64	uint64_t;
-	#define INLINE_C_FUNC		__inline
-
 	#define struct_packed 
+	#define INLINE_C_FUNC		__inline
 
 	#if defined(_M_X64) || defined(__amd64__)
 
