@@ -47,6 +47,7 @@ let NODE_BITCORE_NODE SelfNode = `
 	"privKeyVersion":0x55,
 	(NODE_GFX_BINT)"paytxfee" : 0,
 	"block_height" : 0,
+	"data_dir" : "d:\nodix",
 	"useGC" : false,
 	(NODE_GFX_INT)"version"  : 60018,
 	(NODE_GFX_BOOL)"uPnP":false,

@@ -76,7 +76,7 @@ OS_API_C_FUNC(int) b58tobin(void *bin, size_t *binszp, const char *b58, size_t b
 	const unsigned char *b58u = (void*)b58;
 	unsigned char *binu = bin;
 	size_t outisz = (binsz + 3) / 4;
-	unsigned long outi[2048];
+	unsigned long *outi;
 	uint64_t t;
 	unsigned long c;
 	size_t i, j;
@@ -87,6 +87,8 @@ OS_API_C_FUNC(int) b58tobin(void *bin, size_t *binszp, const char *b58, size_t b
 	if (!b58sz)
 		b58sz = strlen_c(b58);
 
+	outi = malloc_c(outisz * 4 + 1);
+
 	memset_c(outi, 0, outisz * sizeof(*outi));
 
 	// Leading zeros, just count
@@ -96,11 +98,17 @@ OS_API_C_FUNC(int) b58tobin(void *bin, size_t *binszp, const char *b58, size_t b
 	for (; i < b58sz; ++i)
 	{
 		if (b58u[i] & 0x80)
+		{
 			// High-bit set on invalid digit
+			free_c(outi);
 			return 0;
+		}
 		if (b58digits_map[b58u[i]] == -1)
+		{
 			// Invalid base58 digit
+			free_c(outi);
 			return 0;
+		}
 		c = (unsigned)b58digits_map[b58u[i]];
 		for (j = outisz; j--;)
 		{
@@ -109,11 +117,19 @@ OS_API_C_FUNC(int) b58tobin(void *bin, size_t *binszp, const char *b58, size_t b
 			outi[j] = t & 0xffffffff;
 		}
 		if (c)
+		{
 			// Output number too big (carry to the next int32)
+			free_c(outi);
 			return 0;
+		}
+		
+			
 		if (outi[0] & zeromask)
+		{
 			// Output number too big (last int32 filled too far)
+			free_c(outi);
 			return 0;
+		}
 	}
 
 	j = 0;
@@ -146,6 +162,8 @@ OS_API_C_FUNC(int) b58tobin(void *bin, size_t *binszp, const char *b58, size_t b
 		--*binszp;
 	}
 	*binszp += zerocount;
+
+	free_c(outi);
 
 	return 1;
 }
