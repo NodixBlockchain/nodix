@@ -50,7 +50,7 @@ let NODE_BITCORE_NODE SelfNode = `
 	"useGC" : false,
 	(NODE_GFX_INT)"version"  : 60018,
 	(NODE_GFX_BOOL)"uPnP":false,
-	(NODE_GFX_INT)"bestChainDepth":3,
+	(NODE_GFX_INT)"bestChainDepth":2,
 	(NODE_GFX_INT)"maxMsgSize":1024,
 	(NODE_GFX_INT)"checktxsign"  : 0,
 	(NODE_GFX_INT)"next_check"  : 0,
