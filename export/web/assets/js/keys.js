@@ -1013,7 +1013,26 @@ class AccountList {
         old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
     }
 
+    scan_account() {
+        var self = this;
 
+        var AddrAr = [];
+
+        for (var n = 0; n < this.addrs.length; n++) {
+            AddrAr.push(this.addrs[n].address);
+        }
+
+        rpc_call('rescanaddrs', [AddrAr], function (data) {
+
+            rpc_call('getpubaddrs', [this.accountName], function (data) {
+                self.update_addrs();
+                for (var n = 0; n < self.accountSelects.length; n++) {
+                    self.update_addrs_select(self.accountSelects[n]);
+                }
+            });
+
+        });
+    }
     scan_addr(address) {
         var self = this;
 
@@ -1095,6 +1114,8 @@ class AccountList {
             rpc_call('getpubaddrs', [this.accountName, shownull], function (data) {
 
                 $('#newaddr').css('display', 'block');
+
+                $('#rescan-all').css('display', 'block');
 
                 if ((typeof data.result.addrs === 'undefined') || (data.result.addrs.length == 0)) {
                     self.addrs = null;
@@ -1357,7 +1378,22 @@ class AccountList {
         col1.appendChild(input);
         row.appendChild(col1);
         container.appendChild(row);
-        
+
+        row = document.createElement('div');
+        col1 = document.createElement('div');
+
+        input = document.createElement('input');
+
+        input.id = "rescan-all";
+        input.name = "rescan-all";
+        input.style = 'display: none';
+        input.value = "rescan all addresses";
+        input.type = "button";
+        input.onclick = function () { self.scan_account(); }
+
+        col1.appendChild(input);
+        row.appendChild(col1);
+        container.appendChild(row);
 
         row                         = document.createElement('div');
         col1                        = document.createElement('div');
