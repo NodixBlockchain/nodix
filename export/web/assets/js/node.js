@@ -2,7 +2,8 @@
 class Node
 {
     make_node_html(name, node) {
-        var html = '<div class="container">';
+        var html = '<div class="container" style="border-bottom:2px #000 dashed;" >';
+
 
         html += make_var_html("user agent", node.user_agent);
 
