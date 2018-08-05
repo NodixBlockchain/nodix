@@ -3,7 +3,7 @@
 #endif
 
 
-#define MAX_THREADS 64
+#define MAX_THREADS 31
 
 LIBC_API size_t			C_API_FUNC file_size(const char *path);
 LIBC_API int			C_API_FUNC append_file(const char *path, const void *data, size_t data_len);

@@ -4043,7 +4043,7 @@ OS_API_C_FUNC(int) listaccounts(mem_zone_ref_const_ptr params, unsigned int rpc_
 OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
 {
 	mem_zone_ref username_n = { PTR_NULL }, param = { PTR_NULL }, addr_list = { PTR_NULL };
-	unsigned int shownull,flags;
+	unsigned int shownull;
 	
 	if (!tree_manager_get_child_at(params, 0, &username_n))
 		return 0;
@@ -4082,13 +4082,14 @@ OS_API_C_FUNC(int) getmininginfo(mem_zone_ref_const_ptr params, unsigned int rpc
 	tree_manager_get_child_value_i32(&my_node, NODE_HASH("current_pow_diff"), &bits);
 	bsize = 1024;
 
+	/*fdiff = getdifficulty(bits);*/
 	fdiff = GetDifficulty(bits);
 
 
 	tree_manager_set_child_value_i64(result, "blocks", height);
 	tree_manager_set_child_value_i32(result, "currentblocksize", bsize);
 	tree_manager_set_child_value_i64(result, "currentblockweight", 0);
-	tree_manager_set_child_value_double(result, "difficulty", fdiff);
+	tree_manager_set_child_value_float(result, "difficulty", fdiff);
 	tree_manager_set_child_value_str(result, "chain", "main");
 
 
@@ -4106,6 +4107,9 @@ OS_API_C_FUNC(int) getwork(mem_zone_ref_const_ptr params, unsigned int rpc_mode,
 	mem_zone_ref	pn = { PTR_NULL };
 	uint64_t		last_blk;
 	unsigned int	bits, n, now, next_block_time, gen_new_block;
+
+	if (!has_peers())
+		return 0;
 	
 	tree_manager_get_child_value_i64(&my_node, NODE_HASH("block_height"), &last_blk);
 
@@ -4324,16 +4328,20 @@ OS_API_C_FUNC(int) getblocktemplate(mem_zone_ref_const_ptr params, unsigned int 
 {
 	char			workid[16];
 	char			bitsStr[16];
-	unsigned char   *bbits;
 	hash_t			block_hash, diffHash, rdiffHash;
 	unsigned char	rnd[8];
-	struct	string	param = { 0 };
+	struct	string	param = { 0 }, emptystr = { 0 };
 	struct	string	param2 = { 0 };
 	mem_zone_ref	cbtx = { PTR_NULL }, txs = { PTR_NULL }, blk_txs = { PTR_NULL }, my_list = { PTR_NULL }, caps = { PTR_NULL }, req_caps = { PTR_NULL }, pn = { PTR_NULL }, reqcaps = { PTR_NULL }, cap = { PTR_NULL };
 	mem_zone_ref_ptr tx = PTR_NULL;
-	unsigned int	n, version, time, bits, rbits, gen_new_block, now;
+	unsigned char	*bbits;
+	unsigned int	rbits, mintime;
+	unsigned int	n, version, time, bits, gen_new_block, now;
 	uint64_t		height, total_fees;
 	uint64_t		last_blk;
+
+	if (!has_peers())
+		return 0;
 
 	tree_manager_get_child_value_i64(&my_node, NODE_HASH("block_height"), &last_blk);
 	
@@ -4362,8 +4370,8 @@ OS_API_C_FUNC(int) getblocktemplate(mem_zone_ref_const_ptr params, unsigned int 
 	}
 
 
-	default_RNG					(rnd, 6);
-	bin_2_hex					(rnd, 6, workid);
+	default_RNG					(rnd, 4);
+	bin_2_hex					(rnd, 4, workid);
 
 	node_aquire_mining_lock();
 
@@ -4389,8 +4397,6 @@ OS_API_C_FUNC(int) getblocktemplate(mem_zone_ref_const_ptr params, unsigned int 
 		if (next_block.zone != PTR_NULL)
 			release_zone_ref						(&next_block);
 
-		
-
 		node_create_pow_block			(&next_block, mining_addr);
 		node_fill_block_from_mempool	(&next_block);
 
@@ -4408,29 +4414,53 @@ OS_API_C_FUNC(int) getblocktemplate(mem_zone_ref_const_ptr params, unsigned int 
 	tree_manager_get_child_value_i32	(&next_block, NODE_HASH("bits"), &bits);
 	tree_manager_get_child_value_i64	(&next_block, NODE_HASH("height"), &height);
 
-	/*
+	get_block_time						(height-1, &mintime);
+
+	
 	bbits = &bits;
 	rbits = ((bbits[0] << 24) | (bbits[1] << 16)  | (bbits[2] << 8) | (bbits[3]));
-	*/
+	
 	SetCompact							(bits, diffHash);
 	uitoa_s								(bits, bitsStr, 16, 16);
+
+	//time += 3600 * 2;
 
 	for (n = 0; n < 32; n++)
 		rdiffHash[31 - n] = diffHash[n];
 
 	tree_manager_set_child_value_str	(result, "bits", bitsStr);
-	tree_manager_set_child_value_hash	(result, "target", diffHash);
+	tree_manager_set_child_value_hash	(result, "target", rdiffHash);
 	tree_manager_set_child_value_i32	(result, "curtime", time);
+	tree_manager_set_child_value_i32	(result, "mintime", mintime);
+	
+	tree_manager_set_child_value_i32	(result, "expires", 30);
 	tree_manager_set_child_value_i32	(result, "sizelimit", 1024*1024);
 	tree_manager_set_child_value_i32	(result, "sigoplimit", 2000);
 	tree_manager_set_child_value_i32	(result, "sigops", 2000);
+	tree_manager_set_child_value_i32	(result, "weightlimit", 4000000);
+	tree_manager_set_child_value_i32	(result, "vbrequired", 0);
 	
 	
 	tree_manager_set_child_value_i64	(result, "height", height);
 	tree_manager_set_child_value_hash	(result, "previousblockhash",block_hash);
-	tree_manager_set_child_value_i32	(result, "version", 1);
-	tree_manager_set_child_value_i64	(result, "noncerange", 0x00000000ffffffff);
+	tree_manager_set_child_value_i32	(result, "version", 2);
+	tree_manager_set_child_value_str	(result, "noncerange", "00000000ffffffff");
 	tree_manager_set_child_value_str	(result, "workid", workid);
+
+	tree_manager_add_child_node			(result, "mutable", NODE_JSON_ARRAY, PTR_NULL);
+
+	emptystr.str = "";
+	emptystr.len = 0;
+	emptystr.size = 1;
+
+
+	tree_manager_add_child_node			(result, "coinbaseaux", NODE_GFX_OBJECT, &caps);
+	release_zone_ref					(&caps);
+
+
+	tree_manager_add_child_node			(result, "rules", NODE_JSON_ARRAY, &caps);
+	tree_manager_set_child_value_str	(&caps, "0", "csv");
+	release_zone_ref					(&caps);
 
 	tree_manager_add_child_node		   (result, "capabilities", NODE_JSON_ARRAY, &caps);
 	
@@ -4442,13 +4472,13 @@ OS_API_C_FUNC(int) getblocktemplate(mem_zone_ref_const_ptr params, unsigned int 
 	tree_manager_write_node_str		   (&cap, 0, "workid");
 	release_zone_ref				   (&cap);
 
-	/*
+	
 	tree_manager_add_child_node		   (&caps, "2", NODE_GFX_STR, &cap);
 	tree_manager_write_node_str		   (&cap, 0, "coinbasevalue");
 	release_zone_ref				   (&cap);
-	*/
+	
 
-	tree_manager_add_child_node		   (&caps, "2", NODE_GFX_STR, &cap);
+	tree_manager_add_child_node		   (&caps, "3", NODE_GFX_STR, &cap);
 	tree_manager_write_node_str		   (&cap, 0, "coinbasetxn");
 	release_zone_ref				   (&cap);
 	
@@ -4490,14 +4520,12 @@ OS_API_C_FUNC(int) getblocktemplate(mem_zone_ref_const_ptr params, unsigned int 
 	release_zone_ref					(&caps);
 	release_zone_ref					(&reqcaps);
 
-	//tree_manager_set_child_value_i64	(result, "coinbasevalue", total_fees);
+	tree_manager_set_child_value_i64	(result, "coinbasevalue", total_fees);
 	
 	node_release_mining_lock();
 
-	
 	return 1;
 }
-
 
 
 OS_API_C_FUNC(int) submitblock(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
@@ -4512,6 +4540,9 @@ OS_API_C_FUNC(int) submitblock(mem_zone_ref_const_ptr params, unsigned int rpc_m
 	unsigned int	n;
 	int				ok = 0;
 
+	if (!has_peers())
+		return 0;
+
 	tree_manager_get_child_value_i64(&my_node, NODE_HASH("block_height"), &last_blkh);
 
 	if (block_pow_limit())
@@ -4524,11 +4555,10 @@ OS_API_C_FUNC(int) submitblock(mem_zone_ref_const_ptr params, unsigned int rpc_m
 
 		if (tree_manager_get_child_at(params, 1, &pn))
 		{
-			const struct string workidStr = { 0 };
+			struct string workidStr = { 0 };
 
 			if (tree_manager_get_child_value_istr(&pn, NODE_HASH("workid"), &workidStr, 0))
 			{
-
 				free_string(&workidStr);
 			}
 			release_zone_ref(&pn);
@@ -4538,30 +4568,37 @@ OS_API_C_FUNC(int) submitblock(mem_zone_ref_const_ptr params, unsigned int rpc_m
 
 		if (xparam.len > 0)
 		{
-			hash_t ph;
+			hash_t  ph;
+			char	hex[9];
 			struct string param = { PTR_NULL }, new_sig = { PTR_NULL };
 			mem_zone_ref new_blk = { PTR_NULL },new_txs = { PTR_NULL };
-			unsigned int done, rd2, rd3;
+			unsigned int done, rd2,mcnt;
 			unsigned int *pstr;
 
-
-			
 			tree_manager_find_child_node(&my_node, NODE_HASH("last_block"), NODE_BITCORE_BLK_HDR, &last_blk);
 			tree_manager_get_child_value_hash(&last_blk, NODE_HASH("blkHash"), hash);
 			release_zone_ref(&last_blk);
 
+			param.len  = xparam.len / 2;
 
+			if (param.len & 3)
+				param.len = (param.len & (~3)) + 4;
 
-			param.len = xparam.len / 2;
 			param.size = param.len + 1;
 			param.str = malloc_c(param.size);
 
 			pstr = (unsigned int *)param.str;
+		
+			/*
+			log_output("\n------------------------------------------------\n");
+			log_output(xparam.str);
+			log_output("\n------------------------------------------------\n");
+			*/
 
-			n = 0;
-			while (n < (param.len / 4))
+			hex[8] = 0;
+			
+			for (n=0; n < (xparam.len / 8); n++)
 			{
-				char	hex[9];
 				hex[0] = xparam.str[n * 8 + 6];
 				hex[1] = xparam.str[n * 8 + 7];
 
@@ -4573,11 +4610,25 @@ OS_API_C_FUNC(int) submitblock(mem_zone_ref_const_ptr params, unsigned int rpc_m
 
 				hex[6] = xparam.str[n * 8 + 0];
 				hex[7] = xparam.str[n * 8 + 1];
-
-				hex[8] = 0;
+				
 				pstr[n] = strtoul_c(hex, PTR_NULL, 16);
-				n++;
 			}
+
+			if ((n * 8) < xparam.len)
+			{
+				memset_c(hex, '0', 9);
+				mcnt = xparam.len - (n * 8);
+				
+				while (mcnt>0)
+				{
+					hex[(8 - mcnt) + 0] = xparam.str[n * 8 + ( mcnt - 2 )];
+					hex[(8 - mcnt) + 1] = xparam.str[n * 8 + ( mcnt - 1 )];
+					mcnt -= 2;
+				}
+
+				pstr[n] = strtoul_c(hex, PTR_NULL, 16);
+			}
+
 			free_string				(&xparam);
 
 			tree_manager_create_node("blk", NODE_BITCORE_BLK_HDR, &new_blk);
@@ -4595,13 +4646,15 @@ OS_API_C_FUNC(int) submitblock(mem_zone_ref_const_ptr params, unsigned int rpc_m
 			
 			tree_manager_get_child_value_hash(&new_blk, NODE_HASH("prev"), ph);
 
+			tree_manager_dump_node_rec(&new_blk, 0, 8); 
+
 			
 			if ((rd >= 80) && (!memcmp_c(ph,hash,sizeof(hash_t))))
 			{
 				hash_t			bh;
 				uint64_t		block_height;
 				mem_zone_ref	node_blks = { PTR_NULL }, tx_list = { PTR_NULL };
-				unsigned int	nonce;
+
 
 				compute_block_hash				 (&new_blk, bh);
 

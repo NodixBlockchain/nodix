@@ -1357,30 +1357,12 @@ class AccountList {
         col1.appendChild           ( this.p);
         row.appendChild            (col1);
         container.appendChild(row);
-        span                       = document.createElement('span');
-        row                         = document.createElement('div');
-        col1                        = document.createElement('div');
-
-        row.className = "row";
-        col1.className = "col-md-4";
-        input = document.createElement('input');
-
-        input.id = "show_null";
-        input.name = "show_null";
-        input.value = '1';
-        input.style = 'display: inline';
-        input.type = "checkbox";
-        input.onchange = function () { self.accountselected(self.accountName); }
-      
-
-        span.innerHTML = 'show address with no balance';
-        col1.appendChild(span);
-        col1.appendChild(input);
-        row.appendChild(col1);
-        container.appendChild(row);
-
+        span = document.createElement('span');
         row = document.createElement('div');
+        row.className = "row";
+
         col1 = document.createElement('div');
+        col1.className = "col-md-4";
 
         input = document.createElement('input');
 
@@ -1393,6 +1375,26 @@ class AccountList {
 
         col1.appendChild(input);
         row.appendChild(col1);
+        container.appendChild(row);
+
+        row = document.createElement('div');
+        row.className = "row";
+        col1 = document.createElement('div');
+        col1.className = "col-md-4";
+
+        input = document.createElement('input');
+        input.id = "show_null";
+        input.name = "show_null";
+        input.value = '1';
+        input.style = 'display: inline';
+        input.type = "checkbox";
+        input.onchange = function () { self.accountselected(self.accountName); }
+      
+        span.innerHTML = 'show address with no balance';
+        col1.appendChild(span);
+        col1.appendChild(input);
+        row.appendChild(col1);
+
         container.appendChild(row);
 
         row                         = document.createElement('div');

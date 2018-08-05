@@ -30,6 +30,7 @@ mem_zone_ref		self_node  = { PTR_INVALID };
 hash_t				null_hash = { 0xCD };
 
 mem_zone_ref		pos_kernel_def = { PTR_INVALID };
+mem_zone_ref		seed_node = { PTR_INVALID };
 tpo_mod_file		*pos_kernel = PTR_INVALID;
 unsigned int		ping_nonce = 0x01;
 
@@ -148,15 +149,18 @@ OS_API_C_FUNC(int) truncate_chain(uint64_t to_height)
 
 	//copy new last block
 	tree_manager_find_child_node	(&self_node, NODE_HASH("last_block"), NODE_BITCORE_BLK_HDR, &blk);
-	load_blk_hdr_at					(&blk, current_height);
-	tree_manager_get_child_value_i32(&blk, NODE_HASH("time"), &time);
-	release_zone_ref				(&blk);
+	if (!load_blk_hdr_at(&blk, current_height))
+	{
+		log_message("could not load last block after truncate", PTR_NULL);
+		return 0;
+	}
 
+	tree_manager_get_child_value_i32(&blk, NODE_HASH("time"), &time);
 	tree_manager_set_child_value_i32(&self_node, "last_block_time", time);
 	tree_manager_set_child_value_i64(&self_node, "block_height", current_height);
+	release_zone_ref(&blk);
 
-	
-	
+
 	if (load_blk_hdr_at(&blk, current_height))
 	{
 		if (blk_find_last_pow_block(&blk, PTR_NULL) >= 0)
@@ -170,7 +174,6 @@ OS_API_C_FUNC(int) truncate_chain(uint64_t to_height)
 		}
 		release_zone_ref(&blk);
 	}
-	
 	
 	if (load_blk_hdr_at(&blk, current_height))
 	{
@@ -188,12 +191,10 @@ OS_API_C_FUNC(int) truncate_chain(uint64_t to_height)
 		release_zone_ref(&blk);
 	}
 	
-	
-
 	get_blockreward(current_height + 1, &block_reward);
 	tree_manager_set_child_value_i64(&self_node, "pow_reward", block_reward);
 
-	get_stake_reward(current_height+1, &block_reward);
+	get_stake_reward(current_height + 1, &block_reward);
 	tree_manager_set_child_value_i64(&self_node, "pos_reward", block_reward);
 	return current_height;
 }
@@ -340,8 +341,13 @@ void rebuild_money_supply()
 int do_staking()
 {
 	struct string username = { 0 };
-	mem_zone_ref mempool = { PTR_NULL }, newblk = { PTR_NULL };
+	mem_zone_ref mempool = { PTR_NULL }, newblk = { PTR_NULL }, peer_nodes = { PTR_NULL };
+	unsigned int num_nodes;
 	int newblkret;
+
+
+	if (!has_peers())
+		return 0;
 
 	if (!node_aquire_mempool_lock(&mempool))
 		return 0;
@@ -404,6 +410,8 @@ OS_API_C_FUNC(int) accept_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_lis
 	unsigned int		is_staking;
 	unsigned int		checktx, block_time;
 
+	if (!node_is_next_block(header))
+		return 0;
 
 	if (!tree_manager_get_child_value_i32(header, NODE_HASH("time"), &block_time))
 		return 0;
@@ -1097,7 +1105,7 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 		log_message("testing chain at height : %new_len% - %cur_len%", &log);
 		release_zone_ref(&log);
 
-		if (new_len > (cur_len + bestChainDepth))
+		if (new_len >= (cur_len + bestChainDepth))
 		{
 			if(truncate_chain(testing))
 			{ 
@@ -1612,6 +1620,7 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 		mem_zone_ref	stake_mod_def = { PTR_NULL };
 		ret = resolve_script_var		(params, PTR_NULL,"SelfNode"							, NODE_BITCORE_NODE, &self_node,PTR_NULL);
 		if (ret)ret = resolve_script_var(params, PTR_NULL, "configuration.staking.pos_kernel", NODE_MODULE_DEF, &pos_kernel_def, PTR_NULL);
+		
 		if(ret)node_set_script			(params);
 	}
 
@@ -1721,13 +1730,11 @@ OS_API_C_FUNC(int) app_loop(mem_zone_ref_ptr params)
 	unsigned int		new_block = 0, new_tx = 0;;
 	
 
-
-	
-	empty_trash();
-	do_mark_sweep(get_tree_mem_area_id(),5000);
+	empty_trash			();
+	do_mark_sweep		(get_tree_mem_area_id(),5000);
 	
 
-	node_check_services();
+	node_check_services	();
 	
 	
 	node_check_new_connections	();

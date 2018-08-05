@@ -378,7 +378,7 @@ function check_hash(twit_id, parent) {
 
 function make_var_html(label,val)
 {
-    return '<div class="row"><div class="col-md-2"><label>'+label+'</label></div><div class="col-md-2"><span >'+val+'</span></div></div>';
+    return '<div class="row"><div class="col-sm-2"><label>' + label + '</label></div><div class="col-md" style="text-align:left"><span >' + val + '</span></div></div>';
 }
 
 function get_tx_html(tx, n) {

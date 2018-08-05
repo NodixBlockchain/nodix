@@ -18,7 +18,7 @@ NODE_API int			C_API_FUNC		node_del_txs_from_mempool(mem_zone_ref_ptr tx_list);
 NODE_API int			C_API_FUNC		node_del_btree_from_mempool();
 NODE_API int			C_API_FUNC		node_get_hash_idx(uint64_t block_idx, hash_t hash);
 NODE_API int			C_API_FUNC		node_get_last_block_time(ctime_t *otime);
-
+NODE_API int			C_API_FUNC		has_peers();
 NODE_API int			C_API_FUNC		node_remove_last_block();
 NODE_API int			C_API_FUNC		node_rewrite_txs(uint64_t nums);
 NODE_API int			C_API_FUNC		node_check_chain(mem_zone_ref_ptr node, mem_zone_ref_ptr hdr);

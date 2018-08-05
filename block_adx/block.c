@@ -3615,22 +3615,24 @@ OS_API_C_FUNC(int) make_genesis_block(mem_zone_ref_ptr genesis_conf,mem_zone_ref
 OS_API_C_FUNC(int) get_tx_data(mem_zone_ref_ptr tx, mem_zone_ref_ptr txData)
 {
 	struct string	txdata = { 0 };
-	size_t			size;
+	size_t			size,sz;
 	uint64_t		fee;
-	unsigned char	*buffer;
+	unsigned char	*buffer,*end;
 	hash_t txh;
 
-	tree_manager_get_child_value_i32(tx, NODE_HASH("size"), &size);
+	size	= get_node_size(tx);
+	buffer	= malloc_c(size);
+	end		= write_node(tx, buffer);
 
-	buffer = malloc_c(size);
-	write_node(tx, buffer);
+	sz		= mem_sub(buffer, end);
 
-	txdata.len = size * 2;
+	txdata.len	= size * 2;
 	txdata.size = txdata.len + 1;
-	txdata.str = malloc_c(txdata.size);
+	txdata.str	= malloc_c(txdata.size);
+	
+	bin_2_hex	(buffer, size, txdata.str);
 
-
-	bin_2_hex(buffer, size, txdata.str);
+	txdata.str[txdata.len] = 0;
 
 	free_c(buffer);
 
@@ -3641,6 +3643,7 @@ OS_API_C_FUNC(int) get_tx_data(mem_zone_ref_ptr tx, mem_zone_ref_ptr txData)
 	tree_manager_set_child_value_vstr	(txData, "data", &txdata);
 	tree_manager_set_child_value_i64	(txData, "fee", fee);
 	tree_manager_set_child_value_hash	(txData, "hash", txh);
+	tree_manager_set_child_value_hash	(txData, "txid", txh);
 	tree_manager_set_child_value_bool	(txData, "required", 1);
 
 	free_string(&txdata);

@@ -458,7 +458,7 @@ class BlockExplorer
         var html = 'filters : <br/>';
         
         for (var i = 0; i < this.blk_filters.length; i++) {
-            html += '<div><span onclick="remove_filter(' + i + ');" style="color:red;">X</span>' + this.blk_filters[i] + '</div>';
+            html += '<div><span onclick="MyBlocks.remove_filter(' + i + ');" style="color:red;">X</span>' + this.blk_filters[i] + '</div>';
         }
         this.blk_filts.innerHTML=html;
     }
@@ -616,7 +616,7 @@ class BlockExplorer
         for (var i = 0; i < this.blk_filters.length; i++)
         {
             if (!first) urlq += '&';
-            urlq += blk_filters[i];
+            urlq += this.blk_filters[i];
             first = 0;
         }
 
@@ -1359,7 +1359,7 @@ class BlockExplorer
 
 
         incol           = document.createElement('div');
-        incol.className = 'col-md-2';
+        incol.className = 'col-md';
 
         this.blk_filter_val         = document.createElement('input');
         this.blk_filter_val.type    = "text";

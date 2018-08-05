@@ -508,133 +508,6 @@ OS_API_C_FUNC(void) register_tpo_exports(tpo_mod_file *tpo_mod,const char *mod_n
 
 }
 
-struct ctx_t
-{
-	unsigned short StackSeg;
-	unsigned short DataSeg;
-	unsigned short CodeSeg;
-	unsigned int   mem_area_id;
-	unsigned int   tree_area_id;
-};
-
-struct sandbox_t
-{
-	struct ctx_t	newctx;
-	struct ctx_t	origctx;
-
-};
-
-
-int generate_export_stub(struct sandbox_t *sand_box,mem_ptr sec_ptr,size_t func_ofset,unsigned int StackOffset,mem_zone_ref_ptr stub_code)
-{
-	mem_stream				strm;
-	unsigned char			cpy_stack[] = { 0x8B,0x06,0x89,0x07,0x83,0xEE,0x04,0x83,0xEF,0x04,0x49,0x75,0xF3 };
-	unsigned int			jmp_adr;
-
-	mem_stream_init(&strm, stub_code, 0);
-
-	mem_stream_write_8		(&strm, 0x55);		//push ebp
-	mem_stream_write_16		(&strm, 0xE589);	//mov  ebp	, esp
-	mem_stream_write_8		(&strm, 0x60);		//pusha
-
-	mem_stream_write_16		(&strm, 0xB866);	//mov ax	, StackSeg
-	mem_stream_write_16		(&strm, sand_box->newctx.StackSeg);
-
-	mem_stream_write_16		(&strm, 0xC08E);	//mov es	, ax
-	mem_stream_write_16		(&strm, 0xFF31);	//xor edi	, edi
-
-	mem_stream_write_16		(&strm, 0x758D);	//lea esi	, [ebp+4]
-	mem_stream_write_8		(&strm, 0x04);
-	
-	mem_stream_write_8		(&strm, 0xB9);		//mov ecx	, StackOffset
-	mem_stream_write_32		(&strm, StackOffset);
-
-	mem_stream_write_16		(&strm, 0xE9C1);	///shr ecx	, 2
-	mem_stream_write_8		(&strm, 0x02);
-
-	mem_stream_write		(&strm,cpy_stack,sizeof(cpy_stack));
-
-	mem_stream_write_16		(&strm, 0xB866);	//mov ax	,	StackSeg
-	mem_stream_write_16		(&strm, sand_box->newctx.StackSeg);
-	
-	mem_stream_write_16		(&strm, 0xD08E);	//mov ss	,	ax
-	mem_stream_write_16		(&strm, 0xE431);	//xor esp	,	esp
-	
-	mem_stream_write_16		(&strm, 0xB866);	//mov ax	,	DataSeg
-	mem_stream_write_16		(&strm, sand_box->newctx.DataSeg);
-
-	mem_stream_write_16		(&strm, 0xC08E);	//mov es	,	ax
-	mem_stream_write_16		(&strm, 0xD88E);	//mov ds	,	ax
-	
-	mem_stream_write_8		(&strm, 0x9A);		//call CodeSeg:my_func
-	mem_stream_write_32		(&strm, func_ofset);
-	mem_stream_write_16		(&strm, sand_box->newctx.CodeSeg);
-
-	jmp_adr					= mem_stream_get_pos(&strm)+7;
-
-	mem_stream_write_8		(&strm, 0xEA);		//jmp OrigCodeSeg:export_stub_back
-	mem_stream_write_32		(&strm, jmp_adr);
-	mem_stream_write_16		(&strm, sand_box->origctx.CodeSeg);
-
-	mem_stream_write_16		(&strm, 0xB866);	//mov ax		,	OrigDataSeg
-	mem_stream_write_16		(&strm, sand_box->origctx.DataSeg);
-
-	mem_stream_write_16		(&strm, 0xC08E);	//mov es		,	ax
-	mem_stream_write_16		(&strm, 0xD88E);	//mov ds		,	ax
-
-	mem_stream_write_16		(&strm, 0xB866);	//mov ax		,	OrigStackSeg
-	mem_stream_write_16		(&strm, sand_box->origctx.DataSeg);
-	
-	mem_stream_write_16		(&strm, 0xD08E);	//mov ss		,	ax
-	
-	mem_stream_write_8		(&strm, 0x61);		//popa
-
-
-	mem_stream_write_16		(&strm, 0xEC89);	//mov esp		, ebp
-	
-	mem_stream_write_8		(&strm, 0xED);		//pop ebp
-
-	mem_stream_write_8		(&strm, 0xC2);		//ret StackOffset
-	mem_stream_write_16		(&strm, StackOffset);
-
-	/*
-	55						//push ebp
-	89 E5					//mov  ebp	, esp
-	60						//pusha
-	66 B8 20 00				//mov ax	, StackSeg
-	
-	8E C0					//mov es	, ax
-	31 FF					//xor edi	, edi
-	8D 75 04				//lea esi	, [ebp+4]
-	B9 04 00 00 00			//mov ecx	, StackOffset
-	C1 E9 02				//shr ecx	, 2
-		
-	8B 06 89 07 83 EE 04 83 EF 04 49 75 F3	// stack cpy
-		
-	66 B8	20 00			//mov ax	,	StackSeg
-	8E D0					//mov ss	,	ax
-	31 E4					//xor esp	,	esp
-
-	66 B8 70 00				//mov ax	,	DataSeg
-	8E C0					//mov es	,	ax
-	8E D8					//mov ds	,	ax
-		
-	9A 84 01 00 00 50 00	//call CodeSeg:my_func
-	EA C7 01 00 00 60 00	//jmp OrigCodeSeg:export_stub_back
-		
-	66 B8 80 00				//mov ax		,	OrigDataSeg
-	8E C0					//mov es		,	ax
-	8E D8					//mov ds		,	ax
-	66 B8 40 00				//mov ax		,	OrigStackSeg
-	8E D0					//mov ss		,	ax
-	61						//popa
-	89 EC					//mov esp		, ebp
-	5D						//pop ebp
-	C2 04 00				//ret StackOffset
-	*/
-	return 0;
- }
-
 
 OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_file,unsigned int imp_func_addr)
 {
@@ -1141,19 +1014,19 @@ OS_API_C_FUNC(int) load_module(const char *file, const char *mod_name, tpo_mod_f
 		return 0;
 	}
 
+
 	tpo_mod_init		(mod);
 	tpo_mod_load_tpo	(&mod_file, mod, 0);
 
-	uitoa_s				(get_zone_ptr(&mod->data_sections, 0), mod_addr, 16, 16);
-
 	register_tpo_exports(mod, mod_name);
-	
+
 	if (n_modz<32)
 		modz[n_modz++] = mod;
 
 	return 1;
 
 }
+
 
 
 
@@ -1191,7 +1064,6 @@ OS_API_C_FUNC(int) execute_script_mod_rcall(tpo_mod_file		*tpo_mod, const char *
 
 OS_API_C_FUNC(int) execute_script_mod_call(tpo_mod_file		*tpo_mod, const char *method)
 {
-
 	module_proc_ptr mod_func;
 
 	mod_func = (module_proc_ptr)get_tpo_mod_exp_addr_name(tpo_mod, method, 0);

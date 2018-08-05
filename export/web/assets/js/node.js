@@ -15,20 +15,73 @@ class Node
         html += make_var_html("ping", node.ping_delay + ' ms');
 
         if (typeof (node.last_block) != 'undefined')
-            html += '<div class="row"><div class="col-md-2"><label>last block</label></div><div class="col-md-2"><a class="hash-lnk" >' + node.last_block + '</a></div></div>';
+        {
+            html += make_var_html("last block", node.last_block);
+        }
+            //html += '<div class="row"><div class="col-sm"><label>last block</label></div><div class="col-sm"><a class="hash-lnk" >' + node.last_block + '</a></div></div>';
 
         html += '</div>';
 
-        $('#' + name).html(html);
+        $('#' + name).append(html);
         
     }
-
     
+
     make_modules_html(name, modules) {
         var self = this;
+        var row,container;
+
+        container = document.createElement('div');
+        container.className = 'container flex-center text-center';
+
+        row = document.createElement('div');
+        row.className = 'row ';
 
         $('#' + name).empty();
         for (var i = 0; i < modules.length; i++) {
+
+            var button,icon,span,col,br;
+
+            if (typeof modules[i].module != 'undefined')
+                var mDef = modules[i].module;
+            else
+                var mDef = modules[i];
+
+            col = document.createElement('div');
+            button = document.createElement('button');
+            icon = document.createElement('i');
+            span = document.createElement('span');
+            br = document.createElement('br');
+
+            col.className = 'col-md';
+
+            button.className = 'btn btn-primary btn-rounded waves-effect';
+            button.id = 'heading_' + mDef.name;
+            button.type = 'button';
+            button.setAttribute('data-toggle', "collapse");
+            button.setAttribute('data-target', '#mod_infos_' + mDef.name);
+            button.setAttribute('aria-expanded', false);
+            button.setAttribute('aria-controls','mod_infos_' + mDef.name);
+            
+            icon.className = "fa fa-cog  fa-2x";
+            span.innerHTML = mDef.name;
+
+            button.appendChild(icon);
+            button.appendChild(br);
+            button.appendChild(span);
+
+            col.appendChild(button);
+            row.appendChild(col);
+        }
+
+        container.appendChild(row);
+
+        $('#' + name).append(container);
+
+        //flex-center text-center
+
+        for (var i = 0; i < modules.length; i++) {
+
             var html = '';
 
             if (typeof modules[i].module != 'undefined')
@@ -36,19 +89,11 @@ class Node
             else
                 var mDef = modules[i];
 
-            html = '<section>'
-            html += '<h3 style="cursor:pointer" onclick="$(\'#mod_infos_' + mDef.name + '\').toggle();" >';
-            html += '<img src="/assets/img/mod.gif" alt="module" />';
-            html += '<span class="medium">' + mDef.name + '</span>';
-            if (typeof modules[i].base != 'undefined') html += '&nbsp;' + modules[i].base;
-            html += '</h3>';
-
-            html += '<div style="display:none;" id="mod_infos_' + mDef.name + '" >';
+            html += '<div class="collapse" role="tabpanel" aria-labelledby="heading_' + mDef.name + '" data-parent="#node_modules" id="mod_infos_' + mDef.name + '" >';
+            html += '<div class="mt-3">';
             html += '<div><span>file :</span><span>' + mDef.file + '</span></div>';
             html += '<div><span>size :</span><span>' + mDef.size + '</span>&nbsp;bytes</div>';
-
             html += '<h4>methods</h4>';
-
             html += '<ul id="mod_procs_' + mDef.name + '" style="padding-left:12px; list-style: square inside url(/assets/img/proc.gif);"  ;>'
             for (var n = 0; n < mDef.exports.length; n++) {
                 html += '<li  method="' + mDef.exports[n] + '">'
@@ -61,14 +106,10 @@ class Node
 
                 html += '<span  class="args"></span>';
                 html += '<p  class="desc"></p>';
-
-
                 html += '</li>';
             }
-            html += '</ul>'
-
-            html += '</div>'
-            html += '</section>';
+            html += '</ul>';
+            html += '</div></div>';
             $('#' + name).append(html);
         }
     }
@@ -224,29 +265,32 @@ class Node
             html += '<h1><strong>' + scripts[i].file + '</strong></h1>';
             for (var scriptk in scripts[i]) {
                 var script_var = scripts[i][scriptk];
-                html += '<div>';
-                html += '<label  ><h3 onclick=" $(\'#var_' + scriptk + '\').slideToggle();">' + scriptk + '</h3></label>';
-                if ((typeof script_var == 'object') || (typeof script_var == 'Array') || (script_var.length < 32)) {
-                    if (typeof script_var == 'object') {
-                        for (var ne = 0; ne < script_var.length; ne++) {
-                            html += '<div>' + script_var[ne] + '</div>';
+
+                if (script_var != null) {
+                    html += '<div>';
+                    html += '<label  ><h3 onclick=" $(\'#var_' + scriptk + '\').slideToggle();">' + scriptk + '</h3></label>';
+                    if ((typeof script_var == 'object') || (typeof script_var == 'Array') || (script_var.length < 32)) {
+                        if (typeof script_var == 'object') {
+                            for (var ne = 0; ne < script_var.length; ne++) {
+                                html += '<div>' + script_var[ne] + '</div>';
+                            }
                         }
+                        else
+                            html += '&nbsp;:&nbsp;<span>' + script_var + '</span>';
                     }
-                    else
-                        html += '&nbsp;:&nbsp;<span>' + script_var + '</span>';
+
+                    else {
+                        var str = '';
+
+                        if (typeof script_var == 'string')
+                            str = script_var.replace(/(?:\r\n|\r|\n)/g, '<br />');
+                        else if (typeof script_var == 'integer')
+                            str = script_var.toString();
+
+                        html += '<div id="var_' + scriptk + '" class="script_proc">' + str + '</div>';
+                    }
+                    html += '</div>'
                 }
-
-                else {
-                    var str = '';
-
-                    if (typeof script_var == 'string')
-                        str = script_var.replace(/(?:\r\n|\r|\n)/g, '<br />');
-                    else if (typeof script_var == 'integer')
-                        str = script_var.toString();
-
-                    html += '<div id="var_' + scriptk + '" class="script_proc">' + str + '</div>';
-                }
-                html += '</div>'
             }
             html += '</section>';
             html += '</div>'

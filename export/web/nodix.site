@@ -1,3 +1,4 @@
+
 let NODE_JSON_ARRAY stylesheets = `[
 	"/assets/fonts/fontawesome-webfont.woff2",
 	"/assets/plugins/bootstrap/css/bootstrap.min.css",
@@ -23,7 +24,6 @@ let NODE_JSON_ARRAY scripts = `[
 	"/assets/plugins/back-to-top.js",
 	"/assets/js/custom.js"
 ]`
-
 	
 let NODE_JSON_ARRAY metas = `[
 	
@@ -95,6 +95,8 @@ page index = `
 		api_base_url ='';
 		lang		= 'en';
 
+		$('#menu_node').addClass('active');
+
 		MyNode   = new Node();
 		MyBlocks = new BlockExplorer();
 
@@ -142,6 +144,8 @@ page services = `
 			site_base_url = '/nodix.site';
 			api_base_url  = '';
 			lang		  = 'en';
+
+			$('#menu_node').addClass('active');
 
 			MyNode = new Node();
 
@@ -191,6 +195,8 @@ page blocks = `
 	    lang			= 'en';
         api_base_url	= '';
 		site_base_url	= '/nodix.site';
+
+		$('#menu_blocks').addClass('active');
 
 		MyBlocks = new BlockExplorer();
 
@@ -244,7 +250,8 @@ page block(block_hash) = `
 		lang			= 'en';
 		site_base_url	= '/nodix.site';
 		api_base_url	= '';
-         
+        $('#menu_blocks').addClass('active');
+
 		var hash = '%block_hash%';
 
 		MyBlocks = new BlockExplorer();
@@ -285,6 +292,8 @@ page address(addr,page_idx) = `
 			api_base_url  ='';
 			lang		  = 'en';
 
+			$('#menu_blocks').addClass('active');
+
 			MyBlocks			  = new BlockExplorer();
 			MyBlocks.create_addr_panel('addrs','%addr%');
 
@@ -303,8 +312,6 @@ page address(addr,page_idx) = `
 	html_block "templates/footer.html"
 
 `
-
-
 	
 page tx(txid) = `
 
@@ -325,6 +332,8 @@ page tx(txid) = `
 			lang			= 'en';
 			site_base_url = '/nodix.site';
 	        api_base_url	= '';
+
+			$('#menu_blocks').addClass('active');
 
 			MyBlocks			  = new BlockExplorer();
 			MyBlocks.create_tx_panel('txPanel','%txid%');
@@ -362,6 +371,13 @@ page wallet(account_name) = `
 			lang			='en';
 			api_base_url	='';
 			site_base_url	='/nodix.site';
+
+			$('#menu_wallet').addClass('active');
+			$('#menu_wallet_main').addClass('active');
+
+			$('#menu').html('wallet');
+			$('#menu').attr('href','/nodix.site/wallet/');
+
 			ec				= new EC('secp256k1');
 
 			MyAccount		= new AccountList	('account_list','my_wallet',{'withSecret':false,'staking':false,'newAccnt':true});
@@ -410,6 +426,16 @@ page staking(account_name) = `
 		lang			='en';
 		api_base_url	='';
 		site_base_url	='/nodix.site';
+
+
+		$('#menu_wallet').addClass('active');
+		$('#menu_wallet_staking').addClass('active');
+		
+		$('#menu').html('wallet');
+		$('#menu').attr('href','/nodix.site/wallet/');
+
+		$('#sub_menu').html('staking');
+		$('#sub_menu').attr('href','/nodix.site/staking/');
 		
 		ec				= new EC('secp256k1');
 
@@ -419,6 +445,70 @@ page staking(account_name) = `
 
     
 		});
+	end_js
+
+	html_block "templates/footer.html"
+`
+
+	
+page transaction(account_name) = `
+	
+	push stylesheets,"/assets/css/plugins/blocks.css"
+	push scripts,"/assets/js/blocks.js"
+	push scripts,"/assets/js/ecdsa_bundle.js"
+	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
+	push scripts,"/assets/js/keys.js"
+	push scripts,"/assets/js/md5.min.js"
+
+	node_adx.node_list_accounts	(node_accounts)
+	set logged = 0;
+	
+	if(cookies.sessionid ! "" )
+		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
+	endif
+
+	
+	html_head "NodiX WALLET transaction" 
+	
+	html_block "templates/menu.html"
+	html_block "templates/transaction.html"
+	
+	html_scripts
+	
+	html_var logged;
+	html_var cookies.sessionid;
+	
+	html_js
+	jQuery(document).ready(function() 
+	{
+		
+		lang			='en';
+		api_base_url	='';
+		site_base_url	='/nodix.site';
+
+		$('#menu_wallet').addClass('active');
+		$('#menu_wallet_tx').addClass('active');
+
+		$('#menu').html('wallet');
+		$('#menu').attr('href','/nodix.site/wallet/');
+
+		$('#sub_menu').html('transaction');
+		$('#sub_menu').attr('href','/nodix.site/staking/');
+
+		
+		ec				= new EC('secp256k1');
+		paytxfee		=  %SelfNode.paytxfee%;
+		
+		$('#paytxfee').val(paytxfee);
+		
+		MyAccount		= new AccountList	('account_list','my_wallet',{'withSecret':true,'staking':false,'newAccnt':false});
+		MyAccount.setAddressText			('Enter the secret key for the addresses you want to use for the transaction on below, and check the box to enable transaction from this address.');
+		MyAccount.setAccounts				(%node_accounts%,'%account_name%');
+		
+		$('.coin_unit').html				(get_amount_coin(unit));
+		
+
+	});
 	end_js
 
 	html_block "templates/footer.html"
@@ -509,6 +599,8 @@ page application(app_name,account_name) = `
 		lang			='en';
 		api_base_url	='';
 		site_base_url	='/nodix.site';
+
+		$('#menu_apps').addClass('active');
 		
 		ec				= new EC('secp256k1');
 		paytxfee		=  %SelfNode.paytxfee%;
@@ -587,6 +679,8 @@ page applications(account_name) = `
 		lang			='en';
 		api_base_url	='';
 		site_base_url	='/nodix.site';
+
+		$('#menu_apps').addClass('active');
 		
 		ec				= new EC('secp256k1');
 		paytxfee		=  %SelfNode.paytxfee%;
@@ -601,60 +695,6 @@ page applications(account_name) = `
 
 		MyApps			=	new Applications();
 		MyApps.setApps						(%node_apps%);
-
-	});
-	end_js
-
-	html_block "templates/footer.html"
-`
-
-	
-page transaction(account_name) = `
-	
-	push stylesheets,"/assets/css/plugins/blocks.css"
-	push scripts,"/assets/js/blocks.js"
-	push scripts,"/assets/js/ecdsa_bundle.js"
-	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
-	push scripts,"/assets/js/keys.js"
-	push scripts,"/assets/js/md5.min.js"
-
-	node_adx.node_list_accounts	(node_accounts)
-	set logged = 0;
-	
-	if(cookies.sessionid ! "" )
-		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
-	endif
-
-	
-	html_head "NodiX WALLET transaction" 
-	
-	html_block "templates/menu.html"
-	html_block "templates/transaction.html"
-	
-	html_scripts
-	
-	html_var logged;
-	html_var cookies.sessionid;
-	
-	html_js
-	jQuery(document).ready(function() 
-	{
-		
-		lang			='en';
-		api_base_url	='';
-		site_base_url	='/nodix.site';
-		
-		ec				= new EC('secp256k1');
-		paytxfee		=  %SelfNode.paytxfee%;
-		
-		$('#paytxfee').val(paytxfee);
-		
-		MyAccount		= new AccountList	('account_list','my_wallet',{'withSecret':true,'staking':false,'newAccnt':false});
-		MyAccount.setAddressText			('Enter the secret key for the addresses you want to use for the transaction on below, and check the box to enable transaction from this address.');
-		MyAccount.setAccounts				(%node_accounts%,'%account_name%');
-		
-		$('.coin_unit').html				(get_amount_coin(unit));
-		
 
 	});
 	end_js

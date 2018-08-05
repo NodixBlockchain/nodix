@@ -1039,7 +1039,7 @@ class Applications
 
          div.className = "container";
          div.id = "apps";
-         
+
          if (this.apps != null) {
              for (n = 0; n < this.apps.length; n++) {
                  div.appendChild( this.get_app_header(this.apps[n]));
@@ -1066,12 +1066,7 @@ class Applications
 
         if (this.apps == null) return;
 
-        var section = document.createElement('section');
-        var h2 = document.createElement('h2');
-        h2.innerHTML = 'Applications';
-        section.appendChild(h2);
-        section.appendChild(this.get_apps_html());
-        document.getElementById('app_list').appendChild(section);
+        document.getElementById('app_list').appendChild(this.get_apps_html());
      }
 
 
