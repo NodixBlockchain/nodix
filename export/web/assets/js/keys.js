@@ -35,10 +35,6 @@ function privKeyAddr(username, addr, secret) {
             var DecHexkey = strtoHexString(un_enc(secret, xk));
             var addr = private_prefix + DecHexkey + '01';
 
-
-
-
-
             h = sha256(addr);
             h2 = sha256(h);
             crc = h2.slice(0, 8);
@@ -906,18 +902,28 @@ class AccountList {
             var n, num_addrs = this.addrs.length;
 
             for (n = 0; n < num_addrs; n++) {
-                var cell, span, input;
+                var cell, span, input,label;
                 var row = new_tbody.insertRow(n);
+                var a;
                 
-                row.className   = "my_wallet_addr";
-                row.setAttribute("addr", this.addrs[n].address);
+                row.className = "my_wallet_addr";
+                
 
-                row.addEventListener("click", function () { self.addr_selected(this.getAttribute('addr')); });
+                /*row.addEventListener("click", function () { self.addr_selected(this.getAttribute('addr')); });*/
 
                 cell            = row.insertCell(0);
                 cell.setAttribute("title", this.addrs[n].address)
-                cell.setAttribute("class", 'addr_label')
-                cell.innerHTML = this.addrs[n].label;
+                cell.setAttribute("class", 'addr_label');
+
+                a = document.createElement('a');
+                a.setAttribute("addr", this.addrs[n].address);
+                a.className = "btn btn-primary waves-effect waves-light"
+                a.setAttribute('data-toggle', 'modal');
+                a.setAttribute('data-target', '#PrivateKeyModal');
+                a.setAttribute('data-backdrop', 'false');
+                a.innerHTML = this.addrs[n].label;
+                a.addEventListener("click", function () { self.addr_selected(this.getAttribute('addr')); });
+                cell.appendChild(a);
 
                 span            = document.createElement('span');
                 span.setAttribute("amount", this.addrs[n].amount);
@@ -949,45 +955,58 @@ class AccountList {
                     cell            = row.insertCell(3);
                     cell.appendChild  (span);
 
+                    label = document.createElement('label');
+                    label.className = 'custom-control-label';
+                    label.setAttribute('for', 'selected_' + this.addrs[n].address);
+                    label.innerHTML = '&nbsp;';
 
                     input = document.createElement('input');
-                    input.type      = "checkbox";
-                    input.id        = 'selected_' + this.addrs[n].address;
-                    input.value     = '';
+                    input.id = 'selected_' + this.addrs[n].address;
+                    input.type = "checkbox";
+                    input.className = 'custom-control-input';
+                    input.value = 1;
                     input.setAttribute("addr", this.addrs[n].address);
 
                     input.addEventListener("change", function () { self.check_address( this.getAttribute('addr')); });
 
                     span = document.createElement('div');
+                    span.className = 'custom-control custom-checkbox';
                     span.appendChild(input);
+                    span.appendChild(label);
 
                     cell            = row.insertCell(4);
                     cell.className  = "select";
               
                     cell.appendChild(span);
-
-
+                    
                     cell = row.insertCell(5);
                 }
                 else
                 {
-                    input           = document.createElement('input');
-                    input.type      = "checkbox";
-                    input.id        = 'selected_' + this.addrs[n].address;
-                    input.value     = '';
+                    label = document.createElement('label');
+                    label.className= 'custom-control-label';
+                    label.setAttribute('for', 'selected_' + this.addrs[n].address);
+                    label.innerHTML = '&nbsp;';
+
+                    input = document.createElement('input');
+                    input.id = 'selected_' + this.addrs[n].address;
+                    input.type = "checkbox";
+                    input.className = 'custom-control-input';
+                    input.value = 1;
                     input.setAttribute("addr", this.addrs[n].address);
 
                     input.addEventListener("change", function () { self.check_address( this.getAttribute('addr')); });
 
                     span = document.createElement('div');
+                    span.className = 'custom-control custom-checkbox';
+                    
                     span.appendChild(input);
-
+                    span.appendChild(label);
+                    
                     cell            = row.insertCell(3);
                     cell.className  = "select";
               
                     cell.appendChild(span);
-
-
                     cell = row.insertCell(4);
                 }
                     
@@ -1082,6 +1101,10 @@ class AccountList {
             var new_tbody    = document.createElement('tbody');
             this.accountName = '';
 
+            $('#account_infos').css('display', 'none');
+
+            this.p.style.display = 'none';
+
             if (!this.opts.newAccnt) {
                 this.input.style.display = 'none';
                 $('#newaddr').css('display', 'none');
@@ -1104,6 +1127,10 @@ class AccountList {
         {
             var n;
             var self = this;
+
+            $('#account_infos').css('display', 'block');
+            this.p.style.display = 'block';
+
             var shownull = $('#show_null').is(':checked') ? true : false;
 
             this.accountName         = accnt_name;
@@ -1146,7 +1173,7 @@ class AccountList {
         var opt;
 
 
-        this.input.display = 'inline';
+        //this.input.display = 'inline';
 
 
         while (this.select.options.length) {
@@ -1288,18 +1315,176 @@ class AccountList {
         return true;
     }
 
+    makeModal(modal_id)
+    {
+        var modal,dialog,content,body,inner;
+
+        modal=document.createElement('div');
+        dialog=document.createElement('div');
+        content=document.createElement('div');
+        body=document.createElement('div');
+        inner=document.createElement('div');
+
+        modal.className='modal fade top modal-content-clickable';
+        modal.tabIndex=-1;
+        modal.id = modal_id;
+        modal.setAttribute('role','dialog');
+        modal.setAttribute('aria-labelledby','myModalLabel');
+        modal.setAttribute('data-backdrop','false');
+        modal.setAttribute('aria-hidden','true');
+        modal.style.display='none';
+
+        dialog.className='modal-dialog modal-frame modal-top modal-notify modal-info';
+        dialog.setAttribute('role','document');
+
+        content.className='modal-content';
+        body.className='modal-body';
+        inner.className='text-center';
+
+
+        body.appendChild(inner);
+        content.appendChild(body);
+        dialog.appendChild(content);
+        modal.appendChild(dialog);
+        document.body.appendChild(modal);
+
+        return inner;
+    }
+
+    newAddrForm()
+    {
+        var h3,a,inner,input,label,form,span;
+
+        form = document.createElement('form');
+
+        h3=document.createElement('h3');
+        h3.innerHTML='import';
+
+        form.appendChild(h3);
+
+        inner = document.createElement('div');
+        inner.className = 'md-form';
+
+        input = document.createElement('button');
+        input.className = 'btn btn btn-primary';
+        input.type = "button";
+        input.onclick = function () { generateKeys(); }
+        input.innerHTML = 'create new address';
+
+
+        inner.appendChild(input);
+        form.appendChild(inner);
+
+        inner = document.createElement('div');
+        inner.className = 'form-group row';
+
+        label = document.createElement('label');
+        label.className = 'col-form-label';
+        label.setAttribute('for', 'addrlabel');
+        label.innerHTML = 'Key label :';
+        
+        input = document.createElement('input');
+        input.id = "addrlabel";
+        input.name = "addrlabel";
+        input.type = "text";
+        input.className = 'form-control';
+        input.setAttribute('placeholder', 'new address');
+
+        inner.appendChild(label);
+        inner.appendChild(input);
+        form.appendChild(inner);
+
+        inner = document.createElement('div');
+        inner.className = 'form-group row';
+
+        label = document.createElement('label');
+        label.className = 'col-form-label';
+        label.setAttribute('for', 'pubaddr');
+        label.innerHTML = 'public address';
+        
+        input = document.createElement('input');
+        input.id = "pubaddr";
+        input.name = "pubaddr";
+        input.type = "text";
+        input.className = 'form-control';
+        input.setAttribute('disabled','disabled');
+
+        inner.appendChild(label);
+        inner.appendChild(input);
+        form.appendChild(inner);
+
+        inner = document.createElement('div');
+        inner.className = 'md-form';
+
+        label = document.createElement('label');
+        label.setAttribute('for', 'pubaddr');
+        label.innerHTML = 'private address';
+        
+        input = document.createElement('input');
+        input.id = "privkey";
+        input.name = "privkey";
+        input.type = "text";
+        input.className = 'form-control';
+        input.addEventListener("input", function () { newkey(this.value);});
+
+        inner.appendChild(input);
+        inner.appendChild(label);
+        form.appendChild(inner);
+
+        span=document.createElement('prv_key_msg');
+        span.style.color='red';
+        form.appendChild(span);
+      
+        inner = document.createElement('div');
+        inner.className = 'md-form';
+
+        label = document.createElement('label');
+        label.setAttribute('for', 'pubaddr');
+        label.innerHTML = 'secret key';
+        
+        input = document.createElement('input');
+        input.id = "imp_key";
+        input.name = "imp_key";
+        input.type = "text";
+        input.className = 'form-control';
+        input.addEventListener("input", function () { newkey(this.value);});
+
+        inner.appendChild(input);
+        inner.appendChild(label);
+        form.appendChild(inner);
+
+        inner = document.createElement('div');
+        inner.className = 'md-form';
+
+        input = document.createElement('button');
+        input.className = 'btn btn-primary';
+        input.type = "button";
+        input.addEventListener('click', function () { MyAccount.import_keys($('#addrlabel').val()); });
+        input.innerHTML = 'import';
+        inner.appendChild(input);
+        form.appendChild(inner);
+
+        span=document.createElement('imp_key_msg');
+        span.style.color='red';
+        form.appendChild(span);
+
+        return form
+
+        // <i class="icon-append fa fa-lock"></i><span>Do not forget this key, we do not own a copy, it is your responsibility to note it somewhere. <br /> You will not be able to withdraw your coins or make any transaction on our website if you loose it, neither sign bounties & get key your reward !</span>
+    }
+
 
     constructor(divName,listName,opts) {
         var self = this;
         var n;
-        var input,span,div, container, row, col1, col2, label, table,h2;
+        var input, span, div, inner, p,a,container, row, col1, label, table, h2;
         var ths = ["label", "balance", "uncomfirmed balance"];
         
         if (opts.withSecret)
-        {
             ths.push("secret");
-            ths.push("select");
-        }
+
+        ths.push("select");
+        ths.push("rescan");
 
         this.opts               = opts;
         this.accountSelects     = new Array();
@@ -1312,121 +1497,200 @@ class AccountList {
 
         div                 = document.getElementById(divName);
         container           = document.createElement('div');
-        col1                = document.createElement('div');
-        col2                = document.createElement('div');
-        row                 = document.createElement('div');
-        label               = document.createElement('label');
-        this.input          = document.createElement('input');
 
-        this.input.id        = "account_name";
-        this.input.name      = "account_name";
-        this.input.size      = 12;
-        this.input.value     = '';
-
-
-        this.select                     = document.createElement('select');
-        this.select.id                  = "my_account";
-        this.select.name                = "my_account";
-        this.select.style.display       = 'inline';
-        this.select.style.maxWidth      = '120px';
-
-
-
-        label.innerHTML                = "account";        
-        container.className            = "container";
-        row.className                  = "row";
-        col1.className                 = "col-md-2";
-        col2.className                 = "col-md-4";
-
-        col2.appendChild                 (this.select);
-        col2.appendChild                 (this.input);
-        col1.appendChild                 (label);
-        row.appendChild                  (col1);
-        row.appendChild                  (col2);
-        container.appendChild            (row);
-
-
-        row                          = document.createElement('div');
-        col1                         = document.createElement('div');
-        this.p                       = document.createElement('p');
-
-        row.className                = "row";
-        col1.className               = "col-md-6";
-        this.p.innerHTML             = 'Below are the addresses for your account.'
-
-        col1.appendChild           ( this.p);
-        row.appendChild            (col1);
-        container.appendChild(row);
-        span = document.createElement('span');
+        container.className = "card";
+        
+        /* header */        
         row = document.createElement('div');
-        row.className = "row";
+        row.className = "card-header  pt-3 aqua-gradient";
+        h2= document.createElement('h3');
+        h2.className = 'white-text mb-3 pt-3 font-weight-bold';
+        h2.innerHTML = 'Manage your wallet';
+        row.appendChild(h2);
+        container.appendChild(row);
+
+        /* body */
+        row = document.createElement('div');
+        row.className = "card-body px-lg-5 pt-0";
+
+        /* account select */
+        h2 = document.createElement('h3');
+        h2.innerHTML = 'Select an account'
 
         col1 = document.createElement('div');
-        col1.className = "col-md-4";
+        col1.className = "md-form";
 
-        input = document.createElement('input');
+        this.select = document.createElement('select');
+        this.select.id = "my_account";
+        this.select.name = "my_account";
+        this.select.className = "browser-default";
 
-        input.id = "rescan-all";
-        input.name = "rescan-all";
-        input.style = 'display: none';
-        input.value = "rescan all addresses";
-        input.type = "button";
-        input.onclick = function () { self.scan_account(); }
-
-        col1.appendChild(input);
+        col1.appendChild(h2);
+        col1.appendChild(this.select);
         row.appendChild(col1);
-        container.appendChild(row);
 
-        row = document.createElement('div');
-        row.className = "row";
+        /* account name */
         col1 = document.createElement('div');
-        col1.className = "col-md-4";
+        col1.className = 'md-form';
+
+        label = document.createElement('label');
+        label.setAttribute('for', 'account_name');
+        label.innerHTML = '';
+
+        this.input = document.createElement('input');
+        this.input.id = "account_name";
+        this.input.type = 'text';
+        this.input.className = 'form-control';  
+        
+        col1.appendChild(this.input);
+        col1.appendChild(label);
+        row.appendChild(col1);
+
+        /* rescan all */
+        col1 = document.createElement('div');
+        col1.id = 'account_infos';
+        col1.style.display = 'none';
+
+        inner = document.createElement('div');
+        inner.className = 'md-form';
+        inner.style='height:32px;'
 
         input = document.createElement('input');
         input.id = "show_null";
         input.name = "show_null";
-        input.value = '1';
-        input.style = 'display: inline';
         input.type = "checkbox";
+        input.value = '1';
+        input.className = 'custom-control-input';
+
         input.onchange = function () { self.accountselected(self.accountName); }
-      
-        span.innerHTML = 'show address with no balance';
-        col1.appendChild(span);
-        col1.appendChild(input);
+
+        label = document.createElement('label');
+        label.className = 'custom-control-label';
+        label.style = 'margin:12px;'
+        label.setAttribute('for', 'show_null');
+        label.innerHTML = 'show address with no balance';
+
+        inner.appendChild(input);
+        inner.appendChild(label);
+        col1.appendChild(inner);
+
+        inner = document.createElement('div');
+        inner.className = 'md-form';
+
+        input = document.createElement('button');
+        input.className = 'btn btn btn-primary';
+        input.type = "button";
+        input.onclick = function () { self.scan_account(); }
+        input.innerHTML = 'rescan all';
+
+        inner.appendChild(input);
+        col1.appendChild(inner);
+
+        a = document.createElement('a');
+        a.className = "btn btn-primary waves-effect waves-light"
+        a.setAttribute('data-toggle', 'modal');
+        a.setAttribute('data-target', '#newKeyModal');
+        a.setAttribute('data-backdrop', 'false');
+        a.innerHTML = 'add new address';
+        col1.appendChild(a);
+
         row.appendChild(col1);
 
-        container.appendChild(row);
+        /* address list */
+        col1 = document.createElement('div');
+        col1.className = "container content";
 
-        row                         = document.createElement('div');
-        col1                        = document.createElement('div');
+        this.p = document.createElement('p');
+        this.p.style.display = 'none';
+        this.p.innerHTML = 'Below are the addresses for your account.'
 
+        col1.appendChild(this.p);
 
-        this.AddrTable              = document.createElement('TABLE');
-
-        row.className               = "row";
-        col1.className              = "col-md-6";
-        this.AddrTable.id           = "my_address_list_table";      
-        this.AddrTable.className    = "table table-hover";
+        this.AddrTable = document.createElement('TABLE');
+        this.AddrTable.id = "my_address_list_table";
+        this.AddrTable.className = "table table-hover";
 
         var header = this.AddrTable.createTHead();
-        var body   = this.AddrTable.createTBody();
-        var trow   = header.insertRow(0);     
+        var body = this.AddrTable.createTBody();
+        var trow = header.insertRow(0);
+
+        header.className = "black white-text";
 
         for (n = 0; n < ths.length; n++) {
             var th = document.createElement('th');
             th.innerHTML = ths[n];
             trow.appendChild(th);
         }
-        
-        col1.appendChild        (this.AddrTable);
-        row.appendChild         (col1);
-        container.appendChild   (row);
+        col1.appendChild(this.AddrTable);
 
-        div.appendChild         (container);
+
+      
+        row.appendChild(col1);
+        container.appendChild(row);
+        div.appendChild(container);
+
+        row = this.makeModal('newKeyModal');
+        row.appendChild(this.newAddrForm());
+
+        a = document.createElement('a');
+        a.type = 'button';
+        a.className = 'btn btn-outline-info waves-effect';
+        a.setAttribute('data-dismiss', 'modal');
+        a.innerHTML = 'close';
+        row.appendChild(a);
+
+        container = document.createElement('div');
+        div.appendChild(container);
+
+        row = this.makeModal('PrivateKeyModal');
+        p = document.createElement('p');
+        p.id = 'unspentaddr';
+        row.appendChild(p);
+
+
+        inner = document.createElement('div');
+        inner.className = 'md-form';
+
+        label = document.createElement('label');
+        label.setAttribute('for', 'viewPrivSecret');
+        label.innerHTML = 'enter your secret :';
+
+        input = document.createElement('input');
+        input.id = "viewPrivSecret";
+        input.name = "viewPrivSecret";
+        input.type = "password";
+        input.className = 'form-control';
+
+        inner.appendChild(input);
+        inner.appendChild(label);
+        row.appendChild(inner);
+
+        inner = document.createElement('div');
+        inner.className = 'text-center';
+        p = document.createElement('span');
+        p.id = 'privAddr';
+        inner.appendChild(p);
+        row.appendChild(inner);
+
+        a = document.createElement('a');
+        a.type = "button";
+        a.innerHTML = 'get private addr';
+        a.className = 'btn btn-info waves-effect waves-light';
+        a.onclick = function () { privKeyAddr(MyAccount.accountName, $('#unspentaddr').html(), $('#viewPrivSecret').val()); }
+
+        row.appendChild(a);
+
+        a = document.createElement('a');
+        a.type = 'button';
+        a.className = 'btn btn-outline-info waves-effect';
+        a.setAttribute('data-dismiss', 'modal');
+        a.innerHTML = 'close';
+        row.appendChild(a);
+
+
 
 
         // build transaction list
-
         if ((listName != null) && (listName.length > 0))
         {
             div           = document.getElementById(listName);
