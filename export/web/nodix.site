@@ -361,6 +361,10 @@ page wallet(account_name) = `
 			api_base_url	='';
 			site_base_url	='/nodix.site';
 
+			paytxfee		=  %SelfNode.paytxfee%;
+		
+			$('#paytxfee').val(paytxfee);
+
 			$('#menu_wallet').addClass('active');
 			$('#menu_wallet_main').addClass('active');
 
@@ -369,10 +373,12 @@ page wallet(account_name) = `
 
 			ec				= new EC('secp256k1');
 
-			MyAccount		= new AccountList	('account_list','my_wallet',{'withSecret':false,'staking':false,'newAccnt':true});
+			MyAccount		= new AccountList	('account_list','my_wallet',{'withSecret':true,'staking':false,'newAccnt':true});
 			MyAccount.setAccounts				(%node_accounts%,'%account_name%');
 	
 			check_anon_access	();
+
+			update_unit	(document.getElementById('units'));
    
 		});
 	end_js

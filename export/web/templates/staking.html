@@ -140,7 +140,7 @@
         <div class="row">
             <div class="col-sm-1"><label>Units</label></div>
             <div class="col-md-2">
-                <select style="max-width:120px;" onchange="unit = this.options[this.selectedIndex].value; MyAccount.update_unspent(); MyAccount.update_addrs(); $('#stakeweight').html(MyAccount.totalweight / unit); " id="units" name="units">
+                <select style="max-width:120px;" onchange="unit = this.options[this.selectedIndex].value; MyAccount.update_unspent(); MyAccount.update_addrs(); $('#stakeweight').html(MyAccount.totalweight / unit); " class="browser-default" id="units" name="units">
                     <option value="1">satoshis</option>
                     <option value="1000000">cents</option>
                     <option value="100000000">coin</option>
@@ -149,10 +149,11 @@
         </div>
     </div>
 
-    <section>
-        <h2 class="heading-md">Manage your wallet</h2>
-        <div id="account_list"></div>
-    </section>
+    <div class="container content">
+        <section>
+            <div id="account_list"></div>
+        </section>
+    </div>
 
     <div class="container">
         <div class="row">

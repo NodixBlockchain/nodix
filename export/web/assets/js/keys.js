@@ -233,19 +233,19 @@ class AccountList {
         this.selectedMenu = id;
 
         if (id == "tab_unspents")
-            $('#tab_unspents').addClass('selected');
+            $('#tab_unspents').addClass('active');
         else
-            $('#tab_unspents').removeClass('selected');
+            $('#tab_unspents').removeClass('active');
 
         if (id == "tab_spents")
-            $('#tab_spents').addClass('selected');
+            $('#tab_spents').addClass('active');
         else
-            $('#tab_spents').removeClass('selected');
+            $('#tab_spents').removeClass('active');
 
         if (id == "tab_received")
-            $('#tab_received').addClass('selected');
+            $('#tab_received').addClass('active');
         else
-            $('#tab_received').removeClass('selected');
+            $('#tab_received').removeClass('active');
     }
 
 
@@ -297,11 +297,12 @@ class AccountList {
             cell.innerHTML  = timeConverter(this.unspents[n].time);
 
             cell            = row.insertCell(1);
-            cell.className  = "unspent_tx";
+            cell.className  = "tx-cell";
             cell.innerHTML  = this.unspents[n].txid;
 
 
             cell            = row.insertCell(2);
+            cell.className  = "addr-cell";
             naddr           = this.unspents[n].addresses.length;
             addresses       = '';
 
@@ -337,10 +338,11 @@ class AccountList {
             cell.innerHTML  = timeConverter(this.unspents[n].time);
 
             cell            = row.insertCell(1);
-            cell.className  = "unspent_tx";
+            cell.className = "tx-cell";
             cell.innerHTML  = this.unspents[n].txid;
 
             cell            = row.insertCell(2);
+            cell.className  = "addr-cell";
             naddr           = this.unspents[n].addresses.length;
             addresses       = '';
 
@@ -497,11 +499,11 @@ class AccountList {
             cell.innerHTML  = timeConverter(this.spents[n].time);
 
             cell            = row.insertCell(1);
-            cell.className  = "spent_tx";
+            cell.className = "tx-cell";
             cell.innerHTML  = this.spents[n].txid;
 
             cell            = row.insertCell(2);
-            cell.className  = "addr_to";
+            cell.className  = "addr-cell addr_to";
             naddr           = this.spents[n].addresses.length;
             addresses       = '';
 
@@ -536,11 +538,11 @@ class AccountList {
             cell.innerHTML  = timeConverter(this.spents[n].time);
 
             cell            = row.insertCell(1);
-            cell.className  = "spent_tx";
+            cell.className  = "tx-cell";
             cell.innerHTML  = this.spents[n].txid;
 
             cell            = row.insertCell(2);
-            cell.className  = "addr_to";
+            cell.className = "addr-cell addr_to";
             naddr           = this.spents[n].addresses.length;
             addresses       = '';
 
@@ -638,11 +640,11 @@ class AccountList {
             cell.innerHTML  = timeConverter(this.recvs[n].time);
 
             cell            = row.insertCell(1);
-            cell.className  = "spent_tx";
+            cell.className  = "tx-cell";
             cell.innerHTML  = this.recvs[n].txid;
 
             cell            = row.insertCell(2);
-            cell.className  = "addr_from";
+            cell.className = "addr-cell addr_from";
             naddr           = this.recvs[n].addresses.length;
             addresses       = '';
 
@@ -679,11 +681,11 @@ class AccountList {
             cell.innerHTML  = timeConverter(this.recvs[n].time);
 
             cell            = row.insertCell(1);
-            cell.className  = "spent_tx";
+            cell.className  = "tx-cell";
             cell.innerHTML  = this.recvs[n].txid;
 
             cell            = row.insertCell(2);
-            cell.className  = "addr_from";
+            cell.className = "addr-cell addr_from";
             naddr           = this.recvs[n].addresses.length;
             addresses       = '';
 
@@ -1102,6 +1104,8 @@ class AccountList {
             this.accountName = '';
 
             $('#account_infos').css('display', 'none');
+            $('#transaction').css('display', 'none');
+            
 
             this.p.style.display = 'none';
 
@@ -1129,6 +1133,11 @@ class AccountList {
             var self = this;
 
             $('#account_infos').css('display', 'block');
+            $('#transaction').css('display', 'block');
+
+
+            
+
             this.p.style.display = 'block';
 
             var shownull = $('#show_null').is(':checked') ? true : false;
@@ -1693,71 +1702,80 @@ class AccountList {
         // build transaction list
         if ((listName != null) && (listName.length > 0))
         {
-            div           = document.getElementById(listName);
-            container     = document.createElement('div');
-            row           = document.createElement('div');
-            col1          = document.createElement('div');
-            h2            = document.createElement('h2');
+            var ul, li;
 
-            container.className = "container";
-            
-            row.className       = "row";
-            col1.className      = "col-md-2";
-            h2.id               = "tab_unspents";
-            h2.innerHTML        = 'unspent';
-            h2.addEventListener("click", function () { self.fetch_unspents(); });
-            col1.appendChild    (h2);
-            row.appendChild     (col1);
-        
-            col1                = document.createElement('div');
-            h2                  = document.createElement('h2');
-            col1.className      = "col-md-2";
-            h2.id               = "tab_spents";
-            h2.innerHTML        = 'spent';
-            h2.addEventListener("click", function () { self.fetch_spents(); });
-            col1.appendChild    (h2);
-            row.appendChild     (col1);
+       
+            div = document.getElementById(listName);
+            container = document.createElement('div');
+            row = document.createElement('div');
 
-            col1                = document.createElement('div');
-            col1.className      = "col-md-2";
-            h2                  = document.createElement('h2');
-            h2.id               = "tab_received";
-            h2.innerHTML        = 'received';
-            h2.addEventListener ("click", function () { self.fetch_recvs(); });
-            col1.appendChild    (h2);
-            row.appendChild     (col1);
+            container.className = "card text-center";
+            row.className = "card-header";
+
+            h2= document.createElement('div');
+            h2.className = 'white-text mb-3 pt-3 font-weight-bold';
+            h2.innerHTML = 'Manage your transactions';
+            row.appendChild(h2);
+
+            ul = document.createElement('ul');
+            ul.className = 'nav md-pills nav-justified pills-primary';
+
+            li = document.createElement('li');
+            li.className = 'nav-item';
+
+            a = document.createElement('a');
+            a.className = 'nav-link';
+            a.id = 'tab_unspents';
+            a.innerHTML = 'unspent';
+            a.addEventListener("click", function () { self.fetch_unspents(); });
+
+            li.appendChild(a);
+            ul.appendChild(li);
+
+            li = document.createElement('li');
+            li.className = 'nav-item';
+
+            a = document.createElement('a');
+            a.className = 'nav-link';
+            a.id = 'tab_spents';
+            a.innerHTML = 'spent';
+            a.addEventListener("click", function () { self.fetch_spents(); });
+
+            li.appendChild(a);
+            ul.appendChild(li);
+
+            li = document.createElement('li');
+            li.className = 'nav-item';
+
+            a = document.createElement('a');
+            a.className = 'nav-link';
+            a.id = 'tab_received';
+            a.innerHTML = 'received';
+            a.addEventListener("click", function () { self.fetch_recvs(); });
+
+            li.appendChild(a);
+            ul.appendChild(li);
+            row.appendChild(ul);
             container.appendChild(row);
 
 
-            row                     = document.createElement('div');
+            row = document.createElement('div');
+            row.className = "card-body";
+
             col1                    = document.createElement('div');
-            row.className           = "row";
-            col1.className          = "col-md-6 info";
             col1.innerHTML          = 'total:<span id="txtotal"></span>';
             row.appendChild         (col1);
-            container.appendChild   (row);
 
-            row                     = document.createElement('div');
             col1                    = document.createElement('div');
-            row.className           = "row";
-            col1.className          = "col-md-6 info";
             col1.innerHTML          = 'selected:<span id="selected_balance"></span>';
             row.appendChild         (col1);
-            container.appendChild   (row);
 
-            row                     = document.createElement('div');
             col1                    = document.createElement('div');
-            row.className           = "row";
-            col1.className          = "col-md-6";
-            col1.innerHTML          = '<div class="info">showing:<span id="ntx"></span>/<span id="total_tx"></span></div>';
-            row.appendChild     (col1);
-            container.appendChild(row);
+            col1.innerHTML          = 'showing:<span id="ntx"></span>/<span id="total_tx"></span>';
+            row.appendChild         (col1);
+            
 
-
-            row                     = document.createElement('div');
             col1                    = document.createElement('div');
-            row.className           = "row";
-            col1.className          = "col-md-6";
             this.TxTable            = document.createElement('TABLE');
             this.TxTable.id         = 'tx_list';
             this.TxTable.className  = "table hover";
@@ -1768,7 +1786,8 @@ class AccountList {
             ths                     = ["time","tx","from","amount","nconf"];
         
             for (n = 0; n < ths.length; n++) {
-                var th          = document.createElement('th');
+                var th = document.createElement('th');
+                if (ths[n] == 'tx')th.className = 'tx-cell';
                 th.innerHTML    = ths[n];
                 trow.appendChild(th);
             }
