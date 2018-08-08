@@ -1168,9 +1168,20 @@ class AccountList {
 
 
                 if (self.accountName == 'anonymous')
+                {
+                    $('#sendtx_but').attr('disabled', 'disabled');
+                    $('#sendtx_but').attr('display', 'none');
                     $('#viewPrivSecret').attr('disabled', 'disabled');
+                    $('#maketx').html('send tx');
+                }
                 else
+                {
+                    $('#sendtx_but').attr('display', 'block');
+                    $('#sendtx_but').removeAttr('disabled');
                     $('#viewPrivSecret').removeAttr('disabled');
+                    $('#maketx').html('view tx');
+                }
+                    
             });
         }
     }

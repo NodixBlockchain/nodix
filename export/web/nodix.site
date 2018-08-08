@@ -363,6 +363,7 @@ page wallet(account_name) = `
 
 			paytxfee		=  %SelfNode.paytxfee%;
 		
+			$('#paytxfee').attr('placeholder',paytxfee);
 			$('#paytxfee').val(paytxfee);
 
 			$('#menu_wallet').addClass('active');
