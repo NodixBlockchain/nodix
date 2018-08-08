@@ -1566,6 +1566,19 @@ class AccountList {
         col1.appendChild(label);
         row.appendChild(col1);
 
+        col1 = document.createElement('div');
+        col1.className = 'md-form';
+
+        a = document.createElement('a');
+        a.className = "btn btn-primary waves-effect waves-light"
+        a.setAttribute('data-toggle', 'modal');
+        a.setAttribute('data-target', '#newKeyModal');
+        a.setAttribute('data-backdrop', 'false');
+        a.innerHTML = 'add new address';
+        col1.appendChild(a);
+
+        row.appendChild(col1);
+
         /* rescan all */
         col1 = document.createElement('div');
         col1.id = 'account_infos';
@@ -1606,13 +1619,6 @@ class AccountList {
         inner.appendChild(input);
         col1.appendChild(inner);
 
-        a = document.createElement('a');
-        a.className = "btn btn-primary waves-effect waves-light"
-        a.setAttribute('data-toggle', 'modal');
-        a.setAttribute('data-target', '#newKeyModal');
-        a.setAttribute('data-backdrop', 'false');
-        a.innerHTML = 'add new address';
-        col1.appendChild(a);
 
         row.appendChild(col1);
 
