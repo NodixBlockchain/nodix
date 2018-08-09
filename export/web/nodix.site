@@ -1,7 +1,7 @@
 
 
 let NODE_JSON_ARRAY stylesheets = `[
-	"/assets/fonts/fontawesome-webfont.woff2",
+	"/assets/font/fa/fontawesome-webfont.woff2",
 	"/assets/css/bootstrap.min.css",
 	"/assets/css/app.css",
 	"/assets/css/style.css",

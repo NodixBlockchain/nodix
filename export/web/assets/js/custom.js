@@ -60,7 +60,7 @@ function rpc_call(in_method, in_params, in_success) {
     }
     else
         obj = { jsonrpc: '2.0', method: in_method, params: in_params, id: 1 };
-    console.log(in_params);
+    
 
     $.ajax({
         url: api_base_url + rpc_base,

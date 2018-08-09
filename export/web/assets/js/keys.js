@@ -475,14 +475,16 @@ class AccountList {
         var nrows = 0;
         var num_spents  = this.spents.length;
       
-        new_tbody       = document.createElement('tbody');
-        thead           = this.TxTable.tHead;
+        new_tbody = document.createElement('tbody');
+        thead = this.TxTable.tHead;
+        this.selected_balance = 0;
 
         thead.rows[0].cells[2].innerHTML = 'to';
-
         total = 0;
 
         for (var n = 0; n < num_spents; n++) {
+            total += this.spents[n].amount;
+
             if (!$('#selected_' + this.spents[n].srcaddr).is(':checked')) continue;
 
             var cell;
@@ -490,7 +492,7 @@ class AccountList {
             var row = new_tbody.insertRow(nrows++);
             var addresses;
 
-            total           += this.spents[n].amount;
+            
             row.className   = 'tx_ready';
 
 
@@ -520,10 +522,13 @@ class AccountList {
             cell.className = "tx_conf";
             cell.innerHTML = this.spents[n].confirmations;
 
+            this.selected_balance += this.spents[n].amount;
             
         }
 
         for (var n = 0; n < num_spents; n++) {
+            total += this.spents[n].amount;
+
             if ($('#selected_' + this.spents[n].srcaddr).is(':checked')) continue;
             var cell;
             var naddr;
@@ -562,7 +567,9 @@ class AccountList {
             
         }
 
-        $('#txtotal').html  (total / unit);
+        $('#txtotal').html(total / unit);
+        $('#selected_balance').html(this.selected_balance / unit);
+
         $('#ntx').html      (num_spents);
        
 
@@ -626,6 +633,7 @@ class AccountList {
         thead.rows[0].cells[2].innerHTML = 'from';
 
         for (var n = 0; n < num_recvs; n++) {
+            total += this.recvs[n].amount;
             if (!$('#selected_' + this.recvs[n].dstaddr).is(':checked')) continue;
 
             var cell;
@@ -663,10 +671,13 @@ class AccountList {
             cell.className = "tx_conf";
             cell.innerHTML = this.recvs[n].confirmations;
 
-            total += this.recvs[n].amount;
+           
         }
 
         for (var n = 0; n < num_recvs; n++) {
+
+            total += this.recvs[n].amount;
+
             if ($('#selected_' + this.recvs[n].dstaddr).is(':checked')) continue;
 
             var cell;
@@ -703,10 +714,11 @@ class AccountList {
             cell.className = "tx_conf";
             cell.innerHTML = this.recvs[n].confirmations;
 
-            total += this.recvs[n].amount;
+           
         }
 
-        $('#txtotal').html  (total / unit);
+        $('#txtotal').html(total / unit);
+        $('#selected_balance').html(this.total_selected / unit);
         $('#ntx').html      (num_recvs);
 
         old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
@@ -742,8 +754,6 @@ class AccountList {
             self.recvs.sort(function (a, b) { return (b.time - a.time); });
 
             self.update_recvs();
-            $('#selected_balance').html(self.total_selected / unit);
-            $('#txtotal').html(self.total_amount / unit);
             $('#total_tx').html(data.result.ntx);
 
             
@@ -805,10 +815,20 @@ class AccountList {
         else
             this.fetch_unspents();
     }
+    update_selected_amount() {
+        var select_amount;
+        select_amount = 0;
+
+        for (var n = 0; n < this.SelectedAddrs.length; n++) {
+            select_amount += parseInt($('#balance_' + this.SelectedAddrs[n]).attr('amount'));
+        }
+        $('#addr-selected').html(select_amount / unit);
+    }
 
     check_address(addr)
     {
         var n;
+       
 
         if ((this.opts.withSecret == false) || (this.accountName == 'anonymous'))
         {
@@ -823,7 +843,7 @@ class AccountList {
                 this.addr_selected(addr);
 
             this.update_txs();
-                
+            this.update_selected_amount();
         }
         else
         {
@@ -861,9 +881,14 @@ class AccountList {
                         self.addr_selected(addr);
 
                     self.update_txs();
+
+                    self.update_selected_amount();
                 });
             });
         }
+
+        
+     
     }
 
     update_addrs_select(select_name) {
@@ -894,8 +919,9 @@ class AccountList {
     {
         var self              = this;
         var old_tbody         = this.AddrTable.tBodies[0];
-        var new_tbody         = document.createElement('tbody');
-        this.selected_balance = 0;
+        var new_tbody = document.createElement('tbody');
+        var total_amount = 0;
+
 
         if ((this.addrs == null) || (this.addrs.length == 0)) {
             this.AddrTable.style.display = 'none';
@@ -941,7 +967,9 @@ class AccountList {
 
                 cell            = row.insertCell(2);
                 cell.className  = "balance_unconfirmed";
-                cell.appendChild    (span);
+                cell.appendChild(span);
+
+                total_amount += this.addrs[n].amount;
 
                 if ((this.opts.withSecret) && (this.accountName!='anonymous'))
                 {
@@ -1032,6 +1060,10 @@ class AccountList {
             this.AddrTable.style.display = 'block';
         }
         old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+        
+        $('#addr-total').html(total_amount/unit);
+       
+
     }
 
     scan_account() {
@@ -1497,7 +1529,7 @@ class AccountList {
     constructor(divName,listName,opts) {
         var self = this;
         var n;
-        var input, span, div, inner, p,a,container, row, col1, label, table, h2;
+        var input, span, div, inner, p,a,container, row, col1, col2, label, table, h2;
         var ths = ["label", "balance", "uncomfirmed balance"];
         
         if (opts.withSecret)
@@ -1619,6 +1651,30 @@ class AccountList {
         inner.appendChild(input);
         col1.appendChild(inner);
 
+        inner = document.createElement('div');
+        inner.className = 'row';
+        col2 = document.createElement('div');
+        col2.className = 'col-sm-1';
+        col2.innerHTML = 'total:';
+        inner.appendChild(col2);
+        col2 = document.createElement('div');
+        col2.className = 'col-sm-2 d-flex justify-content-end';
+        col2.id = 'addr-total';
+        inner.appendChild(col2);
+        col1.appendChild(inner);
+
+        inner = document.createElement('div');
+        inner.className = 'row';
+        col2 = document.createElement('div');
+        col2.className = 'col-sm-1';
+        col2.innerHTML = 'selected:';
+        inner.appendChild(col2);
+
+        col2 = document.createElement('div');
+        col2.className = 'col-sm-2 d-flex justify-content-end';
+        col2.id = 'addr-selected';
+        inner.appendChild(col2);
+        col1.appendChild(inner);
 
         row.appendChild(col1);
 
@@ -1713,13 +1769,10 @@ class AccountList {
         a.innerHTML = 'close';
         row.appendChild(a);
 
-
-
-
         // build transaction list
         if ((listName != null) && (listName.length > 0))
         {
-            var ul, li;
+            var cbody,ul, li;
 
        
             div = document.getElementById(listName);
@@ -1776,20 +1829,44 @@ class AccountList {
             container.appendChild(row);
 
 
+            cbody = document.createElement('div');
+            cbody.className = "card-body";
+
             row = document.createElement('div');
-            row.className = "card-body";
+            row.className = 'row';
+            col1 = document.createElement('div');
+            col1.className = 'col-sm-1';
+            col1.innerHTML = 'total:';
+            row.appendChild(col1);
+            col1 = document.createElement('div');
+            col1.id='txtotal';
+            col1.className = 'col-sm-2  d-flex justify-content-end';
+            row.appendChild(col1);
+            cbody.appendChild(row);
 
-            col1                    = document.createElement('div');
-            col1.innerHTML          = 'total:<span id="txtotal"></span>';
-            row.appendChild         (col1);
+            row = document.createElement('div');
+            row.className = 'row';
+            col1 = document.createElement('div');
+            col1.className = 'col-sm-1';
+            col1.innerHTML = 'selected:';
+            row.appendChild(col1);
+            col1 = document.createElement('div');
+            col1.id = 'selected_balance';
+            col1.className = 'col-sm-2  d-flex justify-content-end';
+            row.appendChild(col1);
+            cbody.appendChild(row);
 
-            col1                    = document.createElement('div');
-            col1.innerHTML          = 'selected:<span id="selected_balance"></span>';
-            row.appendChild         (col1);
-
-            col1                    = document.createElement('div');
-            col1.innerHTML          = 'showing:<span id="ntx"></span>/<span id="total_tx"></span>';
-            row.appendChild         (col1);
+            row = document.createElement('div');
+            row.className = 'row';
+            col1 = document.createElement('div');
+            col1.className = 'col-sm-1';
+            col1.innerHTML = 'showing:';
+            row.appendChild(col1);
+            col1 = document.createElement('div');
+            col1.className = 'col-sm-2   d-flex justify-content-end';
+            col1.innerHTML='<span id="ntx"></span>/<span id="total_tx"></span>';
+            row.appendChild(col1);
+            cbody.appendChild(row);
             
 
             col1                    = document.createElement('div');
@@ -1809,10 +1886,10 @@ class AccountList {
                 trow.appendChild(th);
             }
 
-            col1.appendChild        (this.TxTable);
-            row.appendChild         (col1);
-            container.appendChild   (row);
-            div.appendChild         (container);
+            col1.appendChild(this.TxTable);
+            cbody.appendChild(col1);
+            container.appendChild(cbody);
+            div.appendChild(container);
         }
     }
 }
