@@ -15,13 +15,6 @@
        {
            min-width:120px;
        }
-       #list_container
-       {
-           max-height:300px;
-           width:100%;
-           overflow-y:scroll;
-           margin:32px;
-       }
        #addresses
        {
            margin:18px;
@@ -30,62 +23,75 @@
        {
            color:red;
        }
+       .card{
+           margin:12px;
+       }
+       #app_root_infos
+       {
+           margin:12px;
+       }
    </style>
 
     <div class="content">
     <section>
-        <h2>Addresses</h2>
         <div id="addresses"></div>
     </section>
+        <div class="card">
+            <div class="card-header text-center color-block default-color-dark"><h3>Application root</h3></div>
+            <div class="container flex-center text-center" id="app_root_infos"></div>
+        </div>
     <section>
-        <h2>Transactions</h2>
-        <div id="list_container"></div>
+        <div class="card">
+            <div class="card-header text-center  color-block default-color-dark"><h3>Applications</h3></div>
+            <div id="app_list"></div>
+        </div>
     </section>
-    <hr />
-    <div id="app_root_infos"></div>
-
     <section>
-        <h2>Applications</h2>
-        <div id="app_list"></div>
-    </section>
-    <section>
-        <h2>New application</h2>
-        <div id="new_app" class="container">
-            <form name="new app">
-                <fieldset>
-                    <legend>Application infos</legend>
-                    <div class="row">  <div class="col-md-4"><span id="app_error"></span></div></div>
-                    <div class="row">
-                        <div class="col-md-2"><label>Application name</label></div><div class="col-md-2"><input type="text" id="app_name" name="app_name" /></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-2"><label>Application address</label></div><div class="col-md-2"><select name="app_addr" id="app_addr"></select></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-2"><label>Application fees</label></div><div class="col-md-2"><span id="root_app_fees"></span></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-2"><label>Transaction fees</label></div><div class="col-md-2"><input type="text" name="paytxfee" id="paytxfee" /></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-2"><label>Total fees</label></div><div class="col-md-2"><span id="totalfee"></span></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-2"><label>Selected addrs:</label></div><div class="col-md-2"><span id="selected_balance"></span></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-2"><input type="button" value="create app" onclick="MyApps.create_app($('#app_addr').val(), $('#app_name').val(), $('#paytxfee').val());" /></div>
-                    </div>
-                </fieldset>
-            </form>
-            <div class="row">
-                <div class="col-md-6"><div id="app_tx"></div></div>
+        
+        <div class="card">
+            <div class="card-header text-center  color-block default-color-dark">
+                <h2>New application</h2>
             </div>
-            <div class="row">
-                <div class="col-md-6"><input type="button" onclick=" signtxinputs(my_tx.txid, my_tx.txsin);" value="sign & send" /></div>
+            <div class="card-body">
+                <div id="new_app" class="container">
+                    <form name="new app">
+                        <fieldset>
+                            <legend>Application infos</legend>
+                            <div class="row">  <div class="col-md-4"><span id="app_error"></span></div></div>
+                            <div class="row">
+                                <div class="col-md-2"><label>Application name</label></div><div class="col-md-2"><input type="text" id="app_name" name="app_name" /></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-2"><label>Application address</label></div><div class="col-md-2"><select name="app_addr" class="browser-default" id="app_addr"></select></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-2"><label>Application fees</label></div><div class="col-md-2"><span id="root_app_fees"></span></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-2"><label>Transaction fees</label></div><div class="col-md-2"><input type="text" name="paytxfee" id="paytxfee" /></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-2"><label>Total fees</label></div><div class="col-md-2"><span id="totalfee"></span></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-2"><label>Selected addrs:</label></div><div class="col-md-2"><span id="selected_balance"></span></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-2"><button class="btn btn-primary" onclick="MyApps.create_app($('#app_addr').val(), $('#app_name').val(), $('#paytxfee').val()); return false;">create app</button></div>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+                <div id="app_tx"></div>
+                <input type="button" onclick="signtxinputs(my_tx.txid, my_tx.txsin);" value="sign & send" />
             </div>
         </div>
     </section>
-
-    <div id="app_root_new"></div>
+    <section>
+        <div class="container">
+            <div id="new_app">
+                <div id="app_root_new"></div>
+            </div>
+        </div>
+    </section>
 </div>

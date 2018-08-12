@@ -1,73 +1,87 @@
-<!--=== Block Explorer ===-->
-<div class="container content">
-    <section>
+<section>
+    <div class="container">
+        <div class="row"><h2>node informations</h2></div>
+        <div class="row"><p class="lead">Below are informations about this node</p></div>
+    </div>
+    <div class="container"><div class="row"><div class="col-md"><div id="node_div"></div></div></div></div>
+    <div class="container">
+        <div id="node_block_lag"></div>
+        <div><span id="node_time_lag"></span>&nbsp;behind</div>
+    </div>
+</section>
+
+
+<section>
+    <hr />
+    <div class="container">
         <div class="row">
-            <section id="node_div"></section>
-            <div id="node_block_lag"></div>
-            <div><span id="node_time_lag"></span>&nbsp;behind</div>
+            <h2>mining info</h2>
         </div>
         <div class="row">
-            <section>
-                <h1>mining info</h1>
-                <div class="row">
-                    <div class="col-md-2"><label>last POW block</label></div><div class="col-md-2"><a onclick="MyBlocks.selectBlock(SelfNode.lastPOWBlk); return false;" id="lastpowblock"></a></div>
-                </div>
-                <div class="row">
-                    <div class="col-md-2"><label>current POW difficulty</label></div><div class="col-md-2"><span id="currentpowdiff"></span></div>
-                </div>
-                <div class="row">
-                    <div class="col-md-2"><label>current POW reward</label></div><div class="col-md-2"><span id="powreward"></span></div>
-                 </div>
-            </section>
+            <div class="col-md-2">last POW block</div><div class="col-md-2"><a class="hash-lnk" onclick="MyBlocks.selectBlock(SelfNode.lastPOWBlk); return false;"  id="lastpowblock"></a></div>
         </div>
         <div class="row">
-            <section>
-                <h1>staking info</h1>
-                <div class="row">
-                    <div class="col-md-2"><label>last POS block</label></div><div class="col-md-2"><a onclick="MyBlocks.selectBlock(SelfNode.lastPOSBlk); return false;" id="lastposblock"></a></div>
-                </div>
-                <div class="row">
-                    <div class="col-md-2"><label>current POS difficulty</label></div><div class="col-md-2"><span id="currentposdiff"></span></div>
-                </div>
-                <div class="row">
-                    <div class="col-md-2"><label>current POS reward</label></div><div class="col-md-2"><span id="posreward"></span></div>
-                </div>
-            </section>
+            <div class="col-md-2">POW difficulty</div><div class="col-md-2"><span id="currentpowdiff"></span></div>
         </div>
+        <div class="row">
+            <div class="col-md-2">POW reward</div><div class="col-md-2"><span id="powreward"></span></div>
+        </div>
+    </div>
+</section>
+
+<section>
+    <hr />
+    <div class="container">
+        <div class="row">
+            <h2>staking info</h2>
+        </div>
+        <div class="row">
+            <div class="col-md-2"><label>last POS block</label></div><div class="col-md-2"><a class="hash-lnk" onclick="MyBlocks.selectBlock(SelfNode.lastPOSBlk); return false;" id="lastposblock"></a></div>
+        </div>
+        <div class="row">
+            <div class="col-md-2"><label>POS difficulty</label></div><div class="col-md-2"><span id="currentposdiff"></span></div>
+        </div>
+        <div class="row">
+            <div class="col-md-2"><label>POS reward</label></div><div class="col-md-2"><span id="posreward"></span></div>
+        </div>
+    </div>
+</section>
+
+<section>
+    <div class="container">
+        <div class="row"><h2>Peers</h2></div>
+    </div>
+    <div style="padding-left:24px;" id="peer_nodes_div"></div>
+</section>
+
+<section>
+    <div class="container">
         <div class="row">
             <div class="col-md-8">
-                <section>
-                    <h1>memory pool</h1>
-                    <div id="mempool"></div>
-                </section>
+                <h1>memory pool</h1>
+                <div id="mempool"></div>
             </div>
         </div>
-        <div class="row">
-            <section>
-                <h1>peer nodes</h1>
-                <section style="padding-left:24px;" id="peer_nodes_div"></section>
-            </section>
-        </div>
-        <div class="row">
-            <section>
-                <h1>modules</h1>
-                <section style="padding-left:24px;" class="accordion" id="node_modules"></section>
-            </section>
-        </div>
-    </section>
-
-
-    <section>
-    <div class="modal fade" id="blockmodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content" >
-            <div class="modal-header"><h3 style="display: inline;">block&nbsp;<button type="button" class="close" data-dismiss="modal" style="vertical-align:top;" aria-hidden="true">×</button><br/><span id="blockhash"></span></h3> </div>
-            <div class="modal-body"><section id="lastblock"></section></div>
-         </div>
-        </div>
-      </div>
-    </section>
     </div>
-<!--=== End Node Infos ===-->
-</div>
+</section>
+<section>
+    <div class="container">
+        <div class="row"><h2>Modules</h2></div>
+    </div>
+    <div class="container">
+        <div style="padding-left:24px;" class="accordion" id="node_modules"></div>
+    </div>
+</section>
+
+
+<section>
+    <div class="modal fade" id="blockmodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content" style="width:800px;"  >
+                <div class="modal-header"><h3 style="display: inline;">block&nbsp;<br /><span id="blockhash"></span></h3><button type="button" class="close" data-dismiss="modal" style="vertical-align:top;" aria-hidden="true">×</button> </div>
+                <div class="modal-body"><section id="lastblock"></section></div>
+            </div>
+        </div>
+    </div>
+</section>
 <!--/wrapper-->

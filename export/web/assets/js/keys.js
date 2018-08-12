@@ -248,6 +248,109 @@ class AccountList {
             $('#tab_received').removeClass('active');
     }
 
+    staking_loop(hash_data, time_start, time_end, diff) {
+        var ct;
+        for (ct = time_start; ct < time_end; ct += 16) {
+            var str = hex32(ct);
+            var total = hash_data + str;
+            var h = sha256(total);
+            var h2 = sha256(h);
+            if (compare_hash(h2, diff)) {
+                $('#newhash').html(h2);
+                return ct;
+            }
+            this.nHashes++;
+        }
+        return 0;
+    }
+
+    check_all_staking() {
+        var self = this;
+
+        if (!$('#do_staking').prop('checked')) return 0;
+
+        if (this.staking_unspents == null) return 0;
+
+        var n;
+        var time_start, time_end;
+        var timeStart = Math.floor(new Date().getTime() / 1000);
+        var timeBegin = Math.floor((timeStart + 15) / 16) * 16;
+
+        var num_stake_unspents = this.staking_unspents.length;
+
+        if (stake_infos.last_block_time > (stake_infos.now - stake_infos.block_target)) {
+            time_start = Math.floor((stake_infos.last_block_time + 15) / 16) * 16;
+            time_end = time_start + stake_infos.block_target;
+        }
+        else {
+            time_start = timeBegin - 16;
+            time_end = timeBegin + 16;
+        }
+        this.nHashes = 0;
+
+        for (n = 0; n < num_stake_unspents; n++) {
+            var txtime, staking;
+
+            staking = this.staking_unspents[n];
+            txtime = this.staking_loop(staking.hash_data, time_start, time_end, staking.difficulty);
+
+            var timeEnd = Math.ceil(new Date().getTime() / 1000);
+            var timespan = (timeEnd - timeStart);
+            var hashrate = this.nHashes / timespan;
+
+            $('#hashrate').html(this.nHashes + ' has    hes in ' + timespan + ' secs (' + hashrate + ' hashes/sec) last scan : ' + timeStart);
+
+            if (txtime > 0) {
+                var pubkey = $('#selected_' + staking.dstaddr).attr('pubkey');
+                rpc_call('getstaketx', [staking.txid, staking.vout, txtime, pubkey], function (staketx) {
+                    var txh, txa, secret;
+
+                    if (!staketx.error) {
+                        var bh = staketx.result.newblockhash;
+                        txh = staketx.result.txhash;
+                        txa = staketx.result.addr;
+
+                        rpc_call('getprivaddr', [self.accountName, txa], function (keyData) {
+
+                            if (!keyData.error) {
+                                secret = $('#secret_' + txa).val();
+                                var DecHexkey = strtoHexString(un_enc(secret, keyData.result.privkey.slice(0, 64)));
+                                var keys = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
+
+                                // Sign message (must be an array, or it'll be treated as a hex sequence)
+                                var pubk = keys.getPublic().encodeCompressed('hex');
+                                var signature = keys.sign(txh, 'hex');
+
+                                // Export DER encoded signature in Array
+                                //var derSign = signature.toDER('hex');
+                                var derSign = signature.toLowS();
+
+                                rpc_call('signstaketx', [bh, derSign, pubk], function (txsign) {
+                                    var hash = txsign.result.newblockhash;
+                                    var blocksignature = keys.sign(hash, 'hex');
+                                    var derSign = blocksignature.toLowS();
+
+                                    rpc_call('signstakeblock', [hash, derSign, pubk], function (blksign) {
+                                        self.fetch_unspents();
+                                    });
+                                });
+                            }
+                        });
+                       
+                    }
+                    else
+                        alert('stake tx rejected');
+                });
+
+                return 0;
+            }
+        }
+
+        if (this.staketimer != null)
+            clearTimeout(this.staketimer);
+
+        this.staketimer = setTimeout(function () { self.check_all_staking(); }, 10000);
+    }
 
     update_unspent() {
         var total;
@@ -412,15 +515,22 @@ class AccountList {
             stake_infos.now                     = data.result.now;
             stake_infos.last_block_time         = data.result.last_block_time;
 
-            self.update_staking_infos            ();
+            self.update_staking_infos   ();
+
+            if (self.staketimer != null)
+                clearTimeout(self.staketimer);
+
+            self.staketimer = setTimeout(function () { self.check_all_staking();}, 10000);
         });
     }
 
 
     fetch_unspents() {
+        if (this.TxTable == null)return;
+
         var n;
         var self      = this;
-        var AddrAr    = [];
+        var AddrAr = [];
 
         var old_tbody = this.TxTable.tBodies[0];
         var new_tbody = document.createElement('tbody');
@@ -577,6 +687,8 @@ class AccountList {
     }
 
     fetch_spents() {
+        if (this.TxTable == null) return;
+
         var self      = this;
         var n;
         var AddrAr    = [];
@@ -725,6 +837,7 @@ class AccountList {
     }
 
     fetch_recvs() {
+        if (this.TxTable == null) return;
         var self      = this;
         var n;
         var AddrAr    = [];
@@ -941,11 +1054,10 @@ class AccountList {
 
                 cell            = row.insertCell(0);
                 cell.setAttribute("title", this.addrs[n].address)
-                cell.setAttribute("class", 'addr_label');
 
                 a = document.createElement('a');
                 a.setAttribute("addr", this.addrs[n].address);
-                a.className = "btn btn-primary waves-effect waves-light"
+                a.className = "btn btn-primary waves-effect waves-light addr-label"
                 a.setAttribute('data-toggle', 'modal');
                 a.setAttribute('data-target', '#PrivateKeyModal');
                 a.setAttribute('data-backdrop', 'false');
@@ -955,14 +1067,16 @@ class AccountList {
 
                 span            = document.createElement('span');
                 span.setAttribute("amount", this.addrs[n].amount);
+                span.className = 'addr-amount';
                 span.id         = 'balance_' + this.addrs[n].address;
                 span.innerHTML  = this.addrs[n].amount / unit;
 
                 cell            = row.insertCell(1);
-                cell.className  = "balance_confirmed";
+                cell.className = "balance_confirmed";
                 cell.appendChild(span);
 
                 span            = document.createElement('span');
+                span.className  = 'addr-amount';
                 span.innerHTML  = this.addrs[n].unconf_amount / unit;
 
                 cell            = row.insertCell(2);
@@ -975,6 +1089,7 @@ class AccountList {
                 {
                     input = document.createElement('input');
                     input.setAttribute("address", this.addrs[n].address);
+                    input.className = 'addr-secret';
                     input.type      = "password";
                     input.id        = 'secret_' + this.addrs[n].address;
                     input.value     = '';
@@ -1137,6 +1252,8 @@ class AccountList {
 
             $('#account_infos').css('display', 'none');
             $('#transaction').css('display', 'none');
+            $('#staking').css('display', 'none');
+            
             
 
             this.p.style.display = 'none';
@@ -1205,9 +1322,13 @@ class AccountList {
                     $('#sendtx_but').attr('display', 'none');
                     $('#viewPrivSecret').attr('disabled', 'disabled');
                     $('#maketx').html('send tx');
+                    $('#staking').css('display', 'none');
                 }
                 else
                 {
+                    if (self.opts.staking == true)
+                        $('#staking').css('display', 'block');
+
                     $('#sendtx_but').attr('display', 'block');
                     $('#sendtx_but').removeAttr('disabled');
                     $('#viewPrivSecret').removeAttr('disabled');
@@ -1530,7 +1651,7 @@ class AccountList {
         var self = this;
         var n;
         var input, span, div, inner, p,a,container, row, col1, col2, label, table, h2;
-        var ths = ["label", "balance", "uncomfirmed balance"];
+        var ths = ["label", "balance", "unconf"];
         
         if (opts.withSecret)
             ths.push("secret");
@@ -1545,7 +1666,10 @@ class AccountList {
         this.unspents           = null;
         this.minConf            = 10;
         this.selectedMenu       = '';
-        this.SelectedAddrs      = new Array();
+        this.SelectedAddrs = new Array();
+        this.staketimer = null;
+        this.nHashes = 0;
+
 
         div                 = document.getElementById(divName);
         container           = document.createElement('div');
@@ -1658,7 +1782,7 @@ class AccountList {
         col2.innerHTML = 'total:';
         inner.appendChild(col2);
         col2 = document.createElement('div');
-        col2.className = 'col-sm-2 d-flex justify-content-end';
+        col2.className = 'col-md-2 justify-content-end';
         col2.id = 'addr-total';
         inner.appendChild(col2);
         col1.appendChild(inner);
@@ -1671,7 +1795,7 @@ class AccountList {
         inner.appendChild(col2);
 
         col2 = document.createElement('div');
-        col2.className = 'col-sm-2 d-flex justify-content-end';
+        col2.className = 'col-md-2 justify-content-end';
         col2.id = 'addr-selected';
         inner.appendChild(col2);
         col1.appendChild(inner);
@@ -1700,6 +1824,8 @@ class AccountList {
 
         for (n = 0; n < ths.length; n++) {
             var th = document.createElement('th');
+
+            if (ths[n] == 'unconf') th.className = 'balance_unconfirmed';
             th.innerHTML = ths[n];
             trow.appendChild(th);
         }
@@ -1770,11 +1896,10 @@ class AccountList {
         row.appendChild(a);
 
         // build transaction list
-        if ((listName != null) && (listName.length > 0))
-        {
-            var cbody,ul, li;
+        if ((listName != null) && (listName.length > 0)) {
+            var cbody, ul, li;
 
-       
+
             div = document.getElementById(listName);
             container = document.createElement('div');
             row = document.createElement('div');
@@ -1782,7 +1907,7 @@ class AccountList {
             container.className = "card text-center";
             row.className = "card-header";
 
-            h2= document.createElement('div');
+            h2 = document.createElement('div');
             h2.className = 'white-text mb-3 pt-3 font-weight-bold';
             h2.innerHTML = 'Manage your transactions';
             row.appendChild(h2);
@@ -1839,8 +1964,8 @@ class AccountList {
             col1.innerHTML = 'total:';
             row.appendChild(col1);
             col1 = document.createElement('div');
-            col1.id='txtotal';
-            col1.className = 'col-sm-2  d-flex justify-content-end';
+            col1.id = 'txtotal';
+            col1.className = 'col-md-2 justify-content-end';
             row.appendChild(col1);
             cbody.appendChild(row);
 
@@ -1852,7 +1977,7 @@ class AccountList {
             row.appendChild(col1);
             col1 = document.createElement('div');
             col1.id = 'selected_balance';
-            col1.className = 'col-sm-2  d-flex justify-content-end';
+            col1.className = 'col-md-2 justify-content-end';
             row.appendChild(col1);
             cbody.appendChild(row);
 
@@ -1863,26 +1988,31 @@ class AccountList {
             col1.innerHTML = 'showing:';
             row.appendChild(col1);
             col1 = document.createElement('div');
-            col1.className = 'col-sm-2   d-flex justify-content-end';
-            col1.innerHTML='<span id="ntx"></span>/<span id="total_tx"></span>';
+            col1.className = 'col-md-2 justify-content-end';
+            col1.innerHTML = '<span id="ntx"></span>/<span id="total_tx"></span>';
             row.appendChild(col1);
             cbody.appendChild(row);
-            
 
-            col1                    = document.createElement('div');
-            this.TxTable            = document.createElement('TABLE');
-            this.TxTable.id         = 'tx_list';
-            this.TxTable.className  = "table hover";
-       
-            header                  = this.TxTable.createTHead();
-            body                    = this.TxTable.createTBody();
-            trow                    = header.insertRow(0);
-            ths                     = ["time","tx","from","amount","nconf"];
-        
+
+            col1 = document.createElement('div');
+            this.TxTable = document.createElement('TABLE');
+            this.TxTable.id = 'tx_list';
+            this.TxTable.className = "table hover";
+
+            header = this.TxTable.createTHead();
+            body = this.TxTable.createTBody();
+            trow = header.insertRow(0);
+            ths = ["time", "tx", "from", "amount", "nconf"];
+
             for (n = 0; n < ths.length; n++) {
                 var th = document.createElement('th');
-                if (ths[n] == 'tx')th.className = 'tx-cell';
-                th.innerHTML    = ths[n];
+
+                if (ths[n] == 'tx') th.className = 'tx-cell';
+                if (ths[n] == 'time') th.className = 'time';
+
+
+
+                th.innerHTML = ths[n];
                 trow.appendChild(th);
             }
 
@@ -1891,6 +2021,8 @@ class AccountList {
             container.appendChild(cbody);
             div.appendChild(container);
         }
+        else
+            this.TxTable = null;
     }
 }
 

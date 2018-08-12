@@ -454,24 +454,54 @@ class Applications
 
      get_app_header(app)
      {
-         var section,h1, div, span1, span2;
+         var section,h1, div,inner, cont,row,col;
 
          section = document.createElement('section');
 
          h1 = document.createElement('h1');
          div = document.createElement('div');
-         span1 = document.createElement('span');
-         span2 = document.createElement('span');
+         div.className = 'card';
+
+         inner = document.createElement('div');
+         inner.className = 'card-header pt-3 indigo';
 
          h1.innerHTML = '<a href="/nodix.site/application/' + app.appName + '" >' + app.appName + '</a>';
-         span1.innerHTML = 'txid : ' + app.txid;
-         span2.id = 'appAddr';
-         span2.innerHTML = app.appAddr;
-         div.innerHTML = 'Master addr : ';
-         div.appendChild(span2);
+         inner.appendChild(h1);
+         div.appendChild(inner);
 
-         section.appendChild(h1);
-         section.appendChild(span1);
+         inner = document.createElement('div');
+         inner.className = 'card-body';
+
+         cont = document.createElement('div');
+         cont.className = 'container';
+         row = document.createElement('div');
+         row.className = 'row';
+         col = document.createElement('div');
+         col.className = 'col';
+         col.innerHTML = 'Master addr :';
+         row.appendChild(col);
+         col = document.createElement('div');
+         col.className = 'col';
+         col.id = 'appAddr';
+         col.innerHTML = app.appAddr;
+         row.appendChild(col);
+         cont.appendChild(row);
+         
+         row = document.createElement('div');
+         row.className = 'row';
+         col = document.createElement('div');
+         col.className = 'col';
+         col.innerHTML = 'txid :';
+         row.appendChild(col);
+         col = document.createElement('div');
+         col.className = 'col';
+         col.innerHTML = app.txid;
+         row.appendChild(col);
+         cont.appendChild(row);
+
+         
+         inner.appendChild(cont);
+         div.appendChild(inner);
          section.appendChild(div);
 
          return section;
@@ -1039,10 +1069,9 @@ class Applications
 
          div.className = "container";
          div.id = "apps";
-
          if (this.apps != null) {
              for (n = 0; n < this.apps.length; n++) {
-                 div.appendChild( this.get_app_header(this.apps[n]));
+                 div.appendChild(this.get_app_header(this.apps[n]));
              }
          }
          
@@ -1082,7 +1111,7 @@ class Applications
              $('#app_root_new').css('display', 'none');
              $('#app_root_new').html('');
              $('#app_root_infos').css('display', 'block');
-             $('#app_root_infos').html('<section><h2>Application root</h2><div class="container"><div class="row"><div class="col-md-2">txid:<span id="root_app_txh"></span></div></div><div class="row"><div class="col-md-2">addr:<span id="root_app_addr"></span></div></div></div></section>');
+             $('#app_root_infos').html('<div class="row"><div class="col-md">txid</div><div class="col-md"  id="root_app_txh"></div></div><div class="row"><div class="col-md">addr</div><div class="col-md" id="root_app_addr"></div></div>');
              
 
              $('#root_app_txh').html(root_app_hash);

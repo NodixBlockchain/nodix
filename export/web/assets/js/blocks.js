@@ -984,8 +984,8 @@ class BlockExplorer
         h3 = document.createElement('h3');
         span = document.createElement('span');
 
-        col.className = 'col-md-1';
-        h3.innerHTML = 'previous day';
+        col.className = 'col-md';
+        h3.innerHTML = 'prev';
         span.id = 'blocklistprev';
         span.innerHTML = dateConverter(this.PrevTime);
              
@@ -995,6 +995,8 @@ class BlockExplorer
             self.txs = null;
             self.blk_page_idx = 0;
             self.tx_page_idx = 0;
+
+            $('#datepicker').datepicker('setDate', dateConverter(self.PrevTime));
 
             self.list_blocks(dateConverter(self.PrevTime), 0);
             self.list_txs   (dateConverter(self.PrevTime));
@@ -1010,8 +1012,8 @@ class BlockExplorer
         h3 = document.createElement('h3');
         span = document.createElement('span');
 
-        col.className = 'col-md-1';
-        h3.innerHTML = 'blocks for day';
+        col.className = 'col-md';
+        h3.innerHTML = 'today';
         span.id = 'blocklistdate';
         span.innerHTML = dateConverter(this.CurrentTime);
 
@@ -1021,6 +1023,8 @@ class BlockExplorer
             self.txs = null;
             self.blk_page_idx = 0;
             self.tx_page_idx = 0;
+
+            $('#datepicker').datepicker('setDate', dateConverter(self.CurrentTime));
 
             self.list_blocks(dateConverter(self.CurrentTime), 0);
             self.list_txs   (dateConverter(self.CurrentTime));
@@ -1035,8 +1039,8 @@ class BlockExplorer
         h3 = document.createElement('h3');
         span = document.createElement('span');
 
-        col.className = 'col-md-1';
-        h3.innerHTML = 'next day';
+        col.className = 'col-md';
+        h3.innerHTML = 'next';
         span.id = 'blocklistnext';
         span.innerHTML = dateConverter(this.NextTime);
 
@@ -1045,6 +1049,8 @@ class BlockExplorer
             self.txs = null;
             self.blk_page_idx = 0;
             self.tx_page_idx = 0;
+
+            $('#datepicker').datepicker('setDate', dateConverter(self.NextTime));
 
             self.list_blocks(dateConverter(self.NextTime), 0);
             self.list_txs   (dateConverter(self.NextTime));
@@ -1289,7 +1295,7 @@ class BlockExplorer
         var filter_ops = [{ val: ">", label: ">" }, { val: "<", label: "<" }, { val: "=", label: "=" }];
         var hdr = [{ id: "height_hdr", label: "height" }, { id: "time_hdr", label: "time" }, { id: "reward_hdr", label: "reward" }, { id: "time_hdr", label: "time" }, { id: "ntx_hdr", label: "ntx" }, { id: "size_hdr", label: "size" }];
 
-        var container,span,row, col, inrow, incol, panel, panel_hdr, panel_body, h3, i, select, input;
+        var container, span, row, col, inrow, incol, panel, panel_hdr, panel_body, panel_footer, h3, i, select, input;
         var n;
 
         container = document.createElement('div');
@@ -1308,8 +1314,8 @@ class BlockExplorer
         container.className = 'container';
         row.className = 'row';
         col.className = 'col-md-5';
-        panel.className = 'panel panel-green margin-bottom-40';
-        panel_hdr.className = 'panel-heading';
+        panel.className = 'card';
+        panel_hdr.className = 'card-header';
         h3.className = 'panel-title';
         i.className = 'fa fa- tasks';
         this.blk_filts.id = 'blk_filter_list';
@@ -1325,10 +1331,11 @@ class BlockExplorer
         incol                   = document.createElement('div');
         this.blk_filter_key     = document.createElement('select');
 
-        panel_body.className    = 'panel-body';
+        panel_body.className    = 'card-body';
         inrow.className         = 'row';
         incol.className         = 'col-md-2';
-        this.blk_filter_key.id  = 'blk_filter_key';
+        this.blk_filter_key.id = 'blk_filter_key';
+        this.blk_filter_key.className = 'browser-default';
 
         for (n = 0; n < filters.length; n++)
         {
@@ -1345,7 +1352,8 @@ class BlockExplorer
         incol.className     = 'col-md-2';
 
         this.blk_filter_op      = document.createElement('select');
-        this.blk_filter_op.id   = 'blk_filter_op';
+        this.blk_filter_op.id = 'blk_filter_op';
+        this.blk_filter_op.className = 'browser-default';
 
         for (n = 0; n < filter_ops.length; n++) {
             var opt = document.createElement('option');
@@ -1392,6 +1400,7 @@ class BlockExplorer
         this.blkTable = document.createElement('TABLE');
         this.blkTable.id = "list_table";
         this.blkTable.className = "table table-hover";
+        
 
         var header = this.blkTable.createTHead();
         var body = this.blkTable.createTBody();
@@ -1407,6 +1416,8 @@ class BlockExplorer
         panel_body.appendChild(this.blkTable);
         panel.appendChild(panel_body);
        
+        panel_footer = document.createElement('div');
+        panel_footer.className = 'panel-footer';
 
 
         input = document.createElement('input');
@@ -1428,19 +1439,19 @@ class BlockExplorer
 
         });
 
-        panel.appendChild(input);
+        panel_footer.appendChild(input);
 
         span = document.createElement('span');
         span.id = 'curblocks';
-        panel.appendChild(span);
+        panel_footer.appendChild(span);
 
         span = document.createElement('span');
         span.innerHTML = '&nbsp;/&nbsp;';
-        panel.appendChild(span);
+        panel_footer.appendChild(span);
 
         span = document.createElement('span');
         span.id = 'totalblocks';
-        panel.appendChild(span);
+        panel_footer.appendChild(span);
 
         input = document.createElement('input');
         input.id = 'searchmore';
@@ -1453,7 +1464,7 @@ class BlockExplorer
 
         });
 
-        panel.appendChild(input);
+        panel_footer.appendChild(input);
         span                    = document.createElement('span');
         span.innerHTML          = 'from block #';
 
@@ -1463,10 +1474,10 @@ class BlockExplorer
         this.cursearch.value    = '0';
         this.cursearch.setAttribute       ('disabled', 'disabled');
 
-        panel.appendChild(span);
-        panel.appendChild(this.cursearch);
+        panel_footer.appendChild(span);
+        panel_footer.appendChild(this.cursearch);
 
-
+        panel.appendChild(panel_footer);
         col.appendChild(panel);
         row.appendChild(col);
 
@@ -1474,15 +1485,17 @@ class BlockExplorer
         panel = document.createElement('div');
         panel_hdr = document.createElement('div');
         panel_body = document.createElement('div');
+        panel_footer = document.createElement('div');
         this.txList = document.createElement('div');
 
         h3 = document.createElement('h3');
         i = document.createElement('i');
 
         col.className = 'col-md-7';
-        panel.className = 'panel panel-green margin-bottom-40';
-        panel_hdr.className = 'panel-heading';
-        panel_body.className = 'panel-body';
+        panel.className = 'card';
+        panel_hdr.className = 'card-header';
+        panel_body.className = 'card-body';
+        panel_footer.className = 'card-footer';
         h3.className = 'panel-title';
         i.className = 'fa fa- tasks';
         i.innerHTML = 'Transactions';
@@ -1511,20 +1524,22 @@ class BlockExplorer
 
         });
 
-        panel.appendChild(input);
+        panel_footer.appendChild(input);
 
         span = document.createElement('span');
         span.id = 'curtxs';
-        panel.appendChild(span);
+        panel_footer.appendChild(span);
 
 
         span = document.createElement('span');
         span.innerHTML = '&nbsp;/&nbsp;';
-        panel.appendChild(span);
+        panel_footer.appendChild(span);
 
         span = document.createElement('span');
         span.id = 'totaltxs';
-        panel.appendChild(span);
+        panel_footer.appendChild(span);
+
+        panel.appendChild(panel_footer);
 
         col.appendChild(panel);
         row.appendChild(col);

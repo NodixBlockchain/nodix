@@ -1,3 +1,4 @@
+
 <!--=== Block Explorer ===-->
 <div class="container content">
     <section>
@@ -6,7 +7,7 @@
         <h2>block explorer</h2>
         <div style="vertical-align:bottom;">
           <span>Units : </span>
-          <select onchange="unit = this.options[this.selectedIndex].value; MyBlocks.update_blocks(); MyBlocks.update_txs(txs);" id="units" name="units">
+          <select onchange="unit = this.options[this.selectedIndex].value; MyBlocks.update_blocks(); MyBlocks.update_txs(txs);" id="units" name="units" class="browser-default">
             <option value="100000000">ADX</option>
             <option value="100000">mADX</option>
             <option value="100">µADX</option>
@@ -18,25 +19,18 @@
     </section>
 
     <section>
-       <div class="row">
-         <div class="col-md-9">
-           <label class="label">Select single date with inline datepicker</label>
-           <form action="#" id="sky-form" class="sky-form">
-             <header>Blocks date</header>
-             <fieldset>
-               <section>
-                 <label class="label">Select single date with inline datepicker</label>
-                 <div id="inline"></div>
-               </section>
-             </fieldset>
-           </form>
-         </div>
+       <div class="card">
+         <div class="card-header text-center">Blocks date</div>
+           <div class="card-body flex-center"><div id="datepicker"></div></div>
+           <div class="card-footer flex-center"><div id="navday"></div></div>
        </div>
    </section>
 
-   <section id="navday"></section>
-
-    <section id="blocks"></section>
+    <hr/>
+    <section >
+        <div id="blocks">
+        </div>
+    </section>
 
     <section >
       <div class="modal fade" id="blockmodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">

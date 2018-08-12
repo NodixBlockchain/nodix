@@ -25,6 +25,12 @@ while (i < ALPHABET.length) {
 function encryptNodeKey(msg)
 {   
     var mykey, myprivX;
+
+    if (typeof (ec) == 'undefined')
+        return null;
+
+    if (ec == null)
+        return null;
     
     myprivX = sessionStorage.MyNodixKey;
 
@@ -55,9 +61,7 @@ function rpc_call(in_method, in_params, in_success) {
     var encMsg = encryptNodeKey(JSON.stringify(in_params));
 
     if (encMsg)
-    {
         obj = { jsonrpc: '2.0', method: in_method, pubkey: encMsg.pubkey, params: encMsg.msg, id: 1 };
-    }
     else
         obj = { jsonrpc: '2.0', method: in_method, params: in_params, id: 1 };
     
@@ -395,9 +399,15 @@ function get_tx_html(tx, n) {
     else if (typeof tx.txsout != 'undefined')
         vout = tx.txsout;
 
-    new_html = '<div class="row justify-content-md-center tx_row fade in" style="border-bottom:1px solid #000;margin-bottom:2px;" onclick="show_tx(\'' + tx.txid + '\');" >';
+    new_html = '<div class="row justify-content-md-center tx_row fade in show" style="border-bottom:1px solid #000;margin-bottom:2px;" onclick="show_tx(\'' + tx.txid + '\');" >';
     new_html += '<div class="col-md-5  align-self-start" >';
-    new_html += '<a class="tx_lnk" onclick="SelectTx(\'' + tx.txid + '\'); return false;" href="' + site_base_url + '/tx/' + tx.txid + '">' + '#' + n + '</a>';
+    new_html += '<a class="tx_lnk" onclick="SelectTx(\'' + tx.txid + '\'); return false;" href="' + site_base_url + '/tx/' + tx.txid + '">';
+
+    if (typeof (n) != 'undefined') {
+        new_html += '#' + n;
+    }
+    new_html += '</a>';
+
     new_html += timeConverter(tx.time);
 
     if (tx.isNull == true) {
@@ -409,9 +419,13 @@ function get_tx_html(tx, n) {
         new_html += vout.length + '&nbsp;out';
     }
     new_html += '</div>';
-    if (tx.blockheight) {
-        new_html += '<div class="col-md-6 align-self-end" >';
-        new_html += 'block #' + tx.blockheight+'&nbsp';
+    if (typeof(tx.blockheight)!='undefined') {
+        new_html += '<div class="col-md align-self-end" >';
+        new_html += 'block #' + tx.blockheight + '&nbsp';
+        new_html += '</div>';
+    }
+    if (tx.blocktime) {
+        new_html += '<div class="col-md align-self-end" >';
         new_html += '<span class="block_idate" >' + timeConverter(tx.blocktime) + '</span>';
         new_html += '</div>';
     }
@@ -420,16 +434,16 @@ function get_tx_html(tx, n) {
     new_html += '<div class="row tx_infos"  style="border-bottom:1px dashed #000;margin-bottom:2px;" id="tx_infos_' + tx.txid + '" >';
     new_html += '<span style="  width: 100%;  display: inline-block;text-align:center" >transaction id :' + tx.txid + '</span><br/>';
     if (tx.isNull == true) {
-        new_html += '<div class="col-md-6" >' + '<h2>inputs</h2>' + '#0 null&nbsp;' + '</div>';
-        new_html += '<div class="col-md-6" >' + '<h2>outputs</h2>' + '#0 null&nbsp;' + '</div>';
+        new_html += '<div class="col-md" >' + '<h2>inputs</h2>' + '#0 null&nbsp;' + '</div>';
+        new_html += '<div class="col-md" >' + '<h2>outputs</h2>' + '#0 null&nbsp;' + '</div>';
     }
     else if (tx.is_app_root == 1)
 	{
-		new_html += '<div class="col-md-6" >' + '<h2>inputs</h2>' + '#0&nbsp;approot&nbsp;' + '</div>';
-        new_html += '<div class="col-md-6" >' + '<h2>outputs</h2>' + '#0&nbsp;' + vout[0].value + ' ' + tx.dstaddr + '</div>';
+		new_html += '<div class="col-md" >' + '<h2>inputs</h2>' + '#0&nbsp;approot&nbsp;' + '</div>';
+        new_html += '<div class="col-md" >' + '<h2>outputs</h2>' + '#0&nbsp;' + vout[0].value + ' ' + tx.dstaddr + '</div>';
         
     } else {
-        new_html += '<div class="col-md-6" >';
+        new_html += '<div class="col-md" >';
         new_html += '<h2>inputs</h2>';
         if ((tx.isCoinBase == true)) {
 
@@ -441,7 +455,7 @@ function get_tx_html(tx, n) {
             nins = vin.length;
             for (nn = 0; nn < nins; nn++) {
                 new_html += '<div class="row">';
-                new_html += '<div class="col-md-8" >';
+                new_html += '<div class="col-md" >';
                 new_html += '#' + nn + '&nbsp;';
 
                 if ((vin[nn].isApp == true)) {
@@ -475,14 +489,14 @@ function get_tx_html(tx, n) {
         }
         new_html += '</div>';
 
-        new_html += '<div class="col-md-6" >';
+        new_html += '<div class="col-md" >';
         new_html += '<h2>outputs</h2>';
         if (vout) {
             nouts = vout.length;
             for (nn = 0; nn < nouts; nn++) {
 
                 new_html += '<div class="row">';
-                new_html += '<div class="col-md-8" >';
+                new_html += '<div class="col-md" >';
 
                 if (vout[nn].isNull == true)
                     new_html += '#0 null &nbsp;';

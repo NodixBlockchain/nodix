@@ -1164,9 +1164,9 @@ OS_API_C_FUNC(int) makeapptx(mem_zone_ref_const_ptr params, unsigned int rpc_mod
 			tree_manager_get_child_value_i32	(input, NODE_HASH("idx"), &oIdx);
 
 			get_tx_output_script				(h, oIdx, &script,&inAmount);
-			get_out_script_address				(&script, PTR_NULL, src_addr);
+			if(get_out_script_address				(&script, PTR_NULL, src_addr))
+				tree_manager_set_child_value_btcaddr(input, "srcaddr"	, src_addr);
 
-			tree_manager_set_child_value_btcaddr(input, "srcaddr"	, src_addr);
 			tree_manager_set_child_value_i32	(input, "index"		, nin);
 			tree_manager_set_child_value_i64	(input, "value"		, inAmount);
 
@@ -4070,6 +4070,26 @@ OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_m
 	
 	return 1;
 }
+
+inline float fast_log(float val)
+{
+	int * const exp_ptr = (int *)(&val);
+	int x = *exp_ptr;
+	const int log_2 = ((x >> 23) & 255) - 128;
+	x &= ~(255 << 23);
+	x += 127 << 23;
+	*exp_ptr = x;
+
+	val = ((-1.0f / 3) * val + 2) * val - 2.0f / 3;
+	return ((val + log_2) * 0.69314718f);
+}
+
+float getdifficulty(unsigned int bits)
+{
+	double max_body = fast_log(0x00ffff), scaland = fast_log(256);
+	return exp(max_body - fast_log(bits & 0x00ffffff) + scaland * (0x1d - ((bits & 0xff000000) >> 24)));
+}
+
 
 OS_API_C_FUNC(int) getmininginfo(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
 {

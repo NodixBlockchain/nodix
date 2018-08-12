@@ -153,7 +153,7 @@ page services = `
 						
 			MyNode.mods = http_service.modules;
 
-			MyNode.make_modules_html	('service_modz_div'    ,http_service.modules);
+			MyNode.make_modules_html	('node_modules'    ,http_service.modules);
 			MyNode.make_scripts_html	('service_scriptz_div' ,http_service.nodescripts);
 		});
 	end_js
@@ -166,7 +166,9 @@ page services = `
 page blocks = `
 
 	push stylesheets,"/assets/css/plugins/blocks.css"
-	push scripts,"/assets/js/plugins/datepicker.js"
+	push stylesheets,"/assets/css/plugins/bootstrap-datepicker.min.css"
+
+	push scripts,"/assets/js/plugins/bootstrap-datepicker.min.js"
 	push scripts,"/assets/js/blocks.js"
 	
 	
@@ -181,6 +183,8 @@ page blocks = `
 	 
 	jQuery(document).ready(function () 
 	{
+		var selectedDate;
+
 	    lang			= 'en';
         api_base_url	= '';
 		site_base_url	= '/nodix.site';
@@ -193,8 +197,14 @@ page blocks = `
 		MyBlocks.create_block_list	('blocks');
 		MyBlocks.create_block_infos ('blockInfos');
 
-        Datepicker.initDatepicker(function (selectedDate) 
-		{ 
+		$('#datepicker').datepicker({format: "yyyy-mm-dd" , todayHighlight:true});
+		$('#datepicker').datepicker('setDate',new Date());
+		
+
+		$('#datepicker').on('changeDate', function() {
+			
+		    selectedDate = $('#datepicker').datepicker('getFormattedDate');
+
 			MyBlocks.blk_page_idx = 0; 
 			MyBlocks.tx_page_idx = 0; 
 			MyBlocks.txs = null; 
@@ -203,9 +213,10 @@ page blocks = `
 
 			MyBlocks.list_blocks(selectedDate, 0); 
 			MyBlocks.list_txs	(selectedDate); 
+			
 		});
 
-        var selectedDate = $('#inline').datepicker({ dateFormat: 'yy-mm-dd' }).val();
+        selectedDate = $('#datepicker').datepicker('getFormattedDate');
 
         MyBlocks.list_blocks	(selectedDate, 0);
         MyBlocks.list_txs		(selectedDate);
@@ -367,14 +378,10 @@ page wallet(account_name) = `
 			$('#paytxfee').val(paytxfee);
 
 			$('#menu_wallet').addClass('active');
-			$('#menu_wallet_main').addClass('active');
-
-			$('#menu').html('wallet');
-			$('#menu').attr('href','/nodix.site/wallet/');
 
 			ec				= new EC('secp256k1');
 
-			MyAccount		= new AccountList	('account_list','my_wallet',{'withSecret':true,'staking':false,'newAccnt':true});
+			MyAccount		= new AccountList	('account_list','my_wallet',{'withSecret':true,'staking':true,'newAccnt':true});
 			MyAccount.setAccounts				(%node_accounts%,'%account_name%');
 	
 			check_anon_access	();
@@ -387,126 +394,6 @@ page wallet(account_name) = `
 	html_block "templates/footer.html"
 `
 
-page staking(account_name) = `	
-	push stylesheets,"/assets/css/plugins/blocks.css"
-	
-	push scripts,"/assets/js/blocks.js"
-	push scripts,"/assets/js/ecdsa_bundle.js"
-	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
-	push scripts,"/assets/js/keys.js"
-	push scripts,"/assets/js/md5.min.js"
-	
-	node_adx.node_list_accounts	(node_accounts)
-
-	set has_site_api = 0;
-	
-	node_adx.node_has_service_module("site_cgi") ? 
-		set has_site_api = 1;
-	endor
-	
-	html_head "NodiX WALLET" 
-	
-	html_block "templates/menu.html"
-	html_block "templates/staking.html"
-	
-	html_scripts
-	
-	html_var has_site_api;
-	
-	html_js
-    
-	jQuery(document).ready(function() {
-		
-		lang			='en';
-		api_base_url	='';
-		site_base_url	='/nodix.site';
-
-
-		$('#menu_wallet').addClass('active');
-		$('#menu_wallet_staking').addClass('active');
-		
-		$('#menu').html('wallet');
-		$('#menu').attr('href','/nodix.site/wallet/');
-
-		$('#sub_menu').html('staking');
-		$('#sub_menu').attr('href','/nodix.site/staking/');
-		
-		ec				= new EC('secp256k1');
-
-		MyAccount		= new AccountList	('account_list','my_wallet',{'withSecret':true,'staking':true, 'newAccnt':false});
-
-		MyAccount.setAccounts				(%node_accounts%,'%account_name%');
-
-    
-		});
-	end_js
-
-	html_block "templates/footer.html"
-`
-
-	
-page transaction(account_name) = `
-	
-	push stylesheets,"/assets/css/plugins/blocks.css"
-	push scripts,"/assets/js/blocks.js"
-	push scripts,"/assets/js/ecdsa_bundle.js"
-	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
-	push scripts,"/assets/js/keys.js"
-	push scripts,"/assets/js/md5.min.js"
-
-	node_adx.node_list_accounts	(node_accounts)
-	set logged = 0;
-	
-	if(cookies.sessionid ! "" )
-		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
-	endif
-
-	
-	html_head "NodiX WALLET transaction" 
-	
-	html_block "templates/menu.html"
-	html_block "templates/transaction.html"
-	
-	html_scripts
-	
-	html_var logged;
-	html_var cookies.sessionid;
-	
-	html_js
-	jQuery(document).ready(function() 
-	{
-		
-		lang			='en';
-		api_base_url	='';
-		site_base_url	='/nodix.site';
-
-		$('#menu_wallet').addClass('active');
-		$('#menu_wallet_tx').addClass('active');
-
-		$('#menu').html('wallet');
-		$('#menu').attr('href','/nodix.site/wallet/');
-
-		$('#sub_menu').html('transaction');
-		$('#sub_menu').attr('href','/nodix.site/staking/');
-
-		
-		ec				= new EC('secp256k1');
-		paytxfee		=  %SelfNode.paytxfee%;
-		
-		$('#paytxfee').val(paytxfee);
-		
-		MyAccount		= new AccountList	('account_list','my_wallet',{'withSecret':true,'staking':false,'newAccnt':false});
-		MyAccount.setAddressText			('Enter the secret key for the addresses you want to use for the transaction on below, and check the box to enable transaction from this address.');
-		MyAccount.setAccounts				(%node_accounts%,'%account_name%');
-		
-		$('.coin_unit').html				(get_amount_coin(unit));
-		
-
-	});
-	end_js
-
-	html_block "templates/footer.html"
-`
 
 page application(app_name,account_name) = `
 	
@@ -674,7 +561,7 @@ page applications(account_name) = `
 		api_base_url	='';
 		site_base_url	='/nodix.site';
 
-		$('#menu_apps').addClass('active');
+		$('#menu_node').addClass('active');
 		
 		ec				= new EC('secp256k1');
 		paytxfee		=  %SelfNode.paytxfee%;
@@ -682,7 +569,7 @@ page applications(account_name) = `
 		$('#paytxfee').val(paytxfee / unit);
 
 		
-		MyAccount		=	new AccountList	('addresses','list_container',{'withSecret':true,'newAccnt':false});
+		MyAccount		=	new AccountList	('addresses',null,{'withSecret':true,'newAccnt':false});
 		MyAccount.addAccountSelect			('app_addr');
 		MyAccount.addAccountSelect			('new_app_addr');
 		MyAccount.setAccounts				(%node_accounts%,'%account_name%');

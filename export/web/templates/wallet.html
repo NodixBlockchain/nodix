@@ -25,16 +25,29 @@
         display:none;
     }
     @media only screen and (max-width: 1024px) {
-        .tx-cell {
+        .tx-cell,.time,.balance_unconfirmed {
             max-width: 0px;
             display: none;
         }
         .table td, .table th {
             padding: 0px;
         }
+        .addr-label
+        {
+            font-size:0.6em;
+            padding:0.2rem;
+        }
         .addr-cell
         {
             font-size:0.8em;
+        }
+        .addr-amount
+        {
+            font-size:0.6em;
+        }
+        .addr-secret
+        {
+            max-width:64px;
         }
     }
 
@@ -42,7 +55,7 @@
         .table td, .table th {
             padding: 4px;
         }
-         .addr-cell, .tx-cell {
+         .addr-cell, .tx-cell,.addr-amount {
             font-size:0.8em;
         }
     }
@@ -50,6 +63,7 @@
 </style>
 <script>
     var unit = 1;
+    var ec;
 
     function update_unit(select_obj) {
         var amount = parseFloat($('#amount').val()) * unit;
@@ -62,6 +76,8 @@
         MyAccount.update_txs();
         MyAccount.update_unspent();
         MyAccount.update_addrs();
+
+        $('#stakeweight').html(MyAccount.totalweight / unit);
 
         if (my_tx != null)
             $('#newtx').html(get_tmp_tx_html(my_tx));
@@ -79,8 +95,10 @@
         var dstAddr = $('#dstAddr').val();
 
         MyAccount.maketx(amount, fee, dstAddr);
-
     }
+
+
+
 </script>
 
 <div class="container content">
@@ -127,6 +145,21 @@
             <div id="account_list"></div>
         </div>
     </section>
+    <section id="staking">
+        <div class="container content">
+            <div class="card">
+                <div class="card-header pt-3 aqua-gradient"><h3 class="white-text mb-3 pt-3 font-weight-bold">Select the addresses to stake above, and then check the enable staking box.</h3></div>
+                <div class="card-body">
+                    <span id="stake_msg"></span>
+                    <div class="custom-control custom-checkbox"><input disabled="disabled" class="custom-control-input" type="checkbox" onclick="if (!this.checked) { clearTimeout(MyAccount.staketimer); } else { MyAccount.check_all_staking(); }" id="do_staking" /><label for="do_staking" class="custom-control-label" id="staking">enable staking</label></div>
+                    <div>total weight :<span id="stakeweight"></span></div>
+                    <div>number of staking txs :<span id="nstaketxs"></span></div>
+                    <div>hash rate:<span id="hashrate"></span></div>
+                    <div>new hash :<span id="newhash"></span></div>
+                </div>
+            </div>
+        </div>
+    </section>
     <section id="transaction">
         <div class="container content">
             <div class="card">
@@ -136,13 +169,15 @@
                     <div class="md-form"><input type="text" class="form-control" name="paytxfee" id="paytxfee" /><label for="paytxfee">tx fee</label> </div>
                     <div class="md-form"><input type="text" class="form-control" name="dstAddr" id="dstAddr" /><label for="dstAddr">to</label></div>
                     <div class="col-md"><button id="maketx" type="button" class="btn btn btn-primary" onclick="do_tx();">view tx</button></div>
-                    
+
                     <div class="col-md" id="div_newtxid">new tx id : <span id="newtxid"></span></div>
                     <div class="col-md"><div id="newtx"></div></div>
-                    <div class="col-md"><button id="sendtx_but" type="button" class="btn btn btn-primary" disabled="disabled" onclick="signtxinputs(my_tx.txid, my_tx.txsin);" >sign & send</button></div>
-             </div>
+                    <div class="col-md"><button id="sendtx_but" type="button" class="btn btn btn-primary" disabled="disabled" onclick="signtxinputs(my_tx.txid, my_tx.txsin);">sign & send</button></div>
+                </div>
+            </div>
         </div>
     </section>
+    
 
     <section>
         <div class="container-fluid">
@@ -150,5 +185,5 @@
         </div>
     </section>
     <!-- End Wallet-Form -->
+    <!--/wrapper-->
 
-<!--/wrapper-->
