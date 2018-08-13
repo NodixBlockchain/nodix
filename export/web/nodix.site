@@ -153,7 +153,7 @@ page services = `
 						
 			MyNode.mods = http_service.modules;
 
-			MyNode.make_modules_html	('node_modules'    ,http_service.modules);
+			MyNode.make_modules_html	('service_modules'    ,http_service.modules);
 			MyNode.make_scripts_html	('service_scriptz_div' ,http_service.nodescripts);
 		});
 	end_js

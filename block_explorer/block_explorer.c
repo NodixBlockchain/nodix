@@ -210,7 +210,7 @@ OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zon
 	}
 	else
 	{
-		get_block_hash(nblks - 1, block_hash);
+		get_block_hash(nblks, block_hash);
 	}
 	if (!load_blk_hdr(&blk, block_hash))return 0;
 	ret=get_block_infos(&blk, PTR_NULL, result);

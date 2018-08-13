@@ -1,76 +1,76 @@
 <section>
     <div class="container">
-        <div class="row"><h2>node informations</h2></div>
-        <div class="row"><p class="lead">Below are informations about this node</p></div>
-    </div>
-    <div class="container"><div class="row"><div class="col-md"><div id="node_div"></div></div></div></div>
-    <div class="container">
-        <div id="node_block_lag"></div>
-        <div><span id="node_time_lag"></span>&nbsp;behind</div>
+        <div class="card">
+            <div class="card-header"><h2>node informations</h2><p class="lead">Below are informations about this node</p></div>
+            <div class="card-body"><div id="node_div"></div></div>
+            <div class="card-footer"><div id="node_block_lag"></div><div><span id="node_time_lag"></span>&nbsp;behind</div></div>
+            </div>
     </div>
 </section>
-
-
-<section>
-    <hr />
-    <div class="container">
-        <div class="row">
-            <h2>mining info</h2>
-        </div>
-        <div class="row">
-            <div class="col-md-2">last POW block</div><div class="col-md-2"><a class="hash-lnk" onclick="MyBlocks.selectBlock(SelfNode.lastPOWBlk); return false;"  id="lastpowblock"></a></div>
-        </div>
-        <div class="row">
-            <div class="col-md-2">POW difficulty</div><div class="col-md-2"><span id="currentpowdiff"></span></div>
-        </div>
-        <div class="row">
-            <div class="col-md-2">POW reward</div><div class="col-md-2"><span id="powreward"></span></div>
-        </div>
-    </div>
-</section>
-
-<section>
-    <hr />
-    <div class="container">
-        <div class="row">
-            <h2>staking info</h2>
-        </div>
-        <div class="row">
-            <div class="col-md-2"><label>last POS block</label></div><div class="col-md-2"><a class="hash-lnk" onclick="MyBlocks.selectBlock(SelfNode.lastPOSBlk); return false;" id="lastposblock"></a></div>
-        </div>
-        <div class="row">
-            <div class="col-md-2"><label>POS difficulty</label></div><div class="col-md-2"><span id="currentposdiff"></span></div>
-        </div>
-        <div class="row">
-            <div class="col-md-2"><label>POS reward</label></div><div class="col-md-2"><span id="posreward"></span></div>
-        </div>
-    </div>
-</section>
-
+<hr />
 <section>
     <div class="container">
-        <div class="row"><h2>Peers</h2></div>
-    </div>
-    <div style="padding-left:24px;" id="peer_nodes_div"></div>
-</section>
-
-<section>
-    <div class="container">
-        <div class="row">
-            <div class="col-md-8">
-                <h1>memory pool</h1>
-                <div id="mempool"></div>
+        <div class="card">
+            <div class="card-header"><h2>mining info</h2></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2">last POW block</div><div class="col-md-2"><a class="hash-lnk" onclick="MyBlocks.selectBlock(SelfNode.lastPOWBlk); return false;" id="lastpowblock"></a></div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2">POW difficulty</div><div class="col-md-2"><span id="currentpowdiff"></span></div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2">POW reward</div><div class="col-md-2"><span id="powreward"></span></div>
+                </div>
             </div>
         </div>
     </div>
 </section>
+<hr />
 <section>
     <div class="container">
-        <div class="row"><h2>Modules</h2></div>
+        <div class="card">
+            <div class="card-header"><h2>staking info</h2></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2"><label>last POS block</label></div><div class="col-md"><a class="hash-lnk" onclick="MyBlocks.selectBlock(SelfNode.lastPOSBlk); return false;" id="lastposblock"></a></div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2"><label>POS difficulty</label></div><div class="col-md"><span id="currentposdiff"></span></div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2"><label>POS reward</label></div><div class="col-md"><span id="posreward"></span></div>
+                </div>
+            </div>
+        </div>
     </div>
+</section>
+<hr />
+<section>
     <div class="container">
-        <div style="padding-left:24px;" class="accordion" id="node_modules"></div>
+        <div class="card">
+            <div class="card-header"><h2>Peers</h2></div>
+            <div class="card-body"><div style="padding-left:24px;" id="peer_nodes_div"></div></div>
+        </div>
+     </div>
+</section>
+<hr />
+<section>
+    <div class="container">
+        <div class="card">
+            <div class="card-header"><h2>Memory pool</h2></div>
+            <div class="card-body"><div id="mempool"></div></div>
+        </div>
     </div>
+</section>
+<hr />
+<section>
+   <div class="container">
+       <div class="card">
+           <div class="card-header"><h2>Modules</h2></div>
+           <div class="card-body"><div style="padding-left:24px;" class="accordion" id="node_modules"></div></div>
+       </div>
+   </div>
 </section>
 
 

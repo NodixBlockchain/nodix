@@ -3,7 +3,7 @@
   <section>
   <div style="vertical-align:bottom;">
     <span>Units : </span>
-    <select onchange="unit = this.options[this.selectedIndex].value; MyBlocks.update_blocks(); MyBlocks.update_txs(); MyBlocks.update_addr_balance();" id="units" name="units">
+    <select onchange="unit = this.options[this.selectedIndex].value; MyBlocks.update_blocks(); MyBlocks.update_txs(); MyBlocks.update_addr_balance();" class="browser-default" id="units" name="units">
       <option value="100000000">ADX</option>
       <option value="100000">mADX</option>
       <option value="100">µADX</option>
@@ -13,6 +13,4 @@
   <section id="addrs"></section>
 </div>
 <!--=== End Block Explorer ===-->
-</div>
-<!--/wrapper-->
 

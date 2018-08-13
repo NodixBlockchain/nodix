@@ -6,7 +6,7 @@
                 <h2>block explorer</h2>
                 <div style="vertical-align:bottom;">
                     <span>Units : </span>
-                    <select onchange="unit = this.options[this.selectedIndex].value; MyBlocks.update_tx();" id="units" name="units">
+                    <select onchange="unit = this.options[this.selectedIndex].value; MyBlocks.update_tx();" id="units" class="browser-default" name="units">
                         <option value="100000000">ADX</option>
                         <option value="100000">mADX</option>
                         <option value="100">µADX</option>
@@ -15,7 +15,9 @@
             </div>
         </div>
     </section>
-    <section id="txPanel"></section>
+    <section>
+        <div id="txPanel"></div>
+    </section>
 </div>
 <!--=== End Block Explorer ===-->
 </div>

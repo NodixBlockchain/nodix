@@ -827,7 +827,7 @@ BlockExplorer.prototype.list_addr_txs = function  () {
         else
             self.txs.push.apply(self.txs, data.txs);
     
-        self.txs.sort( function (a, b) { return (b.blocktime - a.blocktime); });
+        /* self.txs.sort( function (a, b) { return (b.blockheight - a.blocktime); }); */
     
         self.update_addr_txs();
     
@@ -957,45 +957,51 @@ BlockExplorer.prototype.create_block_infos = function (root_element) {
     var rows = [{ label: "height :", id: "height" },
                 { label: "time :", id: "time" }, 
                 { label: "hash :", id: "hash" },
-                { label: "previousblockhash :", id: "previousblockhash" },
-                { label: "nextblockhash :", id: "nextblockhash" },
+                { label: "prev block :", id: "previousblockhash" },
+                { label: "next block :", id: "nextblockhash" },
                 { label: "confirmations :", id: "confirmations" },
                 { label: "difficulty :", id: "difficulty" },
                 { label: "merkleroot :", id: "merkleroot" },
                 { label: "nonce :", id: "nonce" },
-                { label: "bits :", id: "nonce" },
+                { label: "bits :", id: "bits" },
                 { label: "difficulty hash :", id: "diffhash" },
                 { label: "proofhash :", id: "proofhash" },
                 { label: "size :", id: "size" },
                 { label: "stakemodifier2 :", id: "stakemodifier2" },
                 { label: "version :", id: "version" },
                 { label: "txs :", id: "txs" }];
-    var table, row, cell;
+    var container, row, cell;
     
-    table = document.createElement('table');
-    table.id = "tblblock";
-    table.setAttribute('style','font-size:0.8em;')
+    container = document.createElement('div');
+    container.className = "container";
+    container.setAttribute('style', 'font-size:0.8em;')
     
     for (var n = 0; n < rows.length; n++)
     {
-        row             = table.insertRow(n);
-    
-        cell            = row.insertCell(0);
-        cell.className  = "lbl";
-        cell.innerHTML  = rows[n].label;
-    
-        cell            = row.insertCell(1);
-        cell.id         = rows[n].id;
+        row = document.createElement('div');
+        row.className = "row";
+
+        cell = document.createElement('div');
+        cell.className  = "col-sm-2 lbl";
+        cell.innerHTML = rows[n].label;
+        row.appendChild(cell);
+
+        cell = document.createElement('div');
+        cell.className = "col-md-8";
+        cell.id = rows[n].id;
+        row.appendChild(cell);
+
+        container.appendChild(row);
     }
     
-    document.getElementById(root_element).appendChild(table);
+    document.getElementById(root_element).appendChild(container);
     
     cell            = document.getElementById('previousblockhash');
-    cell.className  = "val ihash";
+    cell.className = "col-md-8 val ihash";
     cell.addEventListener("click", function () { self.selectBlockTxs(this.innerHTML); });
     
     cell            = document.getElementById('nextblockhash');
-    cell.className = "val ihash";
+    cell.className = "col-md-8 val ihash";
     cell.addEventListener("click", function () { self.selectBlockTxs(this.innerHTML); });
 }
 
@@ -1143,11 +1149,11 @@ BlockExplorer.prototype.create_tx_panel = function (root_element, txid) {
     i = document.createElement('i');
     span = document.createElement('span');
     
-    panel.className = 'panel panel-green margin-bottom-40';
-    panel_hdr.className = 'panel-heading';
-    panel_body.className = 'panel-body';
-    h3.className = 'panel-title';
-    i.className = 'fa fa- tasks';
+    panel.className = 'card';
+    panel_hdr.className = 'card-header';
+    panel_body.className = 'card-body';
+    h3.className = '';
+    i.className = 'fa fa-tasks';
     i.innerHTML = 'transaction&nbsp;';
     span.id = 'txhash';
     
@@ -1193,7 +1199,7 @@ BlockExplorer.prototype.create_addr_panel = function (root_element,addr) {
     var self = this;
     var n;
     var txinfos = [{ label: 'Total Received :', id: 'Received' }, { label: 'Total Sent :', id: 'Sent' }, { label: 'Final Balance :', id: 'Balance' }, { label: 'No. Transactions :', id: 'Transactions' }]
-    var root, panel, panel_hdr, panel_body, input, h3, i, span, row, col;
+    var root, panel, panel_hdr, panel_body, panel_footer, input, h3, i, span, row, container, col;
     
     this.currentAddr = addr;
     
@@ -1227,14 +1233,16 @@ BlockExplorer.prototype.create_addr_panel = function (root_element,addr) {
     panel                   = document.createElement('div');
     panel_hdr               = document.createElement('div');
     panel_body              = document.createElement('div');
+    container               = document.createElement('div');
     h3                      = document.createElement('h3');
     i                       = document.createElement('i');
     span                    = document.createElement('span');
     
-    panel.className         = 'panel panel-green margin-bottom-40';
-    panel_hdr.className     = 'panel-heading';
-    panel_body.className    = 'panel-body';
-    h3.className            = 'panel-title';
+    panel.className         = 'card';
+    panel_hdr.className     = 'card-header';
+    panel_body.className    = 'card-body';
+    container.className     = 'container';
+    h3.className            = '';
     i.className             = 'fa fa- tasks';
     i.innerHTML             = 'address&nbsp;';
     span.id                 = 'address';
@@ -1246,38 +1254,42 @@ BlockExplorer.prototype.create_addr_panel = function (root_element,addr) {
     
     for (n = 0; n < txinfos.length; n++)
     {
-        row             = document.createElement('div');
-        row.className   = "row";
+        row = document.createElement('div');
+        row.className = "row";
     
-        col             = document.createElement('div');
-        col.className   = 'col-md-2';
-        col.innerHTML   = txinfos[n].label;
-    
-        row.appendChild (col);
-    
-        col             = document.createElement('div');
-        col.className   = 'col-md-1';
-        col.id          = txinfos[n].id;
+        col = document.createElement('div');
+        col.className = 'col-md-2';
+        col.innerHTML = txinfos[n].label;
     
         row.appendChild (col);
     
-        panel_body.appendChild  (row);
+        col = document.createElement('div');
+        col.className = 'col-md-4 justify-content-end';
+        col.id = txinfos[n].id;
+    
+        row.appendChild (col);
+    
+        container.appendChild(row);
     }
-    
+    panel_body.appendChild(container);
     panel.appendChild(panel_body);
     root.appendChild(panel);
+
+    root.appendChild(document.createElement('hr'));
     
     
     panel = document.createElement('div');
     panel_hdr = document.createElement('div');
     panel_body = document.createElement('div');
+    panel_footer = document.createElement('div');
     h3 = document.createElement('h3');
     i = document.createElement('i');
     
-    panel.className = 'panel panel-green margin-bottom-40';
-    panel_hdr.className = 'panel-heading';
-    panel_body.className = 'panel-body';
-    h3.className = 'panel-title';
+    panel.className = 'card';
+    panel_hdr.className = 'card-header';
+    panel_body.className = 'card-body';
+    panel_footer.className = 'card-footer';
+    h3.className = '';
     i.className = 'fa fa- tasks';
     i.innerHTML = 'Transactions';
     
@@ -1307,13 +1319,14 @@ BlockExplorer.prototype.create_addr_panel = function (root_element,addr) {
         self.list_addr_txs();
     });
     
-    panel_body.appendChild  (input);
+    panel_footer.appendChild(input);
     
-    this.txList             = document.createElement('div');
-    this.txList.id          = 'tx_list';
+    this.txList = document.createElement('div');
+    this.txList.id = 'tx_list';
     
     panel_body.appendChild  (this.txList);
-    panel.appendChild       (panel_body);
+    panel.appendChild(panel_body);
+    panel.appendChild(panel_footer);
     root.appendChild        (panel);
 }
 

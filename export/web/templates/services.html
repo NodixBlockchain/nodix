@@ -1,94 +1,112 @@
 <!--=== Node Services ===-->
 <style>
-    .script_proc{
-        font-size:12px;
-        font-style:italic;
-        font-family:Consolas;
-        padding-left:8px;
-        overflow:scroll;
-        word-break:keep-all;
-        word-wrap:normal;
-        display:none;
+    .script_proc {
+        font-size: 12px;
+        font-style: italic;
+        font-family: Consolas;
+        padding-left: 8px;
+        overflow: scroll;
+        word-break: keep-all;
+        word-wrap: normal;
+        display: none;
     }
-
 </style>
 <script type="text/javascript">
-        function click_cgi_method(mod, method) {
+    function click_cgi_method(mod, method) {
         $('#api_request').val(api_base_url + mod.base)
         $('#api_method').val(method)
         $('#api_type').val('cgi')
         $('#api_params').empty();
     }
 
-    function do_cgi_request(myMethod, myUrl)
-    {
+    function do_cgi_request(myMethod, myUrl) {
         cgi_base = myUrl;
         api_call(myMethod, '', function (data) {
             $('#responseCode').html(JSON.stringify(data))
         });
     }
-    function click_rpc_method   (mod,method)
-    {
-        $('#api_request').val(api_base_url+mod.base)
+    function click_rpc_method(mod, method) {
+        $('#api_request').val(api_base_url + mod.base)
         $('#api_method').val(method)
         $('#api_type').val('rpc')
         $('#api_params').empty();
     }
 
- 
-    function do_rpc_request(myMethod ,myUrl)
-    {
+
+    function do_rpc_request(myMethod, myUrl) {
         rpc_base = myUrl;
-        rpc_call(myMethod,  [], function (data) {
+        rpc_call(myMethod, [], function (data) {
             $('#responseCode').html(JSON.stringify(data))
         });
     }
-
     var ul;
-
 </script>
-<div class="container content">
-    <section>
-        <section>
-            <h1 id="serv_name"></h1>
-            <div class="row">
-                <div class="col-md-2"><label>running on port</label></div><div class="col-md-2"><span id="serv_port"></span></div>
-            </div>
-            <div class="row">
-                <div class="col-md-2"><label>document root</label></div><div class="col-md-2"><span id="serv_root"></span></div>
-            </div>
-            <div class="row">
-                <div class="col-md-2"><label>index page </label></div><div class="col-md-2"><span id="index"></span></div>
-            </div>
-            <div class="row">
-                <div class="col-md-2"><label>default mime type</label></div><div class="col-md-2"><span id="defaultmime"></span></div>
-            </div>
-        </section>
-        <div class="row">
-            <section>
-                <h2>mimes</h2>
-                <div id="mimes"></div>
-            </section>
-        </div>
-        <div class="row">
-            <div class="col-md-6">
-                <h2>modules : </h2>
-                <div style="padding-left:18px;" class="accordion" id="node_modules"></div>
-                <h2>scripts : </h2>
-                <div style="padding-left:18px;" id="service_scriptz_div"></div>
-            </div>
-            <div class="col-md-4" id="api_div">
-                <div class="row"><div class="col-md-2">request</div><div class="col-md-1"><input name="api_request" id="api_request" value="" /></div></div>
-                <div class="row"><div class="col-md-2">method</div><div class="col-md-1"><input name="api_method" id="api_method" value="" />&nbsp;<span id="api_type"></span></div></div>
-                <div class="row"><div class="col-md-2">params</div><div class="col-md-1"><input name="api_params" id="api_params" value="" /></div></div>
-                <input type="button" value="execute" onclick="if ($('#api_type').val() == 'rpc') { do_rpc_request($('#api_method').val(), $('#api_request').val()); } else { do_cgi_request($('#api_method').val(), $('#api_request').val()); }" />
-                <div class="row">answser:<br/><div class="col-md-4"><div name="responseCode"  id="responseCode"></div></div>
+<section>
+    <div class="container content">
+        <div class="card">
+            <div class="card-header"><h2 id="serv_name">Memory pool</h2></div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2"><label>running on port</label></div><div class="col-md-2"><span id="serv_port"></span></div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2"><label>document root</label></div><div class="col-md-2"><span id="serv_root"></span></div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2"><label>index page </label></div><div class="col-md-2"><span id="index"></span></div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2"><label>default mime type</label></div><div class="col-md-2"><span id="defaultmime"></span></div>
                 </div>
             </div>
-         </div>
-    </section>
-</div>
-<!--=== End Node Services ===-->
-</div>
-<!--/wrapper-->
+        </div>
+    </div>
+</section>
+<section>
+    <div class="container content">
+        <div class="card">
+            <div class="card-header"><h2>Mimes</h2></div>
+            <div class="card-body"><div id="mimes"></div></div>
+        </div>
+    </div>
+</section>
 
+<section>
+    <div class="container content">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header"><h2 id="serv_name">Modules</h2></div>
+                    <div class="card-body"><div style="padding-left:18px;" class="accordion" id="service_modules"></div></div>
+                </div>
+                <hr />
+            </div>
+            <div class="col-md-6" id="api_div">
+                <div class="card">
+                    <div class="card-header"><h2 id="serv_name">Request</h2></div>
+                    <div class="card-body">
+                        <div class="container">
+                            <div class="row"><div class="col-md-2">request</div><div class="col-md-1"><input name="api_request" id="api_request" value="" /></div></div>
+                            <div class="row"><div class="col-md-2">method</div><div class="col-md-1"><input name="api_method" id="api_method" value="" />&nbsp;<span id="api_type"></span></div></div>
+                            <div class="row"><div class="col-md-2">params</div><div class="col-md-1"><input name="api_params" id="api_params" value="" /></div></div>
+                            <input type="button" value="execute" onclick="if ($('#api_type').val() == 'rpc') { do_rpc_request($('#api_method').val(), $('#api_request').val()); } else { do_cgi_request($('#api_method').val(), $('#api_request').val()); }" />
+                            <div class="row">
+                                answser:<br /><div class="col-md-8"><div name="responseCode" id="responseCode"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md">
+                <div class="card">
+                    <div class="card-header"><h2 id="serv_name">Scripts</h2></div>
+                    <div class="card-body"><div style="padding-left:18px;" id="service_scriptz_div"></div></div>
+                </div>
+            </div>
+        </div>
+
+</section>
+
+<!--/wrapper-->

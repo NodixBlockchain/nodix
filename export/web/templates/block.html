@@ -6,7 +6,7 @@
                 <h2>block explorer</h2>
                 <div style="vertical-align:bottom;">
                     <span>Units : </span>
-                    <select onchange="unit = this.options[this.selectedIndex].value; MyBlocks.updateblock(block); MyBlocks.update_txs(txs);" id="units" name="units">
+                    <select onchange="unit = this.options[this.selectedIndex].value; MyBlocks.updateblock(block); MyBlocks.update_txs(txs);" class="browser-default" id="units" name="units">
                         <option value="100000000">ADX</option>
                         <option value="100000">mADX</option>
                         <option value="100">µADX</option>
@@ -17,12 +17,18 @@
         </div>
     </section>
     <section>
-        <h1>block&nbsp;<span id="blockhash"></span></h1>
-        <div id="lastblock"></div>
-        <div id="tx_list"></div>
+        <div class="card">
+            <div class="card-header">
+                <h1>block&nbsp;<span id="blockhash"></span></h1>
+            </div>
+            <div class="card-body">
+                <div id="lastblock"></div>
+            </div>
+            <div class="card-footer">
+                <div id="tx_list"></div>
+            </div>
+        </div>
     </section>
 </div>
 <!--=== End Block Explorer ===-->
-</div>
-<!--/wrapper-->
 

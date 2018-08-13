@@ -24,7 +24,7 @@
     {
         display:none;
     }
-    @media only screen and (max-width: 1024px) {
+    @media only screen and (max-width: 800px) {
         .tx-cell,.time,.balance_unconfirmed {
             max-width: 0px;
             display: none;
@@ -101,12 +101,13 @@
 
 </script>
 
-<div class="container content">
-    <section>
+
+<section>
+    <div class="container content">
         <div class="row">
             <div class="col-md-2"><label>Units</label></div>
             <div class="col-md-2">
-
+    
                 <select onchange="update_unit(this);" class="browser-default" id="units" name="units">
                     <option value="100000000">ADX</option>
                     <option value="1000000">cents</option>
@@ -114,76 +115,78 @@
                 </select>
             </div>
         </div>
-    </section>
-</div>
+    </div>
+</section>
+
     
-    <section>
-        <div class="container content">
-            <div class="card" id="anon_wallet">
-                <div class="card-header  pt-3 aqua-gradient">
-                    <h3 class="white-text mb-3 pt-3 font-weight-bold">Anonymous wallet</h3>
-                </div>
-                <div class="card-body px-lg-5 pt-0">
-                    <div class="md-form">
-                        <input type="password" id="anon_pw" class="form-control" />
-                        <label for="anon_pw">password </label>
-                    </div>
-                    <div class="md-form">
-                        <input type="text" id="anon_timeout" value="1800" class="form-control" />
-                        <label for="anon_timeout">timeout</label>
-                    </div>
-                    <button type="button" class="btn btn-primary waves-effect waves-light" onclick="set_anon_pw($('#anon_pw').val(), parseInt($('#anon_timeout').val()));">set passphrase</button>
-                    <span id="anon_pw_ok"></span>
-                    <span id="anon_pw_error"></span>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section>
-        <div class="container content">
-            <div id="account_list"></div>
-        </div>
-    </section>
-    <section id="staking">
-        <div class="container content">
-            <div class="card">
-                <div class="card-header pt-3 aqua-gradient"><h3 class="white-text mb-3 pt-3 font-weight-bold">Select the addresses to stake above, and then check the enable staking box.</h3></div>
-                <div class="card-body">
-                    <span id="stake_msg"></span>
-                    <div class="custom-control custom-checkbox"><input disabled="disabled" class="custom-control-input" type="checkbox" onclick="if (!this.checked) { clearTimeout(MyAccount.staketimer); } else { MyAccount.check_all_staking(); }" id="do_staking" /><label for="do_staking" class="custom-control-label" id="staking">enable staking</label></div>
-                    <div>total weight :<span id="stakeweight"></span></div>
-                    <div>number of staking txs :<span id="nstaketxs"></span></div>
-                    <div>hash rate:<span id="hashrate"></span></div>
-                    <div>new hash :<span id="newhash"></span></div>
-                </div>
-            </div>
-        </div>
-    </section>
-    <section id="transaction">
-        <div class="container content">
-            <div class="card">
-                <div class="card-header pt-3 aqua-gradient"><h3 class="white-text mb-3 pt-3 font-weight-bold">Transaction</h3></div>
-                <div class="card-body">
-                    <div class="md-form"><input type="text" class="form-control" name="amount" id="amount" /> <label for="amount">send</label><span class="coin_unit"></span></div>
-                    <div class="md-form"><input type="text" class="form-control" name="paytxfee" id="paytxfee" /><label for="paytxfee">tx fee</label> </div>
-                    <div class="md-form"><input type="text" class="form-control" name="dstAddr" id="dstAddr" /><label for="dstAddr">to</label></div>
-                    <div class="col-md"><button id="maketx" type="button" class="btn btn btn-primary" onclick="do_tx();">view tx</button></div>
-
-                    <div class="col-md" id="div_newtxid">new tx id : <span id="newtxid"></span></div>
-                    <div class="col-md"><div id="newtx"></div></div>
-                    <div class="col-md"><button id="sendtx_but" type="button" class="btn btn btn-primary" disabled="disabled" onclick="signtxinputs(my_tx.txid, my_tx.txsin);">sign & send</button></div>
-                </div>
-            </div>
-        </div>
-    </section>
     
-
-    <section>
-        <div class="container-fluid">
-            <div id="my_wallet"></div>
+<section>
+    <div class="container content">
+        <div class="card" id="anon_wallet">
+            <div class="card-header  pt-3 aqua-gradient">
+                <h3 class="white-text mb-3 pt-3 font-weight-bold">Anonymous wallet</h3>
+            </div>
+            <div class="card-body px-lg-5 pt-0">
+                <div class="md-form">
+                    <input type="password" id="anon_pw" class="form-control" />
+                    <label for="anon_pw">password </label>
+                </div>
+                <div class="md-form">
+                    <input type="text" id="anon_timeout" value="1800" class="form-control" />
+                    <label for="anon_timeout">timeout</label>
+                </div>
+                <button type="button" class="btn btn-primary waves-effect waves-light" onclick="set_anon_pw($('#anon_pw').val(), parseInt($('#anon_timeout').val()));">set passphrase</button>
+                <span id="anon_pw_ok"></span>
+                <span id="anon_pw_error"></span>
+            </div>
         </div>
-    </section>
-    <!-- End Wallet-Form -->
-    <!--/wrapper-->
+    </div>
+</section>
+
+<section>
+    <div class="container content">
+        <div id="account_list"></div>
+    </div>
+</section>
+<section id="staking">
+    <div class="container content">
+        <div class="card">
+            <div class="card-header pt-3 aqua-gradient"><h3 class="white-text mb-3 pt-3 font-weight-bold">Select the addresses to stake above, and then check the enable staking box.</h3></div>
+            <div class="card-body">
+                <span id="stake_msg"></span>
+                <div class="custom-control custom-checkbox"><input disabled="disabled" class="custom-control-input" type="checkbox" onclick="if (!this.checked) { clearTimeout(MyAccount.staketimer); } else { MyAccount.check_all_staking(); }" id="do_staking" /><label for="do_staking" class="custom-control-label" id="staking">enable staking</label></div>
+                <div>total weight :<span id="stakeweight"></span></div>
+                <div>number of staking txs :<span id="nstaketxs"></span></div>
+                <div>hash rate:<span id="hashrate"></span></div>
+                <div>new hash :<span id="newhash"></span></div>
+            </div>
+        </div>
+    </div>
+</section>
+<section id="transaction">
+    <div class="container content">
+        <div class="card">
+            <div class="card-header pt-3 aqua-gradient"><h3 class="white-text mb-3 pt-3 font-weight-bold">Transaction</h3></div>
+            <div class="card-body">
+                <div class="md-form"><input type="text" class="form-control" name="amount" id="amount" /> <label for="amount">send</label><span class="coin_unit"></span></div>
+                <div class="md-form"><input type="text" class="form-control" name="paytxfee" id="paytxfee" /><label for="paytxfee">tx fee</label> </div>
+                <div class="md-form"><input type="text" class="form-control" name="dstAddr" id="dstAddr" /><label for="dstAddr">to</label></div>
+                <div class="col-md"><button id="maketx" type="button" class="btn btn btn-primary" onclick="do_tx();">view tx</button></div>
+
+                <div class="col-md" id="div_newtxid">new tx id : <span id="newtxid"></span></div>
+                <div class="col-md"><div id="newtx"></div></div>
+                <div class="col-md"><button id="sendtx_but" type="button" class="btn btn btn-primary" disabled="disabled" onclick="signtxinputs(my_tx.txid, my_tx.txsin);">sign & send</button></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<section>
+    <div class="container-fluid">
+        <div id="my_wallet"></div>
+    </div>
+</section>
+<!-- End Wallet-Form -->
+<!--/wrapper-->
 
