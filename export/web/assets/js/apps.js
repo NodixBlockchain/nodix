@@ -25,7 +25,7 @@ function Applications() {
         $('#app_root_infos').css('display', 'none');
         $('#app_root_infos').html('');
         $('#app_root_new').css('display', 'block');
-        $('#app_root_new').html('<section><h2>New app root</h2><div id="address_list" class="table"></div><div class="container"><fieldset><legend>no app root set</legend><div class="row"><div class="col-md-2"><label>select an address to use as approot</label></div><div class="col-md-2"><select style="width:200px;" name="new_app_addr" id="new_app_addr" ></select></div></div><div class="row"><div class="col-md-2"><label>Set application fee amount</label></div><div class="col-md-2"><input type="text" name="new_app_fee" id="new_app_fee" /></div></div><div class="row"><div class="col-md-2"><input type="button" value="set app root" name="new_app_submit" id="new_app_submit" onclick="MyApps.set_app_root();" /></div></div></fieldset></div></section >');
+        $('#app_root_new').html('<section><h2>New app root</h2><div id="address_list" class="table"></div><div class="container"><fieldset><legend>no app root set</legend><div class="row"><div class="col-md-2"><label>select an address to use as approot</label></div><div class="col-md-2"><select style="width:200px;" name="new_app_addr" id="new_app_addr" class="browser-default"></select></div></div><div class="row"><div class="col-md-2"><label>Set application fee amount</label></div><div class="col-md-2"><input type="text" name="new_app_fee" id="new_app_fee" /></div></div><div class="row"><div class="col-md-2"><input type="button" value="set app root" name="new_app_submit" id="new_app_submit" onclick="MyApps.set_app_root();" /></div></div></fieldset></div></section >');
     }
 }
 
@@ -138,12 +138,15 @@ Applications.prototype.get_type_input_val = function (typeid, key) {
     
 Applications.prototype.update_app_types = function () {
    var n, nn;
-   var html = 'new obj address <select name="obj_addr" id="obj_addr" onchange="$(\'.sel_obj_addr\').html($(this).val());"></select>';
+   var html = 'new obj address <select name="obj_addr" id="obj_addr" class="browser-default" onchange="$(\'.sel_obj_addr\').html($(this).val());"></select>';
 
    for (n = 0; n < this.my_app.app_types.length; n++) {
-       html += '<div class="type_div">';
+       html += '<div class="card">';
+       html += '<div class="card-header indigo flex-center">';
        html += '<h3>' + this.my_app.app_types[n].name + '</h3>'
-       html += 'id :' + this.my_app.app_types[n].id.toString(16);
+       html += '&nbsp;id :' + this.my_app.app_types[n].id.toString(16);
+       html += '</div>';
+       html += '<div class="card-body">';
        html += '<h4>keys</h4>'
 
        html += '<div class="container">';
@@ -180,7 +183,7 @@ Applications.prototype.update_app_types = function () {
        html += '</div>';
 
        html += '<div class="row">';
-       html += '<div class="col-md-2"><select id="objChildKeys_' + this.my_app.app_types[n].id.toString(16) + '"></select></div>';
+       html += '<div class="col-md-2"><select id="objChildKeys_' + this.my_app.app_types[n].id.toString(16) + '" class="browser-default"></select></div>';
        html += '<div class="col-md-4">child object : <input style="display:inline;" id="objChildId_' + this.my_app.app_types[n].id.toString(16) + '"/></div>';
        html += '<div class="col-md-2"><input type="button" onclick="MyApps.add_app_obj_child( $(\'#pObj_' + this.my_app.app_types[n].id.toString(16) + '\').html(), $(\'#objChildKeys_' + this.my_app.app_types[n].id.toString(16) + '\').val(), $(\'#objChildId_' + this.my_app.app_types[n].id.toString(16) + '\').val(), $(\'#paytxfee\').val());" value="add child" /></div>';
        html += '</div>';
@@ -189,7 +192,7 @@ Applications.prototype.update_app_types = function () {
        html += '</div>';
        html += '</div>';
        html += '</div>';
-
+       html += '</div>';
 
        html += '<hr/>';
    }
@@ -370,7 +373,7 @@ Applications.prototype.update_app_upl = function (file) {
 
         col = document.createElement('div');
         col.className = "col-md-2";
-        col.innerHTML = '<select name="fileKey" id="fileKey"><option>no addr</option></select>';
+        col.innerHTML = '<select name="fileKey" id="fileKey" class="browser-default" ><option>no addr</option></select>';
     row.appendChild(col);
 
     upldiv.appendChild(row);
@@ -403,17 +406,17 @@ Applications.prototype.update_app_upl_layout = function (file) {
      row = document.createElement('div');
      row.className = "row";
 
-         col = document.createElement('div');
-         col.className = "col-md-4";
+     col = document.createElement('div');
+     col.className = "col-md-4";
 
-         input = document.createElement('input');
-         input.type = "button";
-         input.value = "create layout tx";
-         input.setAttribute('dataHash', file.dataHash);
+     input = document.createElement('input');
+     input.type = "button";
+     input.value = "create layout tx";
+     input.setAttribute('dataHash', file.dataHash);
 
-         input.addEventListener("click", function () { self.create_app_layout(this.getAttribute('dataHash'), $('#paytxfee').val() ); });
+     input.addEventListener("click", function () { self.create_app_layout(this.getAttribute('dataHash'), $('#paytxfee').val() ); });
 
-         col.appendChild(input);
+     col.appendChild(input);
      row.appendChild(col);
 
      upllayoutdiv.appendChild(row);
@@ -463,7 +466,7 @@ Applications.prototype.update_app_files = function (files, numFiles) {
         span.addEventListener("click", function () { self.get_app_file(this.innerHTML); });
 
         col = document.createElement('div');
-        col.className = "col-md-2";
+        col.className = "col-md";
 
         col.appendChild(span);
         row.appendChild(col);
@@ -527,18 +530,15 @@ Applications.prototype.get_app_header = function (app) {
     return section;
 }
 
-Applications.prototype.get_app_items = function (section,div_id,label,html) {
-    var h2 = document.createElement('h2');
-    h2.setAttribute('style', 'cursor:pointer');
-    h2.addEventListener("click", function () { $('#' + div_id).toggleClass('invisible'); });
-    h2.innerHTML = label;
-
-    var appdiv = document.createElement('div');
-    appdiv.id = div_id;
-    appdiv.innerHTML = html;
-
-    section.appendChild(h2);
-    section.appendChild(appdiv);
+Applications.prototype.get_app_items = function (section, div_id, label, html) {
+    var pane = document.createElement('div');
+    
+    pane.className = 'tab-pane fade in';
+    pane.id = div_id;
+    pane.setAttribute('role', 'tabpanel');
+    pane.innerHTML = html;
+    
+    section.appendChild(pane);
 }
     
 Applications.prototype.get_app_section = function () {
@@ -546,7 +546,8 @@ Applications.prototype.get_app_section = function () {
    var html;
    var section, h2, appdiv;
 
-    section=this.get_app_header(this.my_app);
+   section = document.createElement('div');
+   section.className = 'tab-content card';
    
    /**/       
    html =  '<div id="' + this.my_app.txid + '_types" ></div>';
@@ -557,7 +558,7 @@ Applications.prototype.get_app_section = function () {
    html += '<div id="new_type_keys"></div>';
    html += '<hr/>';
    html += '<h5>new key</h5>';
-   html += '<div class="row"><div class="col-md-2">name<input type="text" size="12" name="new_type_key_name" id="new_type_key_name" /></div><div class="col-md-2">type: <select name="new_type_key" id="new_type_key"></select></div><div class="col-md-2"><input type="radio" name="new_type_key_flags" value="0" >none</input><input type="radio" name="new_type_key_flags" value="1" >unique</input><input type="radio" name="new_type_key_flags" value="2" >index</input></div><div class="col-md-2"><input type="button" onclick="if ( MyApps.add_type_key( $(\'#new_type_key_name\').val(), $(\'#new_type_key\').val(), $(\'input[name = new_type_key_flags]:checked\').val() )) { $(\'#new_type_key_name\').val(\'\'); } "value="+" /></div></div>';
+   html += '<div class="row"><div class="col-md-2">name<input type="text" size="12" name="new_type_key_name" id="new_type_key_name" /></div><div class="col-md-2">type: <select name="new_type_key" id="new_type_key" class="browser-default"></select></div><div class="col-md-2"><input type="radio" name="new_type_key_flags" value="0" >none</input><input type="radio" name="new_type_key_flags" value="1" >unique</input><input type="radio" name="new_type_key_flags" value="2" >index</input></div><div class="col-md-2"><input type="button" onclick="if ( MyApps.add_type_key( $(\'#new_type_key_name\').val(), $(\'#new_type_key\').val(), $(\'input[name = new_type_key_flags]:checked\').val() )) { $(\'#new_type_key_name\').val(\'\'); } "value="+" /></div></div>';
    html += '<div class="row"><div class="col-md-2"><input type="button" onclick="MyApps.create_type();" value="new type" /></div></div>';
    html += '</fieldset>';
    html += '<hr/>';
@@ -1055,9 +1056,12 @@ Applications.prototype.setApp = function (app, nodeTypes, appTypes) {
     
      $('#app_infos').css('display', 'block');
      $('#app_error').css('display', 'none');
+
+     document.getElementById('app_hdr').appendChild(this.get_app_header(this.my_app));
     
      document.getElementById('app').appendChild(this.get_app_section());
-    
+
+   
      this.update_types_select('new_type_key');
      this.update_app_types();
     

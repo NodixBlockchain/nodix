@@ -290,13 +290,17 @@ function AccountList(divName,listName,opts) {
     col1.className = 'md-form';
 
     a = document.createElement('a');
+    a.id='newKeyBut';
     a.className = "btn btn-primary waves-effect waves-light"
     a.setAttribute('data-toggle', 'modal');
     a.setAttribute('data-target', '#newKeyModal');
     a.setAttribute('data-backdrop', 'false');
+
+    if (!this.opts.newAccnt)
+        a.style.display = 'none';
+
     a.innerHTML = 'add new address';
     col1.appendChild(a);
-
     row.appendChild(col1);
 
     /* rescan all */
@@ -368,7 +372,7 @@ function AccountList(divName,listName,opts) {
 
     /* address list */
     col1 = document.createElement('div');
-    col1.className = "container content";
+    
 
     this.p = document.createElement('p');
     this.p.style.display = 'none';
@@ -575,6 +579,7 @@ AccountList.prototype.create_addr_table = function () {
         var th = document.createElement('th');
 
         if (ths[n] == 'unconf') th.className = 'balance_unconfirmed';
+        if (ths[n] == 'rescan') th.className = 'scan';
         th.innerHTML = ths[n];
         trow.appendChild(th);
     }
@@ -1524,23 +1529,9 @@ AccountList.prototype.update_addrs = function ()
                 cell.appendChild(span);
                 cell = row.insertCell(4);
             }
-                
-
-            input           = document.createElement('input');
-            input.type      = "button";
-            input.id        = 'selected_' + this.addrs[n].address;
-            input.value     = 'rescan';
-            input.setAttribute("addr", this.addrs[n].address);
-
-            span = document.createElement('div');
-            span.appendChild(input);
-
 
             cell.className = "scan";
-            cell.appendChild(span);
-
-                
-            cell.innerHTML = '<div><input addr="' + this.addrs[n].address + '" type="button" value="rescan" onclick="MyAccount.scan_addr($(this).attr(\'addr\'))"; value=""  /></div>';
+            cell.innerHTML = '<input type="button" addr="' + this.addrs[n].address + '" value="rescan" onclick="MyAccount.scan_addr($(this).attr(\'addr\'))";  />';
         }
         this.AddrTable.style.display = 'block';
     }
@@ -1620,6 +1611,8 @@ AccountList.prototype.accountselected = function (accnt_name)
         $('#account_infos').css('display', 'none');
         $('#transaction').css('display', 'none');
         $('#staking').css('display', 'none');
+       
+        
         
         this.create_addr_table();
 
@@ -1627,11 +1620,14 @@ AccountList.prototype.accountselected = function (accnt_name)
 
         if (!this.opts.newAccnt) {
             this.input.style.display = 'none';
+
+            $('#newKeyBut').css('display', 'none');
             $('#newaddr').css('display', 'none');
         }
         else {
             this.input.disabled = false;
             $('#newaddr').css('display', 'block');
+            $('#newKeyBut').css('display', 'block');
             this.input.style.display = 'inline';
         }
 
@@ -1650,6 +1646,7 @@ AccountList.prototype.accountselected = function (accnt_name)
 
         $('#account_infos').css('display', 'block');
         $('#transaction').css('display', 'block');
+        $('#newKeyBut').css('display', 'block');
         
         this.p.style.display = 'block';
 

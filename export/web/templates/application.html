@@ -69,49 +69,67 @@
    </style>
 <div class="content">
     <section>
-        <h2>Addresses</h2>
-        <div id="addresses">
-        </div>
+        <div id="addresses"></div>
     </section>
+    <hr />
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header"><h2>Application root</h2></div>
+            <div class="card-body">
+                <div id="app_root_infos"></div>
+                <div id="app_root_error">no application root set</div>
+            </div>
+        </div>
+    </div>
+    <hr />
     <section>
-        <h2>transactions</h2>
-        <div id="list_container">
+        <div id="app_infos">
+
+            <div class="container">
+                <div id="app_hdr"></div>
+                <ul class="nav nav-tabs nav-justified" id="apptabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-toggle="tab" href="#app_type_div" role="tab">Types</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#app_file_div" role="tab">Files</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#app_layout_div" role="tab">Layouts</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#app_mod_div" role="tab">Modules</a>
+                    </li>
+                </ul>
+                <div id="app"></div>
+            </div>
         </div>
     </section>
-    <hr />
-
-    <div id="app_root_infos"></div>
-    <div id="app_root_error">no application root set</div>
-    <hr />
-    <div id="app_infos">
-        <section>
-        <h2>Application</h2>
-        <div class="container" id="app"></div>
-
-        
+    <hr/>
+    <section>
         <div class="container">
-            <hr/>
-            <h2>Transaction</h2>
-            <div id="app_error">application&nbsp;<span id="app_name"></span>&nbsp;not found</div>
-            <div class="row">
-                <div class="col-md-2"><label>Transaction fees</label></div><div class="col-md-2"><input type="text" name="paytxfee" id="paytxfee" /></div>
-            </div>
-            <div class="row">
-                <div class="col-md-2"><label>Selected addrs:</label></div><div class="col-md-2"><span id="selected_balance"></span></div>
-            </div>
-            <div class="row">
-                <div id="div_newtxid" class="col-md-6">new tx id : <span id="newtxid"></span></div>
-            </div>
-            <div class="row">
-                <div class="col-md-6"><div id="type_tx"></div></div>
-            </div>
-            <div class="row">
-                <div class="col-md-6"><input type="button" onclick=" signtxinputs(my_tx.txid, my_tx.txsin);" value="sign &amp; send" /></div>
+            <div class="card">
+                <div class="card-header"><h2>Transaction</h2></div>
+                <div class="card-body">
+                    <div id="app_error">application&nbsp;<span id="app_name"></span>&nbsp;not found</div>
+                    <div class="row">
+                        <div class="col-md-2"><label>Transaction fees</label></div><div class="col-md-2"><input type="text" name="paytxfee" id="paytxfee" /></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2"><label>Selected addrs:</label></div><div class="col-md-2"><span id="selected_balance"></span></div>
+                    </div>
+                    <div class="row">
+                        <div id="div_newtxid" class="col-md-6">new tx id : <span id="newtxid"></span></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6"><div id="type_tx"></div></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6"><input type="button" onclick=" signtxinputs(my_tx.txid, my_tx.txsin);" value="sign &amp; send" /></div>
+                    </div>
+                </div>
             </div>
         </div>
-        </section>
-    </div>
-
-    
-    
-    </div>
+    </section>
+</div>

@@ -488,13 +488,35 @@ page application(app_name,account_name) = `
 		$('#paytxfee').val(paytxfee / unit);
 
 		
-		MyAccount		= new AccountList	('addresses','list_container',{'withSecret':true,'newAccnt':false});
+		MyAccount		= new AccountList	('addresses',null,{'withSecret':true,'newAccnt':false});
 		MyAccount.addAccountSelect			('obj_addr');
 		MyAccount.addAccountSelect			('fileKey');
 		MyAccount.setAccounts				(%node_accounts%,'%account_name%');
 
 		MyApps			=	new Applications();
 		MyApps.setApp		(%my_app%,%nodeTypes%,%app_types%);
+		
+		if(myfile.dataHash)
+		{
+			$('#apptabs a[href="#app_file_div"]').tab('show');
+			$('#app_file_div').addClass('show active');
+		}
+		else if(mylayout.dataHash)
+		{
+			$('#apptabs a[href="#app_layout_div"]').tab('show');
+			$('#app_layout_div').addClass('show active');
+		}
+		else if(mymod.dataHash)
+		{
+			$('#apptabs a[href="#app_mod_div"]').tab('show');
+			$('#app_mod_div').addClass('show active');
+		}
+		else
+		{
+			$('#apptabs a[href="#app_type_div"]').tab('show');
+			$('#app_type_div').addClass('show active');
+		}
+			
 
 	});
 	end_js
