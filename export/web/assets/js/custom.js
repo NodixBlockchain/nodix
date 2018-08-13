@@ -7,7 +7,8 @@ var api_base_url = '';
 var site_base_url = '';
 var sessionid = null;
 
-
+if (!Uint8Array.prototype.slice && 'subarray' in Uint8Array.prototype)
+    Uint8Array.prototype.slice = Uint8Array.prototype.subarray;
 
 var hexChar = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"];
 var b64s = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"';
@@ -407,8 +408,6 @@ function get_tx_html(tx, n) {
         new_html += '#' + n;
     }
     new_html += '</a>';
-
-    new_html += timeConverter(tx.time);
 
     if (tx.isNull == true) {
         new_html += '0&nbsp;in&nbsp;';

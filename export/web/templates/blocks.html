@@ -1,4 +1,10 @@
-
+<style>
+    @media only screen and (max-width: 1024px) {
+        #time_hdr, .block_idate{
+            display:none;
+        }
+    }
+</style>
 <!--=== Block Explorer ===-->
 <div class="container content">
     <section>
@@ -12,7 +18,7 @@
             <option value="100000">mADX</option>
             <option value="100">µADX</option>
           </select>
-          <div style="text-align:center;vertical-align:bottom;padding-bottom:8px;">enter a block or tx hash.<input type="text" id="search_bar" name="search_bar" size="68" /><input type="button" id="do_search" name="do_search" value="search" onclick="var hash=$('#search_bar').val(); if(hash.length==64){ MyBlocks.selectBlockTxs(hash); MyBlocks.SelectTx(hash); } "/></div>
+          <div style="text-align:center;vertical-align:bottom;padding-bottom:8px;">enter a block or tx hash.<input type="text" id="search_bar" name="search_bar" /><input type="button" id="do_search" name="do_search" value="search" onclick="var hash=$('#search_bar').val(); if(hash.length==64){ MyBlocks.selectBlockTxs(hash); MyBlocks.SelectTx(hash); } "/></div>
         </div>
      </div>
     </div>

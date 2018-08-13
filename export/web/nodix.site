@@ -191,15 +191,14 @@ page blocks = `
 
 		$('#menu_blocks').addClass('active');
 
+		$('#datepicker').datepicker({format: "yyyy-mm-dd" , todayHighlight:true});
+		$('#datepicker').datepicker('setDate',new Date());
+
 		MyBlocks = new BlockExplorer();
 
 		MyBlocks.create_day_nav		('navday', Math.round(new Date().getTime() / 1000));
 		MyBlocks.create_block_list	('blocks');
 		MyBlocks.create_block_infos ('blockInfos');
-
-		$('#datepicker').datepicker({format: "yyyy-mm-dd" , todayHighlight:true});
-		$('#datepicker').datepicker('setDate',new Date());
-		
 
 		$('#datepicker').on('changeDate', function() {
 			
@@ -367,7 +366,7 @@ page wallet(account_name) = `
 
 	html_js
 		jQuery(document).ready(function() {
-		
+
 			lang			='en';
 			api_base_url	='';
 			site_base_url	='/nodix.site';
@@ -379,12 +378,12 @@ page wallet(account_name) = `
 
 			$('#menu_wallet').addClass('active');
 
-			ec				= new EC('secp256k1');
+			ec = new EC('secp256k1');
 
-			MyAccount		= new AccountList	('account_list','my_wallet',{'withSecret':true,'staking':true,'newAccnt':true});
-			MyAccount.setAccounts				(%node_accounts%,'%account_name%');
+			MyAccount = new AccountList	('account_list','my_wallet',{'withSecret':true,'staking':true,'newAccnt':true});
+			MyAccount.setAccounts (%node_accounts%,'%account_name%');
 	
-			check_anon_access	();
+			check_anon_access ();
 
 			update_unit	(document.getElementById('units'));
    
