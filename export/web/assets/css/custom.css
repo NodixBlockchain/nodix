@@ -78,8 +78,8 @@
         max-width: 0px;
         display: none;
     }
-    .table td, .table th {
-        padding: 0px;
+    table.table td, table.table th, .table td, .table th {
+        padding: 1px;
     }
     .addr-label
     {
@@ -109,7 +109,7 @@
     }
 }
 
-@media screen and (max-width: 640px) {
+@media only screen and (max-width: 640px) {
     .hash-lnk {
         font-size: 10px;
         font-family: Consolas;
@@ -121,5 +121,9 @@
     .scan
     {
         display:none;
+    }
+    table.table td, table.table th, .table td, .table th
+    {
+        padding:1px;
     }
 }
