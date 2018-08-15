@@ -149,10 +149,11 @@ OS_API_C_FUNC(int) truncate_chain(uint64_t to_height)
 
 	//copy new last block
 	tree_manager_find_child_node	(&self_node, NODE_HASH("last_block"), NODE_BITCORE_BLK_HDR, &blk);
-	if (!load_blk_hdr_at(&blk, current_height))
+	while (!load_blk_hdr_at(&blk, current_height))
 	{
-		log_message("could not load last block after truncate", PTR_NULL);
-		return 0;
+		current_height--;
+		if (current_height == 0)
+			break;
 	}
 
 	tree_manager_get_child_value_i32(&blk, NODE_HASH("time"), &time);
