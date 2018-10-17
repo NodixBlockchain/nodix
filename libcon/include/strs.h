@@ -20,7 +20,7 @@ LIBC_API		void				C_API_FUNC init_string			(struct string *str);
 
 /* preallocate string memory */
 LIBC_API		int 				C_API_FUNC prepare_new_data		(struct string *str, size_t len);
-
+LIBC_API		int 				C_API_FUNC chopChars			(struct string *str, size_t mov_len);
 /* clone input string to target */
 LIBC_API		int					C_API_FUNC clone_string			(struct string *str, const struct string *str1);
 

@@ -233,6 +233,7 @@ int		get_tx	(mem_zone_ref_ptr my_tx,mem_zone_ref_ptr result)
 	char			hexscript[2048];
 	hash_t			tx_hash, nullhash, app_root_hash;
 	mem_zone_ref	txout_list = { PTR_NULL }, txin_list = { PTR_NULL }, appRootHash = { PTR_NULL };
+	mem_zone_ref	apps = { PTR_NULL }, app = { PTR_NULL };
 	uint64_t		height, nblks, blk_time;
 	unsigned int	version, locktime, tx_time,has_app_root;
 	size_t			size;
@@ -284,6 +285,10 @@ int		get_tx	(mem_zone_ref_ptr my_tx,mem_zone_ref_ptr result)
 		release_zone_ref(my_tx);
 		return 1;
 	}
+	get_apps(&apps);
+
+	
+
 	if (tree_manager_find_child_node(my_tx, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list))
 	{
 		mem_zone_ref my_list = { PTR_NULL }, vin_list = { PTR_NULL };
@@ -336,6 +341,16 @@ int		get_tx	(mem_zone_ref_ptr my_tx,mem_zone_ref_ptr result)
 					}
 					free_string(&script);
 				}
+				else if (tree_find_child_node_by_member_name_hash(&apps, NODE_BITCORE_TX, "txid", phash, &app))
+				{
+					char name[32];
+					tree_manager_get_child_value_str(&app, NODE_HASH("appName"), name, 32, 0);
+
+					release_zone_ref(&app);
+
+
+					tree_manager_set_child_value_btcaddr(&new_vin, "srcapp", name);
+				}
 				else
 				{
 					hash_t			prev_bhash;
@@ -349,24 +364,50 @@ int		get_tx	(mem_zone_ref_ptr my_tx,mem_zone_ref_ptr result)
 						if (get_tx_output(&prev_tx, idx, &vout))
 						{
 							tree_manager_get_child_value_i64(&vout, NODE_HASH("value"), &value);
-							tree_manager_set_child_value_i64(&new_vin, "value", value);
+							tree_manager_get_child_value_istr(&vout, NODE_HASH("script"), &script, 0);
 
-							if (tree_manager_add_child_node(&new_vin, "addresses", NODE_JSON_ARRAY, &addrs))
+							if ((value & 0xFFFFFFFF00000000) == 0xFFFFFFFF00000000)
 							{
-								btc_addr_t addr;
-								mem_zone_ref ad = { PTR_NULL };
-								tree_manager_get_child_value_istr(&vout, NODE_HASH("script"), &script, 0);
-								if (get_out_script_address(&script, PTR_NULL,addr))
+								struct string DataStr = { 0 };
+								if (get_out_script_return_val(&script, &DataStr))
 								{
-									if (tree_manager_add_child_node(&addrs, "addr", NODE_BITCORE_WALLET_ADDR, &ad))
-									{
-										tree_manager_write_node_btcaddr(&ad, 0, addr);
-										release_zone_ref(&ad);
-									}
+									btc_addr_t addr;
+
+									if (get_out_script_address(&script, PTR_NULL, addr))
+										tree_manager_set_child_value_btcaddr(&new_vin, "srcaddr", addr);
+
+									tree_manager_set_child_value_i32(&new_vin, "objType", value & 0xFFFFFFFF);
+
+									if(DataStr.len==32)
+										tree_manager_set_child_value_hash(&new_vin, "objHash", DataStr.str);
+									else
+										tree_manager_set_child_value_hash(&new_vin, "objHash", phash);
+
+									free_string(&DataStr);
 								}
-								free_string(&script);
-								release_zone_ref(&addrs);
 							}
+							else
+							{
+								tree_manager_set_child_value_i64(&new_vin, "value", value);
+
+								if (tree_manager_add_child_node(&new_vin, "addresses", NODE_JSON_ARRAY, &addrs))
+								{
+									btc_addr_t addr;
+									mem_zone_ref ad = { PTR_NULL };
+									
+									if (get_out_script_address(&script, PTR_NULL, addr))
+									{
+										if (tree_manager_add_child_node(&addrs, "addr", NODE_BITCORE_WALLET_ADDR, &ad))
+										{
+											tree_manager_write_node_btcaddr(&ad, 0, addr);
+											release_zone_ref(&ad);
+										}
+									}
+									
+									release_zone_ref(&addrs);
+								}
+							}
+							free_string(&script);
 							release_zone_ref(&vout);
 						}
 						release_zone_ref(&prev_tx);
@@ -409,7 +450,27 @@ int		get_tx	(mem_zone_ref_ptr my_tx,mem_zone_ref_ptr result)
 				mem_zone_ref scriptkey = { PTR_NULL };
 				tree_manager_set_child_value_i32(&new_vout, "n", nout);
 
-				if ((value == 0xFFFFFFFF00000000) || (value == 0xFFFFFFFFFFFFFFFF))
+				if ((value & 0xFFFFFFFF00000000) == 0xFFFFFFFF00000000)
+				{
+					struct string DataStr = { 0 };
+					if (get_out_script_return_val(&script, &DataStr))
+					{
+						btc_addr_t addr;
+
+						if (get_out_script_address(&script, PTR_NULL, addr))
+							tree_manager_set_child_value_btcaddr(&new_vout, "dstaddr", addr);
+
+						tree_manager_set_child_value_i32(&new_vout, "objType", value & 0xFFFFFFFF);
+
+						if (DataStr.len == 32)
+							tree_manager_set_child_value_hash(&new_vout, "objHash", DataStr.str);
+						else
+							tree_manager_set_child_value_hash(&new_vout, "objHash", tx_hash);
+
+						free_string(&DataStr);
+					}
+				}
+				else if ((value == 0xFFFFFFFF00000000) || (value == 0xFFFFFFFFFFFFFFFF))
 				{
 					tree_manager_set_child_value_i64(&new_vout, "value", 0);
 					tree_manager_set_child_value_bool(&new_vout, "isNull", 0);
@@ -482,6 +543,7 @@ int		get_tx	(mem_zone_ref_ptr my_tx,mem_zone_ref_ptr result)
 		release_zone_ref(&txout_list);
 	}
 	release_zone_ref(my_tx);
+	release_zone_ref(&apps);
 	return 1;
 }
 
@@ -632,7 +694,7 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 
 		if (hdr->value.len == 64)
 		{
-			hex_2_bin_r(hdr->value.str, block_hash);
+			hex_2_bin_r(hdr->value.str, block_hash,32);
 			tree_manager_create_node("txs", NODE_BITCORE_HASH_LIST, &txs);
 			get_blk_txs(block_hash, nblks, &txs, limit);
 		}

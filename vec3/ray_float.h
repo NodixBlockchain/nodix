@@ -23,6 +23,7 @@ typedef struct
 typedef struct
 {
 	hash_t			fileH;
+	hash_t			txid;
 	unsigned char	name[64];
 	unsigned char	*pixels;
 	unsigned int	w;

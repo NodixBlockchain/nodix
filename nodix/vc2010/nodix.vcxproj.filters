@@ -11,7 +11,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\export\iadix.conf">
+    <None Include="..\..\export\web\assets\js\keys.js">
+      <Filter>Fichiers Sources</Filter>
+    </None>
+    <None Include="..\..\export\web\assets\js\custom.js">
+      <Filter>Fichiers Sources</Filter>
+    </None>
+    <None Include="..\..\export\nodix.node">
       <Filter>Fichiers Sources</Filter>
     </None>
   </ItemGroup>

@@ -32,12 +32,13 @@ C_IMPORT const unsigned char*	C_API_FUNC read_node(mem_zone_ref_ptr key, const u
 C_IMPORT size_t			C_API_FUNC init_node(mem_zone_ref_ptr key);
 
 
-extern int tx_is_app_item(const hash_t txh, unsigned int oidx, mem_zone_ref_ptr app_tx, unsigned char *val);
+
 extern int obj_new(mem_zone_ref_ptr type, const char *objName, struct string *script, mem_zone_ref_ptr obj);
 extern int add_app_tx(mem_zone_ref_ptr new_app, const char *app_name);
 
 extern struct string get_next_script_var(const struct string *script, size_t *offset);
 extern int get_script_file(struct string *script, mem_zone_ref_ptr file);
+extern int	load_utxo(const char *txh, unsigned int oidx, uint64_t *amount, btc_addr_t addr, hash_t objh);
 
 int blk_del_app_root()
 {
@@ -153,6 +154,86 @@ void rm_hash_from_index_str(char *file_name, hash_t hash)
 	return;
 }
 
+void rm_hash_from_index_addr(char *file_name, hash_t hash)
+{
+
+	unsigned char *buffer;
+	size_t			len;
+	if (get_file(file_name, &buffer, &len)>0)
+	{
+		size_t  cur = 0;
+		while (cur < len)
+		{
+			size_t entry_len = sizeof(btc_addr_t) + sizeof(hash_t);
+
+			if (!memcmp_c(&buffer[cur + sizeof(btc_addr_t)], hash, sizeof(hash_t)))
+			{
+				len -= entry_len;
+				if (len > 0)
+				{
+					if (len>cur)
+						memmove_c(&buffer[cur], &buffer[cur + entry_len], len - entry_len);
+
+					put_file(file_name, buffer, len);
+				}
+				else
+					del_file(file_name);
+
+				break;
+			}
+			cur += entry_len;
+		}
+		free_c(buffer);
+	}
+	return;
+}
+
+void rm_hash_from_obj_txfr(const char *app_name,unsigned int type_id, hash_t hash)
+{
+	char typeStr[16];
+	struct string	idx_path = { PTR_NULL };
+	unsigned char *buffer;
+	size_t			len;
+
+	uitoa_s(type_id, typeStr, 16, 16);
+
+	make_string(&idx_path, "apps");
+	cat_cstring_p(&idx_path, app_name);
+	cat_cstring_p(&idx_path, "objs");
+	cat_cstring_p(&idx_path, typeStr);
+	cat_cstring(&idx_path, "_txfr.idx");
+
+	if (get_file(idx_path.str, &buffer, &len)>0)
+	{
+		size_t  cur = 0;
+		while (cur < len)
+		{
+			size_t entry_len = sizeof(hash_t) + sizeof(hash_t);
+
+			if (!memcmp_c(&buffer[cur], hash, sizeof(hash_t)))
+			{
+				len -= entry_len;
+				if (len > 0)
+				{
+					if (len>cur)
+						memmove_c(&buffer[cur], &buffer[cur + entry_len], len - entry_len);
+
+					put_file(idx_path.str, buffer, len);
+				}
+				else
+					del_file(idx_path.str);
+
+				break;
+			}
+			cur += entry_len;
+		}
+		free_c(buffer);
+	}
+
+	free_string(&idx_path);
+	return;
+}
+
 int rm_file_from_index(const char *file_name, hash_t hash)
 {
 	unsigned char *buffer;
@@ -258,11 +339,17 @@ int rm_obj(const char *app_name, unsigned int type_id, hash_t ohash)
 
 		switch (tree_mamanger_get_node_type(idx))
 		{
-		case NODE_GFX_INT:
-			rm_hash_from_index(idx_path.str, ohash);
+			case NODE_GFX_INT:
+				rm_hash_from_index(idx_path.str, ohash);
 			break;
-		case NODE_BITCORE_VSTR:
-			rm_hash_from_index_str(idx_path.str, ohash);
+			case NODE_BITCORE_VSTR:
+				rm_hash_from_index_str(idx_path.str, ohash);
+			break;
+			case NODE_BITCORE_WALLET_ADDR:
+				rm_hash_from_index_addr(idx_path.str, ohash);
+			break;
+			case NODE_BITCORE_PUBKEY:
+				rm_hash_from_index_addr(idx_path.str, ohash);
 			break;
 		}
 		free_string(&idx_path);
@@ -284,6 +371,14 @@ int rm_obj(const char *app_name, unsigned int type_id, hash_t ohash)
 	cat_cstring_p(&obj_path, buff);
 	cat_cstring(&obj_path, "_time.idx");
 	rm_hash_from_file_obj(obj_path.str, ohash);
+	free_string(&obj_path);
+
+	make_string(&obj_path, "apps");
+	cat_cstring_p(&obj_path, app_name);
+	cat_cstring_p(&obj_path, "objs");
+	cat_cstring_p(&obj_path, buff);
+	cat_cstring(&obj_path, "_addr.idx");
+	rm_hash_from_index_addr(obj_path.str, ohash);
 	free_string(&obj_path);
 
 	make_string(&obj_path, "apps");
@@ -717,6 +812,7 @@ OS_API_C_FUNC(int) blk_load_apps(mem_zone_ref_ptr apps)
 					compute_tx_hash(&new_app, txh);
 					tree_manager_set_child_value_hash(&new_app, "txid", txh);
 
+
 					add_app_tx(&new_app, app_name);
 					blk_load_app_types(&new_app);
 
@@ -928,74 +1024,6 @@ OS_API_C_FUNC(int) get_app_type_last_objs_hashes(const char *app_name, unsigned 
 	return ret;
 }
 
-OS_API_C_FUNC(int) find_app_type_obj(const char *app_name, unsigned int type_id, const char *objHash, mem_zone_ref_ptr hash_list)
-{
-	char			typeStr[32];
-	struct string	obj_path = { PTR_NULL };
-	unsigned char	*buffer;
-	size_t			cur, len;
-	size_t			ilen;
-	int				ret;
-
-	uitoa_s(type_id, typeStr, 32, 16);
-
-	make_string(&obj_path, "apps");
-	cat_cstring_p(&obj_path, app_name);
-	cat_cstring_p(&obj_path, "objs");
-	cat_cstring_p(&obj_path, typeStr);
-
-	tree_remove_children(hash_list);
-
-	ret = (get_file(obj_path.str, &buffer, &len) > 0) ? 1 : 0;
-	ilen = strlen_c(objHash);
-
-	if (ret)
-	{
-		cur = 0;
-		ret = 0;
-		while (cur < len)
-		{
-			char			chash[65];
-
-			bin_2_hex(objHash, 32, chash);
-
-			/*
-			unsigned int	n = 0;
-
-			while (n<32)
-			{
-			chash[n * 2 + 0] = hex_chars[objHash[n] >> 4];
-			chash[n * 2 + 1] = hex_chars[objHash[n] & 0x0F];
-			n++;
-			}
-			chash[64] = 0;
-			*/
-
-			if (!strncmp_c(chash, objHash, ilen))
-			{
-				mem_zone_ref	hashn = { PTR_NULL };
-
-				ret = 1;
-
-				if (hash_list != PTR_NULL)
-				{
-					if (tree_manager_add_child_node(hash_list, "hash", NODE_BITCORE_HASH, &hashn))
-					{
-						tree_manager_write_node_hash(&hashn, 0, &buffer[cur]);
-						release_zone_ref(&hashn);
-					}
-				}
-				else
-					break;
-			}
-			cur += 32;
-		}
-		free_c(buffer);
-	}
-	free_string(&obj_path);
-
-	return ret;
-}
 
 OS_API_C_FUNC(int) load_obj_childs(const char *app_name, const char *objHash, const char *KeyName, size_t first, size_t max, unsigned int opts, size_t *count, mem_zone_ref_ptr objs)
 {
@@ -1032,17 +1060,6 @@ OS_API_C_FUNC(int) load_obj_childs(const char *app_name, const char *objHash, co
 				mem_zone_ref newobj = { PTR_NULL };
 
 				bin_2_hex(&buffer[cur], 32, oh);
-				/*
-				unsigned int n;
-				n = 0;
-				while (n < 32)
-				{
-				oh[n * 2 + 0] = hex_chars[buffer[cur + n] >> 4];
-				oh[n * 2 + 1] = hex_chars[buffer[cur + n] & 0x0F];
-				n++;
-				}
-				oh[64] = 0;
-				*/
 
 				load_obj(app_name, oh, "obj", 0, &newobj, addr);
 				tree_manager_set_child_value_btcaddr(&newobj, "objAddr", addr);
@@ -1088,6 +1105,7 @@ OS_API_C_FUNC(int) load_obj_type(const char *app_name, const char *objHash, unsi
 	if (get_file(obj_path.str, &tx_data, &tx_len) > 0)
 	{
 		mem_zone_ref obj_tx = { PTR_NULL }, vout = { PTR_NULL };
+
 		tree_manager_create_node("tx", NODE_BITCORE_TX, &obj_tx);
 		init_node(&obj_tx);
 		read_node(&obj_tx, tx_data, tx_len);
@@ -1096,7 +1114,7 @@ OS_API_C_FUNC(int) load_obj_type(const char *app_name, const char *objHash, unsi
 		if (get_tx_output(&obj_tx, 0, &vout))
 		{
 			uint64_t	value;
-			tree_manager_get_child_value_i64(&vout, NODE_HASH("value"), &value);
+			
 			if (objAddr != PTR_NULL)
 			{
 				struct string		objStr = { PTR_NULL };
@@ -1105,7 +1123,7 @@ OS_API_C_FUNC(int) load_obj_type(const char *app_name, const char *objHash, unsi
 				free_string(&objStr);
 			}
 
-
+			tree_manager_get_child_value_i64(&vout, NODE_HASH("value"), &value);
 			if ((value & 0xFFFFFFFF00000000) == 0xFFFFFFFF00000000)
 			{
 				*type_id = value & 0xFFFFFFFF;
@@ -1166,18 +1184,6 @@ OS_API_C_FUNC(int) get_app_obj_addr(const char *app_name, unsigned int type_id, 
 		size_t			tx_len;
 
 		bin_2_hex(&buffer[cur], 32, chash);
-
-		/*
-		unsigned int	n = 0;
-
-		while (n<32)
-		{
-		chash[n * 2 + 0] = hex_chars[buffer[cur+n] >> 4];
-		chash[n * 2 + 1] = hex_chars[buffer[cur+n] & 0x0F];
-		n++;
-		}
-		chash[64] = 0;
-		*/
 
 		make_string(&obj_path, "apps");
 		cat_cstring_p(&obj_path, app_name);
@@ -1267,6 +1273,7 @@ OS_API_C_FUNC(int) load_obj(const char *app_name, const char *objHash, const cha
 
 			if ((value & 0xFFFFFFFF00000000) == 0xFFFFFFFF00000000)
 			{
+				btc_addr_t			oaddr;
 				struct string		pkey = { PTR_NULL };
 				mem_zone_ref types = { PTR_NULL }, type = { PTR_NULL };
 
@@ -1287,6 +1294,50 @@ OS_API_C_FUNC(int) load_obj(const char *app_name, const char *objHash, const cha
 
 					if (objAddr != PTR_NULL)
 						get_out_script_address(&objStr, &pkey, objAddr);
+
+
+					if (opts & 8)
+					{
+						hash_t txfr,oh;
+						char   typeStr[16];
+
+						uitoa_s(type_id, typeStr, 16, 16);
+						hex_2_bin(objHash, oh, 32);
+
+
+
+						if (find_obj_txfr(app_name, typeStr, oh, txfr))
+						{
+							hash_t bh;
+							mem_zone_ref tx = { PTR_NULL };
+
+							if (load_tx(&tx, bh, txfr))
+							{
+								mem_zone_ref outputs = { PTR_NULL }, addr = { PTR_NULL };
+
+
+								tree_manager_create_node("outputs", NODE_BITCORE_HASH_LIST, &outputs);
+								find_obj_tx(&tx, oh, PTR_NULL, &outputs);
+
+								if (tree_manager_get_child_at(&outputs, 0, &addr))
+								{
+									
+									if (tree_manager_get_node_btcaddr(&addr, 0, oaddr))
+										tree_manager_set_child_value_btcaddr(obj, "curAddr", oaddr);
+
+									release_zone_ref(&addr);
+								}
+
+								release_zone_ref(&outputs);
+								release_zone_ref(&tx);
+							}
+						}
+						else
+						{
+							get_out_script_address(&objStr, PTR_NULL, oaddr);
+							tree_manager_set_child_value_btcaddr(obj, "curAddr", oaddr);
+						}
+					}
 
 					free_string(&objStr);
 
@@ -1309,18 +1360,6 @@ OS_API_C_FUNC(int) load_obj(const char *app_name, const char *objHash, const cha
 
 									bin_2_hex(hdata, 32, chash);
 
-									/*
-									unsigned int	n;
-									n = 0;
-									while (n < 32)
-									{
-									chash[n * 2 + 0] = hex_chars[hdata[n] >> 4];
-									chash[n * 2 + 1] = hex_chars[hdata[n] & 0x0F];
-									n++;
-									}
-									chash[64] = 0;
-									*/
-
 									ret = load_obj(app_name, chash, "item", opts, &subObj, PTR_NULL);
 									tree_manager_copy_children_ref(key, &subObj);
 									release_zone_ref(&subObj);
@@ -1329,6 +1368,7 @@ OS_API_C_FUNC(int) load_obj(const char *app_name, const char *objHash, const cha
 							}
 						}
 
+			
 						if (opts & 4)
 						{
 							if (pkey.len == 33)
@@ -1518,6 +1558,50 @@ void add_index_addr(const char *app_name, const char *typeStr, const char *keyna
 	free_string(&idx_path);
 }
 
+void add_obj_txfr(const char *app_name, const char *typeStr, const hash_t objHash, const hash_t txHash)
+{
+	unsigned char	newval[128];
+	struct string	idx_path = { 0 };
+	unsigned char	*idx_buff;
+	size_t			idx_len, cur;
+
+
+	memcpy_c(newval, objHash, sizeof(hash_t));
+	memcpy_c(&newval[32], txHash, sizeof(hash_t));
+
+
+	make_string(&idx_path, "apps");
+	cat_cstring_p(&idx_path, app_name);
+	cat_cstring_p(&idx_path, "objs");
+	cat_cstring_p(&idx_path, typeStr);
+	cat_cstring(&idx_path, "_txfr.idx");
+
+	if (get_file(idx_path.str, &idx_buff, &idx_len) > 0)
+	{
+		cur = 0;
+		while ((cur + sizeof(hash_t) + sizeof(hash_t)) <= idx_len)
+		{
+			if (memcmp_c(idx_buff + cur, objHash, sizeof(hash_t))<=0)
+				break;
+
+			cur += sizeof(hash_t) + sizeof(hash_t);
+		}
+
+		truncate_file(idx_path.str, cur, newval, sizeof(hash_t) + sizeof(hash_t));
+
+		if (idx_len > cur)
+			append_file(idx_path.str, &idx_buff[cur], idx_len - cur);
+
+		free_c(idx_buff);
+	}
+	else
+		put_file(idx_path.str, newval, sizeof(hash_t) + sizeof(hash_t));
+
+
+	free_string(&idx_path);
+}
+
+
 int find_index_str(const char *app_name, const char *typeStr, const char *keyname, const struct string *val, hash_t hash)
 {
 	struct string	idx_path = { 0 };
@@ -1595,8 +1679,122 @@ OS_API_C_FUNC(int) find_objs_by_addr(const char *app_name, const char *typeStr, 
 	return 1;
 }
 
+OS_API_C_FUNC(int) find_obj_txfr(const char *app_name, const char *typeStr,const hash_t objHash, hash_t txh)
+{
+	struct string	idx_path = { 0 };
+	unsigned char	*idx_buff;
+	size_t			idx_len, cur;
+	int ret = 0;
 
 
+	make_string(&idx_path, "apps");
+	cat_cstring_p(&idx_path, app_name);
+	cat_cstring_p(&idx_path, "objs");
+	cat_cstring_p(&idx_path, typeStr);
+	cat_cstring(&idx_path, "_txfr.idx");
+
+	if (get_file(idx_path.str, &idx_buff, &idx_len) > 0)
+	{
+		cur = 0;
+		while ((cur + sizeof(hash_t) + sizeof(hash_t)) <= idx_len)
+		{
+			if (!memcmp_c(idx_buff+cur, objHash, sizeof(hash_t))) {
+				memcpy_c(txh, idx_buff + cur + sizeof(hash_t), sizeof(hash_t));
+				ret = 1;
+				break;
+			}
+			cur += sizeof(hash_t) + sizeof(hash_t);
+		}
+		free_c(idx_buff);
+	}
+	free_string(&idx_path);
+	return ret;
+}
+OS_API_C_FUNC(int) list_obj_txfr(const char *app_name, const char *typeStr, const hash_t objHash,  mem_zone_ref_ptr txfrs)
+{
+	hash_t txh,bh;
+	btc_addr_t dstAddr, srcAddr;
+	mem_zone_ref inputs = { PTR_NULL }, outputs = { PTR_NULL }, oAddr = { PTR_NULL }, dAddr = { PTR_NULL };
+	mem_zone_ref tx = { PTR_NULL }, txfr = { PTR_NULL };
+	unsigned int tx_time;
+	int ret;
+
+	if (find_obj_txfr(app_name, typeStr, objHash, txh))
+	{
+		ret = load_tx(&tx, bh, txh);
+		
+		while (ret)
+		{
+		
+			mem_zone_ref prev_tx = { PTR_NULL };
+
+			if (ret)ret = tree_manager_get_child_value_i32(&tx, NODE_HASH("time"), &tx_time);
+
+			if (ret)ret = tree_manager_create_node("outputs", NODE_BITCORE_WALLET_ADDR_LIST, &outputs);
+			if (ret)ret = tree_manager_create_node("inputs", NODE_BITCORE_WALLET_ADDR_LIST, &inputs);
+			if (ret)ret = find_obj_tx(&tx, objHash, &inputs, &outputs);
+
+			if (tree_manager_get_child_at(&inputs, 0, &oAddr))
+			{
+				ret = tree_manager_get_node_btcaddr(&oAddr, 0, srcAddr);
+				release_zone_ref(&oAddr);
+			}
+			release_zone_ref(&inputs);
+
+			if (ret)
+			{
+				if (tree_manager_get_child_at(&outputs, 0, &dAddr))
+				{
+					ret = tree_manager_get_node_btcaddr(&dAddr, 0, dstAddr);
+					release_zone_ref(&dAddr);
+				}
+			}
+			
+			release_zone_ref(&outputs);
+
+			if (ret)ret = tree_manager_add_child_node(txfrs, "origin", NODE_GFX_OBJECT, &txfr);
+			if (ret)
+			{
+				tree_manager_set_child_value_i32(&txfr, "time", tx_time);
+				tree_manager_set_child_value_hash(&txfr, "txid", txh);
+				tree_manager_set_child_value_btcaddr(&txfr, "srcaddr", srcAddr);
+				tree_manager_set_child_value_btcaddr(&txfr, "dstaddr", dstAddr);
+				release_zone_ref(&txfr);
+			}
+
+			ret = find_obj_ptxfr	(&tx, objHash, &prev_tx);
+			copy_zone_ref			(&tx, &prev_tx);
+			release_zone_ref		(&prev_tx);
+		}
+
+	}
+
+
+	ret = load_tx(&tx, bh, objHash);
+	if (ret)ret = tree_manager_get_child_value_i32(&tx, NODE_HASH("time"), &tx_time);
+	if (ret)ret = tree_manager_create_node("outputs", NODE_BITCORE_WALLET_ADDR_LIST, &outputs);
+	if (ret)ret = find_obj_tx(&tx, objHash, PTR_NULL, &outputs);
+	if (ret)ret = tree_manager_get_child_at(&outputs, 0, &dAddr);
+	if (ret)ret = tree_manager_get_node_btcaddr(&dAddr, 0, dstAddr);
+	release_zone_ref(&dAddr);
+	release_zone_ref(&outputs);
+
+	if (ret)ret = tree_manager_add_child_node(txfrs, "origin", NODE_GFX_OBJECT, &txfr);
+	if (ret)
+	{
+		tree_manager_set_child_value_i32(&txfr, "time", tx_time);
+		tree_manager_set_child_value_hash(&txfr, "txid", objHash);
+		tree_manager_set_child_value_btcaddr(&txfr, "dstaddr", dstAddr);
+		
+		release_zone_ref(&txfr);
+	}
+
+	
+
+
+	return 1;
+
+}
 
 OS_API_C_FUNC(int) get_app_file(mem_zone_ref_ptr file_tx, struct string *app_name, mem_zone_ref_ptr file)
 {
@@ -1649,17 +1847,6 @@ OS_API_C_FUNC(int) has_app_file(struct string *app_name, hash_t fileHash)
 
 
 	bin_2_hex(fileHash, 32, chash);
-
-	/*
-	n = 0;
-	while (n<32)
-	{
-	chash[n * 2 + 0] = hex_chars[fileHash[n] >> 4];
-	chash[n * 2 + 1] = hex_chars[fileHash[n] & 0x0F];
-	n++;
-	}
-	chash[64] = 0;
-	*/
 
 	make_string(&app_path, "apps");
 	cat_cstring_p(&app_path, app_name->str);
@@ -1772,18 +1959,6 @@ OS_API_C_FUNC(int) get_app_missing_files(struct string *app_name, mem_zone_ref_p
 			{
 				bin_2_hex(&buffer[cur], 32, fHAsh);
 
-				/*
-				unsigned int n;
-				n = 0;
-				while (n < 32)
-				{
-				fHAsh[n * 2 + 0] = hex_chars[buffer[n + cur] >> 4];
-				fHAsh[n * 2 + 1] = hex_chars[buffer[n + cur] & 0x0F];
-				n++;
-				}
-				fHAsh[64] = 0;
-				*/
-
 				make_string(&filePath, "apps");
 				cat_cstring_p(&filePath, app_name->str);
 				cat_cstring_p(&filePath, "datas");
@@ -1807,6 +1982,273 @@ OS_API_C_FUNC(int) get_app_missing_files(struct string *app_name, mem_zone_ref_p
 	free_string(&app_path);
 
 	return 1;
+}
+
+int clear_app_index(const char *appName)
+{
+	struct string	app_path = { 0 };
+	mem_zone_ref	app = { PTR_NULL }, appTypes = { PTR_NULL }, my_list = { PTR_NULL };
+	mem_zone_ref_ptr type;
+
+	if (!tree_manager_find_child_node(&apps, NODE_HASH(appName), NODE_BITCORE_TX, &app))
+		return 0;
+
+	get_app_types(&app, &appTypes);
+
+	for (tree_manager_get_first_child(&appTypes, &my_list, &type); ((type != NULL) && (type->zone != NULL)); tree_manager_get_next_child(&my_list, &type))
+	{
+		char			KeyName[32];
+		char			typeStr[16];
+		struct string	KeyStr = { 0 };
+		unsigned int	KeyId, flags;
+		mem_zone_ref typeOut = { PTR_NULL };
+
+		if (!get_tx_output(type, 1, &typeOut))
+			continue;
+
+		tree_manager_get_child_value_istr(&typeOut, NODE_HASH("script"), &KeyStr, 0);
+
+		if (get_type_infos(&KeyStr, KeyName, &KeyId, &flags))
+		{
+			mem_zone_ref		m_idlist = { 0 };
+			mem_zone_ref_ptr	idx = PTR_NULL;
+			mem_zone_ref idxs = { PTR_NULL };
+
+			uitoa_s(KeyId, typeStr, 16, 16);
+
+			make_string(&app_path, "apps");
+			cat_cstring_p(&app_path, appName);
+			cat_cstring_p(&app_path, "objs");
+			cat_cstring_p(&app_path, typeStr);
+			cat_cstring_p(&app_path, "_time.idx");
+			del_file(app_path.str);
+			free_string(&app_path);
+
+			make_string(&app_path, "apps");
+			cat_cstring_p(&app_path, appName);
+			cat_cstring_p(&app_path, "objs");
+			cat_cstring_p(&app_path, typeStr);
+			cat_cstring_p(&app_path, "_addr.idx");
+			del_file(app_path.str);
+			free_string(&app_path);
+
+			tree_manager_create_node("idxs", NODE_JSON_ARRAY, &idxs);
+			
+			
+			get_app_type_idxs(appName, KeyId, &idxs);
+
+			for (tree_manager_get_first_child(&idxs, &m_idlist, &idx); ((idx != NULL) && (idx->zone != NULL)); tree_manager_get_next_child(&m_idlist, &idx))
+			{
+				char keyStr[16];
+				struct string idx_path = { 0 };
+				const char *keyname = tree_mamanger_get_node_name(idx);
+				unsigned int ktype = tree_mamanger_get_node_type(idx);
+
+				uitoa_s(ktype, keyStr, 16, 16);
+
+				make_string(&idx_path, "apps");
+				cat_cstring_p(&idx_path, appName);
+				cat_cstring_p(&idx_path, "objs");
+				cat_cstring_p(&idx_path, keyStr);
+				cat_cstring(&idx_path, "_");
+				cat_cstring(&idx_path, keyname);
+				cat_cstring(&idx_path, ".idx");
+				del_file(idx_path.str);
+				free_string(&idx_path);
+			}
+			release_zone_ref(&idxs);
+			
+			make_string(&app_path, "apps");
+			cat_cstring_p(&app_path, appName);
+			cat_cstring_p(&app_path, "objs");
+			cat_cstring_p(&app_path, typeStr);
+			del_file(app_path.str);
+			free_string(&app_path);
+
+		}
+
+		free_string(&KeyStr);
+		release_zone_ref(&typeOut);
+		
+
+	}
+
+	release_zone_ref(&appTypes);
+
+	return 0;
+
+}
+int add_obj_index(const char *appName,unsigned int typeID, mem_zone_ref_const_ptr obj,unsigned int tx_time,const hash_t tx_hash)
+{
+	char			typeStr[16];
+	char			tchash[65];
+	btc_addr_t		objAddr;
+	mem_zone_ref	idxs = { 0 };
+	struct string	app_path = { 0 };
+
+	uitoa_s(typeID, typeStr, 16, 16);
+
+	bin_2_hex(tx_hash, 32, tchash);
+
+
+	make_string(&app_path, "apps");
+	cat_cstring_p(&app_path, appName);
+	cat_cstring_p(&app_path, "objs");
+	cat_cstring_p(&app_path, typeStr);
+	append_file(app_path.str, tx_hash, 32);
+	free_string(&app_path);
+
+	tree_manager_get_child_value_btcaddr(obj, NODE_HASH("objAddr"), objAddr);
+
+	add_index(appName, typeStr, "time", tx_time, tx_hash);
+	add_index_addr(appName, typeStr, "addr", objAddr, tx_hash);
+
+
+	if (tree_manager_create_node("idxs", NODE_JSON_ARRAY, &idxs))
+	{
+		mem_zone_ref		m_idlist = { 0 };
+		mem_zone_ref_ptr	idx = PTR_NULL;
+
+		get_app_type_idxs(appName, typeID, &idxs);
+
+		for (tree_manager_get_first_child(&idxs, &m_idlist, &idx); ((idx != NULL) && (idx->zone != NULL)); tree_manager_get_next_child(&m_idlist, &idx))
+		{
+			const char *id_name;
+			id_name = tree_mamanger_get_node_name(idx);
+			switch (tree_mamanger_get_node_type(idx))
+			{
+			case NODE_GFX_INT:
+			{
+				unsigned int val;
+				tree_manager_get_child_value_i32(obj, NODE_HASH(id_name), &val);
+				add_index(appName, typeStr, id_name, val, tx_hash);
+			}
+			break;
+			case NODE_BITCORE_VSTR:
+			{
+				struct string val = { 0 };
+				tree_manager_get_child_value_istr(obj, NODE_HASH(id_name), &val, 0);
+				add_index_str(appName, typeStr, id_name, &val, tx_hash);
+			}
+			break;
+			case NODE_BITCORE_WALLET_ADDR:
+			{
+				btc_addr_t addr;
+				tree_manager_get_child_value_btcaddr(obj, NODE_HASH(id_name), addr);
+				add_index_addr(appName, typeStr, id_name, addr, tx_hash);
+			}
+			break;
+			case NODE_BITCORE_PUBKEY:
+			{
+				btc_addr_t		addr;
+				unsigned char	*pubkey;
+				unsigned int	sz;
+
+				sz = tree_manager_get_child_data_ptr(obj, NODE_HASH(id_name), &pubkey);
+				key_to_addr(pubkey, addr);
+				add_index_addr(appName, typeStr, id_name, addr, tx_hash);
+			}
+			break;
+			}
+		}
+		release_zone_ref(&idxs);
+	}
+
+	return 1;
+}
+
+
+int rebuild_app_index(const char *appName)
+{
+	struct string obj_path = { 0 }, objList = { 0 };
+	mem_zone_ref	app = { PTR_NULL }, appTypes = { PTR_NULL }, my_list = { PTR_NULL };
+	size_t  cur, nfiles;
+
+	if (!clear_app_index(appName))
+		return 0;
+
+	if (!tree_manager_find_child_node(&apps, NODE_HASH(appName), NODE_BITCORE_TX, &app))return 0;
+
+	get_app_types(&app, &appTypes);
+
+	make_string(&obj_path, "apps");
+	cat_cstring_p(&obj_path, appName);
+	cat_cstring_p(&obj_path, "objs");
+
+	nfiles = get_sub_files(obj_path.str, &objList);
+	if (nfiles > 0)
+	{
+		const char		*ptr, *optr;
+		unsigned int	dir_list_len;
+
+		dir_list_len = objList.len;
+		optr = objList.str;
+		cur = 0;
+		while (cur < nfiles)
+		{
+			struct string	path = { 0 };
+			size_t			sz, tx_len;
+			unsigned char	*tx_data;
+
+			ptr = memchr_c(optr, 10, dir_list_len);
+			sz = mem_sub(optr, ptr);
+
+
+
+			if (get_file(obj_path.str, &tx_data, &tx_len) > 0)
+			{
+
+				mem_zone_ref obj_tx = { PTR_NULL }, myobj = { PTR_NULL }, vout = { PTR_NULL };
+				unsigned int  time;
+
+				tree_manager_create_node("tx", NODE_BITCORE_TX, &obj_tx);
+				init_node(&obj_tx);
+				read_node(&obj_tx, tx_data, tx_len);
+				free_c(tx_data);
+
+
+
+				if (get_tx_output(&obj_tx, 0, &vout))
+				{
+					hash_t txh;
+					uint64_t	value;
+
+					compute_tx_hash(&obj_tx, txh);
+					tree_manager_set_child_value_hash(&obj_tx, "txid", txh);
+
+					tree_manager_get_child_value_i32(&obj_tx, NODE_HASH("time"), &time);
+					tree_manager_get_child_value_i64(&vout, NODE_HASH("value"), &value);
+
+					if ((value & 0xFFFFFFFF00000000) == 0xFFFFFFFF00000000)
+					{
+						struct string script = { PTR_NULL };
+						mem_zone_ref type = { PTR_NULL };
+						unsigned int type_id;
+
+						type_id = value & 0xFFFFFFFF;
+
+						if (tree_find_child_node_by_id_name(&appTypes, NODE_BITCORE_TX, "typeId", type_id, &type))
+						{
+							tree_manager_get_child_value_istr(&vout, NODE_HASH("script"), &script, 0);
+							obj_new(&type, "objDef", &script, &myobj);
+							add_obj_index(appName, type_id, &myobj, time, txh);
+
+							free_string(&script);
+							release_zone_ref(&type);
+							release_zone_ref(&myobj);
+						}
+					}
+					release_zone_ref(&vout);
+				}
+				release_zone_ref(&obj_tx);
+				free_c(tx_data);
+			}
+
+			cur++;
+			optr = ptr + 1;
+			dir_list_len -= sz;
+		}
+	}
 }
 
 
@@ -1845,121 +2287,63 @@ int store_app_item(mem_zone_ref_const_ptr tx, unsigned int app_item, unsigned in
 		}
 		free_string(&app_name);
 		break;
-	case 2:
-		if (tree_manager_get_child_value_istr(tx, NODE_HASH("appObj"), &app_name, 0))
-		{
-			char			tchash[65];
-			char			typeStr[16];
-			mem_zone_ref	idxs = { 0 };
-			struct string	app_path = { 0 };
-			unsigned int	typeID;
-
-			bin_2_hex(tx_hash, 32, tchash);
-
-			tree_manager_get_child_value_i32(tx, NODE_HASH("objType"), &typeID);
-
-			uitoa_s(typeID, typeStr, 16, 16);
-
-
-			make_string(&app_path, "apps");
-			cat_cstring_p(&app_path, app_name.str);
-			cat_cstring_p(&app_path, "objs");
-			cat_cstring_p(&app_path, tchash);
-			put_file(app_path.str, buffer, length);
-			free_string(&app_path);
-
-			make_string(&app_path, "apps");
-			cat_cstring_p(&app_path, app_name.str);
-			cat_cstring_p(&app_path, "objs");
-			cat_cstring_p(&app_path, typeStr);
-			append_file(app_path.str, tx_hash, 32);
-			free_string(&app_path);
-
-			add_index(app_name.str, typeStr, "time", tx_time, tx_hash);
-
-
-			if (tree_manager_create_node("idxs", NODE_JSON_ARRAY, &idxs))
+		case 2:
+			if (tree_manager_get_child_value_istr(tx, NODE_HASH("appObj"), &app_name, 0))
 			{
-				mem_zone_ref		m_idlist = { 0 }, obj = { 0 };
-				mem_zone_ref_ptr	idx = PTR_NULL;
+				mem_zone_ref	obj = { 0 };
+				unsigned int	typeID;
 
-				tree_manager_find_child_node(tx, NODE_HASH("objDef"), typeID, &obj);
+				if (!tree_manager_get_child_value_i32(tx, NODE_HASH("objType"), &typeID))
+					typeID = 0;
 
-				get_app_type_idxs(app_name.str, typeID, &idxs);
-
-				for (tree_manager_get_first_child(&idxs, &m_idlist, &idx); ((idx != NULL) && (idx->zone != NULL)); tree_manager_get_next_child(&m_idlist, &idx))
+				if (tree_manager_find_child_node(tx, NODE_HASH("objDef"), typeID, &obj))
 				{
-					const char *id_name;
-					id_name = tree_mamanger_get_node_name(idx);
-					switch (tree_mamanger_get_node_type(idx))
-					{
-					case NODE_GFX_INT:
-					{
-						unsigned int val;
-						tree_manager_get_child_value_i32(&obj, NODE_HASH(id_name), &val);
-						add_index(app_name.str, typeStr, id_name, val, tx_hash);
-					}
-					break;
-					case NODE_BITCORE_VSTR:
-					{
-						struct string val = { 0 };
-						tree_manager_get_child_value_istr(&obj, NODE_HASH(id_name), &val, 0);
-						add_index_str(app_name.str, typeStr, id_name, &val, tx_hash);
-					}
-					break;
-					case NODE_BITCORE_WALLET_ADDR:
-					{
-						btc_addr_t addr;
-						tree_manager_get_child_value_btcaddr(&obj, NODE_HASH(id_name), addr);
-						add_index_addr(app_name.str, typeStr, id_name, addr, tx_hash);
-					}
-					break;
-					case NODE_BITCORE_PUBKEY:
-					{
-						btc_addr_t		addr;
-						unsigned char	*pubkey;
-						unsigned int	sz;
-
-						sz = tree_manager_get_child_data_ptr(&obj, NODE_HASH(id_name), &pubkey);
-						key_to_addr(pubkey, addr);
-						add_index_addr(app_name.str, typeStr, id_name, addr, tx_hash);
-					}
-					break;
-					}
-				}
-				release_zone_ref(&idxs);
-			}
-		}
-		free_string(&app_name);
-		break;
-	case 3:
-		if (tree_manager_get_child_value_istr(tx, NODE_HASH("appFile"), &app_name, 0))
-		{
-			mem_zone_ref file = { PTR_NULL };
-
-			if (tree_manager_find_child_node(tx, NODE_HASH("fileDef"), NODE_GFX_OBJECT, &file))
-			{
-				unsigned char	buffer[64];
-				if (tree_manager_get_child_value_hash(&file, NODE_HASH("dataHash"), buffer))
-				{
+					char			tchash[65];
 					struct string	app_path = { 0 };
 
-					memcpy_c(&buffer[32], tx_hash, sizeof(hash_t));
+					bin_2_hex(tx_hash, 32, tchash);
+
 					make_string(&app_path, "apps");
 					cat_cstring_p(&app_path, app_name.str);
-					cat_cstring_p(&app_path, "datas");
-					cat_cstring_p(&app_path, "index");
-
-					if (stat_file(app_path.str) == 0)
-						append_file(app_path.str, buffer, 64);
-					else
-						put_file(app_path.str, buffer, 64);
-
+					cat_cstring_p(&app_path, "objs");
+					cat_cstring_p(&app_path, tchash);
+					put_file(app_path.str, buffer, length);
 					free_string(&app_path);
+
+					add_obj_index(app_name.str, typeID, &obj, tx_time, tx_hash);
+					release_zone_ref(&obj);
 				}
-				release_zone_ref(&file);
 			}
-		}
+			free_string(&app_name);
+		break;
+		case 3:
+			if (tree_manager_get_child_value_istr(tx, NODE_HASH("appFile"), &app_name, 0))
+			{
+				mem_zone_ref file = { PTR_NULL };
+
+				if (tree_manager_find_child_node(tx, NODE_HASH("fileDef"), NODE_GFX_OBJECT, &file))
+				{
+					unsigned char	buffer[64];
+					if (tree_manager_get_child_value_hash(&file, NODE_HASH("dataHash"), buffer))
+					{
+						struct string	app_path = { 0 };
+
+						memcpy_c(&buffer[32], tx_hash, sizeof(hash_t));
+						make_string(&app_path, "apps");
+						cat_cstring_p(&app_path, app_name.str);
+						cat_cstring_p(&app_path, "datas");
+						cat_cstring_p(&app_path, "index");
+
+						if (stat_file(app_path.str) == 0)
+							append_file(app_path.str, buffer, 64);
+						else
+							put_file(app_path.str, buffer, 64);
+
+						free_string(&app_path);
+					}
+					release_zone_ref(&file);
+				}
+			}
 		break;
 	case 4:
 		if (tree_manager_get_child_value_istr(tx, NODE_HASH("appLayout"), &app_name, 0))
@@ -2085,6 +2469,98 @@ int store_new_app(const struct string *app_name, mem_zone_ref_const_ptr tx, mem_
 	release_zone_ref(&app_tx);
 
 	return 1;
+}
+int store_app_obj_txfr(mem_zone_ref_const_ptr tx)
+{
+	hash_t				txh;
+	
+	mem_zone_ref		txin_list = { PTR_NULL }, my_ilist = { PTR_NULL };
+	mem_zone_ref_ptr	output=PTR_NULL,input = PTR_NULL;
+
+	
+	tree_manager_get_child_value_hash(tx, NODE_HASH("txid"), txh);
+
+	if (!tree_manager_find_child_node(tx, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list))
+		return 0;
+
+	for (tree_manager_get_first_child(&txin_list, &my_ilist, &input); ((input != PTR_NULL) && (input->zone != PTR_NULL)); tree_manager_get_next_child(&my_ilist, &input))
+	{
+		char			appName[32];
+		hash_t			th, objHash;
+		char			buff[32];
+		btc_addr_t		srcAddr;
+		struct string	idx_path = { 0 };
+		uint64_t		amount;
+		unsigned int	idx,oc;
+
+		if (!tree_manager_get_child_value_i32(input, NODE_HASH("isObjChild"), &oc))
+			continue;
+
+		if (!tree_manager_get_child_value_str(input, NODE_HASH("srcapp"), appName, 32, 0))
+			continue;
+
+		tree_manager_get_child_value_hash(input, NODE_HASH("txid"), th);
+		tree_manager_get_child_value_i32(input, NODE_HASH("idx"), &idx);
+
+		load_tx_output_amount(th, idx, &amount);
+
+		if ((amount & 0xFFFFFFFF00000000) != 0xFFFFFFFF00000000)
+			continue;
+
+		if (!tree_manager_get_child_value_hash(input, NODE_HASH("objHash"), objHash))
+			continue;
+
+		uitoa_s					(amount & 0xFFFFFFFF, buff, 32, 16);
+
+		make_string(&idx_path, "apps");
+		cat_cstring_p(&idx_path, appName);
+		cat_cstring_p(&idx_path, "objs");
+		cat_cstring_p(&idx_path, buff);
+		cat_cstring(&idx_path, "_addr.idx");
+
+		rm_hash_from_index_addr(idx_path.str, objHash);
+
+		free_string(&idx_path);
+	}
+	release_zone_ref(&txin_list);
+
+
+	if (!tree_manager_find_child_node(tx, NODE_HASH("txsout"), NODE_BITCORE_VOUTLIST, &txin_list))
+		return 0;
+
+	for (tree_manager_get_first_child(&txin_list, &my_ilist, &output); ((output != PTR_NULL) && (output->zone != PTR_NULL)); tree_manager_get_next_child(&my_ilist, &output))
+	{
+		char			appName[32];
+		hash_t			objHash;
+		char			buff[32];
+		btc_addr_t		dstAddr;
+		uint64_t		amount;
+
+		if (!tree_manager_get_child_value_i64(output, NODE_HASH("value"), &amount))
+			continue;
+
+		if ((amount & 0xFFFFFFFF00000000) != 0xFFFFFFFF00000000)
+			continue;
+
+		if (!tree_manager_get_child_value_hash(output, NODE_HASH("objHash"), objHash))
+			continue;
+
+		if (!tree_manager_get_child_value_btcaddr(output, NODE_HASH("dstAddr"), dstAddr))
+			continue;
+
+		if (!get_obj_app(objHash, appName))
+			continue;
+
+		uitoa_s(amount & 0xFFFFFFFF, buff, 32, 16);
+
+		add_index_addr(appName, buff, "addr", dstAddr, objHash);
+		add_obj_txfr  (appName, buff, objHash, txh);
+
+	}
+	release_zone_ref(&txin_list);
+
+	return 1;
+
 }
 
 int store_app_obj_child(mem_zone_ref_const_ptr tx, const hash_t pObjHash)

@@ -118,11 +118,14 @@
 #define		NODE_COOKIES					0x0C000001
 
 
+#define		NODE_RT_VEC2					0x0D000001
 #define		NODE_RT_VEC3					0x0D000002
 #define		NODE_RT_VEC3_ARRAY				0x0D000003
 #define		NODE_RT_MAT3x3					0x0D000004
 #define		NODE_RT_SHADER_UNIFORM_LIST		0x0D000006
-#define		NODE_RT_MATERIAL_LIST			0x0D000009	
+#define		NODE_RT_MATERIAL_LIST			0x0D000009
+#define		NODE_RT_VEC2_ARRAY				0x0D000010
+#define		NODE_RT_INT_ARRAY				0x0D000020
 
 const enum op_type { CMP_E, CMP_L, CMP_G, CMPL_E, CMPL_L, CMPL_G, CMPL_N, CMP_N };
 
@@ -183,6 +186,7 @@ LIBBASE_API  void			C_API_FUNC	tree_manager_set_node_name				(mem_zone_ref_ptr n
 
 LIBBASE_API  int  			C_API_FUNC	tree_manager_add_child_node				(mem_zone_ref_ptr parent_ref_ptr,const char *name,unsigned int type,mem_zone_ref *ref_ptr);
 LIBBASE_API  unsigned int	C_API_FUNC	tree_manager_node_add_child				(mem_zone_ref_ptr parent_ref_ptr,mem_zone_ref_const_ptr child_ref_ptr);
+LIBBASE_API  unsigned int	C_API_FUNC	tree_manager_allocate_childs			(mem_zone_ref_ptr p_node_ref, unsigned int size);
 LIBBASE_API  unsigned int	C_API_FUNC	tree_manager_node_add_unique_child		(mem_zone_ref_ptr p_node_ref, mem_zone_ref_const_ptr child_ref_ptr, const char *keys);
 LIBBASE_API  int			C_API_FUNC	tree_manager_node_dup					(mem_zone_ref_ptr new_parent,mem_zone_ref_const_ptr src_ref_ptr,mem_zone_ref_ptr new_ref_ptr,unsigned int depth);
 LIBBASE_API  int			C_API_FUNC	tree_manager_node_dup_one				(mem_zone_ref_ptr src_ref_ptr,mem_zone_ref_ptr new_ref_ptr);
@@ -248,6 +252,8 @@ LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_vint			(mem_zone_ref_ptr n
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_sig				(mem_zone_ref_ptr node_ref, mem_size ofset, unsigned char *sign, size_t sign_len);
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_4uc				(mem_zone_ref_ptr node_ref,mem_size ofset,const vec_4uc_t val);
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_vec3f			(mem_zone_ref *node_ref, mem_size ofset, float x, float y, float z);
+LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_vec2f			(mem_zone_ref *node_ref, mem_size ofset, float x, float y);
+
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_word			(mem_zone_ref_ptr node_ref,mem_size ofset,unsigned short value);
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_byte			(mem_zone_ref_ptr node_ref,mem_size ofset,unsigned char value);
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_signed_qword	(mem_zone_ref_ptr node_ref, mem_size ofset, int64_t value);
@@ -261,6 +267,10 @@ LIBBASE_API  void			C_API_FUNC	tree_manager_set_node_image_info		(mem_zone_ref_p
 LIBBASE_API  size_t			C_API_FUNC	tree_manager_get_node_image_size		(mem_zone_ref_const_ptr node_ref);
 LIBBASE_API  size_t			C_API_FUNC	tree_manager_get_node_image_pos			(mem_zone_ref_const_ptr node_ref);
 LIBBASE_API  int			C_API_FUNC	tree_manager_get_node_4uc				(mem_zone_ref_const_ptr node_ref,mem_size ofset,vec_4uc_t val);
+LIBBASE_API  int			C_API_FUNC	tree_manager_get_node_vec2f				(mem_zone_ref_const_ptr node_ref, mem_size ofset, float *x, float *y);
+LIBBASE_API  int			C_API_FUNC	tree_manager_get_node_vec3f				(mem_zone_ref_const_ptr node_ref, mem_size ofset, float *x, float *y, float *z);
+
+
 LIBBASE_API  int			C_API_FUNC	tree_mamanger_get_node_ipv4				(mem_zone_ref_const_ptr node_ref, mem_size ofset, ipv4_t val);
 LIBBASE_API  int			C_API_FUNC	tree_manager_get_node_str				(mem_zone_ref_const_ptr node_ref,mem_size ofset,char *str,unsigned int str_len,unsigned int base);
 LIBBASE_API  int			C_API_FUNC	tree_manager_get_node_ptr(mem_zone_ref *node_ref, mem_size ofset, mem_ptr *value);
@@ -330,6 +340,7 @@ LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_str		(mem_zone_ref_pt
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_rect		(mem_zone_ref_ptr p_node_ref, const char *name, const struct gfx_rect *rect);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_bool		(mem_zone_ref_ptr p_node_ref, const char *name, unsigned int value);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_vec3		(mem_zone_ref_ptr p_node_ref, const char *name, float x, float y, float z);
+LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_vec2		(mem_zone_ref	*p_node_ref, const char *name, float x, float y);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_vec3_arr   (mem_zone_ref_ptr p_node_ref, const char *name, size_t idx,float x, float y, float z);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_mat3x3		(mem_zone_ref_ptr p_node_ref, const char *name, float *mat3x3);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_ipv4		(mem_zone_ref_ptr p_node_ref, const char *name, ipv4_t value);

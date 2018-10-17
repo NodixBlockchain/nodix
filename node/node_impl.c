@@ -75,6 +75,7 @@ NODE_API int			C_API_FUNC		node_release_mempool_lock(){ return 0; }
 NODE_API int			C_API_FUNC		node_aquire_mining_lock(){ return 0; }
 NODE_API int			C_API_FUNC		node_del_btree_from_mempool(){ return 0; }
 NODE_API int			C_API_FUNC		node_aquire_mempool_lock(mem_zone_ref_ptr mempool){ return 0; }
+NODE_API int			C_API_FUNC		node_mempool_getobj(const char *appName, hash_t objHash, mem_zone_ref_ptr obj) { return 0; }
 NODE_API int			C_API_FUNC		node_store_tmp_file(struct string *app_name, mem_zone_ref_ptr file){ return 0; }
 NODE_API int			C_API_FUNC		node_create_pow_block(mem_zone_ref_ptr newBlock, btc_addr_t coinbaseAddr){ return 0; }
 NODE_API int			C_API_FUNC		node_compute_pow_diff_after(mem_zone_ref_ptr newPOWBlock) { return 0; }

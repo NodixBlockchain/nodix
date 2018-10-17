@@ -54,6 +54,7 @@ OS_API_C_FUNC(  int	)			tree_node_find_child_by_type_value(mem_zone_ref_const_pt
 OS_API_C_FUNC(  int	)			tree_node_find_child_by_type(mem_zone_ref_const_ptr p_node_ref, unsigned int node_type, mem_zone_ref_ptr p_node_out_ref, unsigned int index){return 0;}
 OS_API_C_FUNC(  int	)			tree_node_find_child_by_id(mem_zone_ref_const_ptr p_node_ref, unsigned int node_id, mem_zone_ref_ptr p_node_out_ref){return 0;}
 OS_API_C_FUNC(  int	)			tree_find_child_node_by_id_name(mem_zone_ref_const_ptr  p_node_ref, unsigned int child_type, const char *id_name, unsigned int id_val, mem_zone_ref_ptr out_node){return 0;}
+OS_API_C_FUNC(int)				tree_find_child_node_by_hash(mem_zone_ref_const_ptr p_node_ref, unsigned int child_type, hash_t bhash, mem_zone_ref_ptr out_node) { return 0; }
 //OS_API_C_FUNC(  int				tree_find_child_node_by_value			(mem_zone_ref_const_ptr  p_node_ref,unsigned int child_type,const char *id_name,unsigned int id_val,mem_zone_ref_ptr out_node){return 0;}
 OS_API_C_FUNC(  int	)		  tree_find_child_node_idx_by_id(mem_zone_ref *p_node_ref, unsigned int child_type, unsigned int child_id, unsigned int *out_idx){return 0;}
 OS_API_C_FUNC(  int	)			tree_find_child_node_by_member_name(mem_zone_ref_const_ptr p_node_ref, unsigned int child_type, unsigned int child_member_type, const char *child_member_name, mem_zone_ref_ptr out_node){return 0;}
@@ -193,6 +194,7 @@ OS_API_C_FUNC(int)	crypto_hash_sha512(unsigned char *out, const unsigned char *i
 OS_API_C_FUNC(int)	tree_remove_child_by_member_value_hash(mem_zone_ref_ptr p_node_ref, unsigned int child_type, const char *member_name, hash_t hash){ return 0; }
 
 OS_API_C_FUNC(int) tree_manager_write_node_vec3f(mem_zone_ref *node_ref, mem_size ofset, float x, float y, float z){ return 0; }
+OS_API_C_FUNC(int) tree_manager_write_node_vec2f(mem_zone_ref *node_ref, mem_size ofset, float x, float y) { return 0; }
 OS_API_C_FUNC(int) load_script(const char *file, const char *name, mem_zone_ref_ptr script_vars, unsigned int opts){ return 0; }
 OS_API_C_FUNC(int) tree_manager_node_dup(mem_zone_ref *new_parent, mem_zone_ref_const_ptr src_ref_ptr, mem_zone_ref *new_ref_ptr, unsigned int depth){ return 0; }
 OS_API_C_FUNC(int) tree_remove_child_by_name(mem_zone_ref_ptr p_node_ref, unsigned int childkey){ return 0; }
@@ -200,6 +202,7 @@ OS_API_C_FUNC(void) init_upnp(){ return ; }
 
 OS_API_C_FUNC(int) resolve_script_var(mem_zone_ref_ptr global_vars, mem_zone_ref_ptr script_proc, const char *var_path, unsigned int var_type, mem_zone_ref_ptr out_var, mem_zone_ref_ptr pout_var){ return 0; }
 OS_API_C_FUNC(int) tree_manager_set_child_value_vec3(mem_zone_ref	*p_node_ref, const char *name, float x, float y, float z){ return 0; }
+OS_API_C_FUNC(int) tree_manager_set_child_value_vec2(mem_zone_ref	*p_node_ref, const char *name, float x, float y) { return 0; }
 OS_API_C_FUNC(int) tree_manager_get_child_value_double(const mem_zone_ref	*p_node_ref, unsigned int crc_name, double *value){ return 0; }
 OS_API_C_FUNC(int) RC4(char *key, char *plaintext, size_t len, unsigned char *ciphertext){ return 0; }
 OS_API_C_FUNC(void) qsort_c(mem_ptr base, mem_size num, mem_size width, int(*comp)(const_mem_ptr, const_mem_ptr)) { return 0; }

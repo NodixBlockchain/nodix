@@ -78,6 +78,7 @@ NODE_API int			C_API_FUNC		sub_moneysupply(uint64_t amount);
 NODE_API int			C_API_FUNC		node_has_block(mem_zone_ref_ptr hash);
 NODE_API int			C_API_FUNC		node_mempool_has_tx(mem_zone_ref_ptr tx_hash);
 NODE_API int			C_API_FUNC		node_check_mempool_unique(mem_zone_ref_const_ptr node_txs, const char *appName, unsigned int typeID, mem_zone_ref_const_ptr obj);
+NODE_API int			C_API_FUNC		node_mempool_getobj(const char *appName, hash_t objHash, mem_zone_ref_ptr obj);
 
 NODE_API int			C_API_FUNC		node_create_pow_block(mem_zone_ref_ptr newBlock,btc_addr_t addr);
 NODE_API int			C_API_FUNC		node_compute_pow_diff_after(mem_zone_ref_ptr newPOWBlock);

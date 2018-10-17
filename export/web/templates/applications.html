@@ -34,7 +34,9 @@
 
     <div class="content">
     <section>
-        <div id="addresses"></div>
+        <div class="container">
+            <div id="addresses"></div>
+        </div>
     </section>
     <section>
         <div class="container">
@@ -77,13 +79,16 @@
                                     <div class="col-md-2"><label>Transaction fees</label></div><div class="col-md-2"><input type="text" name="paytxfee" id="paytxfee" /></div>
                                 </div>
                                 <div class="row">
+                                    <div class="md-form" style="height: 32px;"><input id="locked" name="locked" type="checkbox" value="1" class="custom-control-input"><label class="custom-control-label" for="locked" style="margin: 12px;">Locked</label></div>
+                                </div>
+                                <div class="row">
                                     <div class="col-md-2"><label>Total fees</label></div><div class="col-md-2"><span id="totalfee"></span></div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-2"><label>Selected addrs:</label></div><div class="col-md-2"><span id="selected_balance"></span></div>
                                 </div>
                                 <div class="row">
-                                    <div class="col-md-2"><button class="btn btn-primary" onclick="MyApps.create_app($('#app_addr').val(), $('#app_name').val(), $('#paytxfee').val()); return false;">create app</button></div>
+                                    <div class="col-md-2"><button class="btn btn-primary" onclick="MyApps.create_app($('#app_addr').val(), $('#app_name').val(), $('#locked').is(':checked')? 1 : 0, $('#paytxfee').val()); return false;">create app</button></div>
                                 </div>
                             </fieldset>
                         </form>

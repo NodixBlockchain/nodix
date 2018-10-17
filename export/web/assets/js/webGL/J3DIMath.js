@@ -762,7 +762,9 @@ J3DIMatrix4.prototype.lookat = function(eyex, eyey, eyez, centerx, centery, cent
     matrix.$matrix.m42 = 0;
     matrix.$matrix.m43 = 0;
     matrix.$matrix.m44 = 1;
-    matrix.translate(-eyex, -eyey, -eyez);
+    //matrix.translate(-eyex, -eyey, -eyez);
+
+    matrix.transpose();
 
     this.multiply(matrix);
 }
@@ -1103,6 +1105,10 @@ J3DIVector3.prototype.scale = function(factor)
     this[0] *= factor; this[1] *= factor; this[2] *= factor;
 }
 
+J3DIVector3.prototype.substract = function (v) {
+    this[0] -= v[0]; this[1] -= v[1]; this[2] -= v[2];
+}
+
 J3DIVector3.prototype.cross = function(v)
 {
     var x =  this[1] * v[2] - this[2] * v[1];
@@ -1313,9 +1319,9 @@ function makeLookAt(cameraPosition, target, up) {
      xAxis[0], xAxis[1], xAxis[2], 0,
      yAxis[0], yAxis[1], yAxis[2], 0,
      zAxis[0], zAxis[1], zAxis[2], 0,
-     cameraPosition[0],
-     cameraPosition[1],
-     cameraPosition[2],
+     -cameraPosition[0],
+     -cameraPosition[1],
+     -cameraPosition[2],
      1];
 }
 
@@ -1335,4 +1341,21 @@ function makeLookAt3x3(cameraPosition, target, up) {
        xAxis[1], yAxis[1], zAxis[1],
        xAxis[2], yAxis[2], zAxis[2]];
     
+}
+
+function makeLookAt3x3t(cameraPosition, target, up) {
+    var zAxis = normalize(subtractVectors(cameraPosition,target));
+    var xAxis = normalize(cross(up, zAxis));
+    var yAxis = normalize(cross(zAxis, xAxis));
+    /*
+    return [
+   xAxis[0], xAxis[1], xAxis[2],
+   yAxis[0], yAxis[1], yAxis[2],
+   zAxis[0], zAxis[1], zAxis[2]];
+   */
+
+    return [
+       xAxis[0], yAxis[0], zAxis[0],
+       xAxis[1], yAxis[1], zAxis[1],
+       xAxis[2], yAxis[2], zAxis[2]];
 }

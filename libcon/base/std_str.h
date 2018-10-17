@@ -93,13 +93,13 @@ static INLINE_C_FUNC void hex_2_bin(const char *chex, unsigned char *bin,size_t 
 	}
 }
 
-static INLINE_C_FUNC void hex_2_bin_r(const char *chex, unsigned char *bin)
+static INLINE_C_FUNC void hex_2_bin_r(const char *chex, unsigned char *bin, size_t len)
 {
 	unsigned int b2hn, b2hnn;
 	char         hex[3];
 	hex[2] = 0;
 
-	for (b2hn = strlen_c(chex) / 2 - 1, b2hnn = 0; chex[b2hnn] != 0; b2hn--, b2hnn += 2)
+	for (b2hn = strlen_c(chex) / 2 - 1, b2hnn = 0; chex[b2hnn] != 0, b2hn < len; b2hn--, b2hnn += 2)
 	{
 		hex[0] = chex[b2hnn + 0];
 		hex[1] = chex[b2hnn + 1];

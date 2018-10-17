@@ -103,8 +103,13 @@ OS_API_C_FUNC(int) cat_cstring(struct string *str, const char *src)
 	src_len				=	strlen_c(src);
 	if(src_len==0)return (int)str->len;
 
+
+	strbuffer_append_bytes(str, src, src_len);
+
+	/*
 	new_len				=	str->len+src_len;
 	str->size			=	new_len+1;
+
 	if(str->str!=NULL)
 		str->str=realloc_c(str->str,str->size);
 	else
@@ -112,9 +117,9 @@ OS_API_C_FUNC(int) cat_cstring(struct string *str, const char *src)
 		str->len=0;
 		str->str=malloc_c(str->size);
 	}
-
 	memcpy_c	(&str->str[str->len],src,src_len+1);
 	str->len = new_len;
+	*/
 	return (int)str->len;
 }
 
@@ -126,10 +131,13 @@ OS_API_C_FUNC(int) cat_cstring_p(struct string *str, const char *src)
 	src_len = strlen_c(src);
 	if (src_len == 0)return (int)str->len;
 
+	strbuffer_append_byte (str, path_sep);
+	strbuffer_append_bytes(str, src, src_len);
+	/*
 	new_len = str->len + src_len+1;
 	str->size = new_len + 1;
 
-	if ((str->str != NULL) && (str->str != PTR_INVALID))
+	if (str->str != NULL)
 		str->str = realloc_c(str->str, str->size);
 	else
 	{
@@ -140,6 +148,7 @@ OS_API_C_FUNC(int) cat_cstring_p(struct string *str, const char *src)
 	str->str[str->len] = path_sep;
 	memcpy_c(&str->str[str->len+1], src, src_len + 1);
 	str->len = new_len;
+	*/
 	return (int)str->len;
 }
 
@@ -157,7 +166,12 @@ OS_API_C_FUNC(int) cat_ncstring(struct string *str, const char *src, size_t src_
 		cpy_len++;
 	}
 	if (cpy_len == 0)return 0;
+
+
+	strbuffer_append_bytes(str, src, cpy_len);
 	
+
+	/*
 	new_len				=	str->len+cpy_len;
 	str->size			=	new_len+1;
 	if(str->str!=NULL)
@@ -165,9 +179,10 @@ OS_API_C_FUNC(int) cat_ncstring(struct string *str, const char *src, size_t src_
 	else
 		str->str=malloc_c(str->size);
 
-	memcpy_c	(&str->str[str->len],src,cpy_len);
+	memcpy_c	(str->str + str->len , src, cpy_len);
 	str->len			= new_len;
 	str->str[str->len]	= 0;
+	*/
 	return (int)str->len;
 }
 
@@ -175,6 +190,10 @@ OS_API_C_FUNC(int) cat_ncstring_p(struct string *str, const char *src, size_t sr
 {
 	size_t		new_len;
 
+	strbuffer_append_byte(str, path_sep);
+	strbuffer_append_bytes(str, src, src_len);
+
+	/*
 	new_len = str->len + 1+src_len;
 	str->size = new_len + 1;
 	if (str->str != NULL)
@@ -189,6 +208,7 @@ OS_API_C_FUNC(int) cat_ncstring_p(struct string *str, const char *src, size_t sr
 	memcpy_c(&str->str[str->len+1], src, src_len);
 	str->len = new_len;
 	str->str[str->len] = 0;
+	*/
 	return (int)str->len;
 }
 
@@ -209,6 +229,10 @@ OS_API_C_FUNC(size_t) cat_string(struct string *str, const struct string *src)
 	}
 	if (cpy_len == 0)return 0;
 
+	strbuffer_append_bytes(str, src->str, cpy_len);
+
+
+	/*
 	new_len				=	str->len+cpy_len;
 	str->size			=	new_len+1;
 
@@ -220,6 +244,7 @@ OS_API_C_FUNC(size_t) cat_string(struct string *str, const struct string *src)
 	memcpy_c	(&str->str[str->len],src->str,cpy_len);
 	str->len = new_len;
 	str->str[str->len]=0;
+	*/
 	return (int)str->len;
 }
 OS_API_C_FUNC(int) prepare_new_data(struct string *str, size_t len)
@@ -315,9 +340,16 @@ OS_API_C_FUNC(int) strcat_uint(struct string *str, size_t i)
 	uitoa_s				(i,buff,32,16);
 
 	src_len				=	strlen_c(buff);
+
+
+	strbuffer_append_bytes(str, buff, src_len);
+
+	/*
 	new_len				=	str->len+src_len;
 
 	str->size			=	new_len+1;
+
+	
 	if(str->str!=NULL)
 		str->str=realloc_c(str->str,str->size);
 	else
@@ -325,6 +357,7 @@ OS_API_C_FUNC(int) strcat_uint(struct string *str, size_t i)
 
 	memcpy_c	(&str->str[str->len],buff,src_len+1);
 	str->len = new_len;
+	*/
 	return (int)str->len;
 }
 
@@ -336,6 +369,10 @@ OS_API_C_FUNC(int) strcat_int(struct string *str, int i)
 	itoa_s				(i,buff,32,10);
 
 	src_len				=	strlen_c(buff);
+
+	strbuffer_append_bytes(str, buff, src_len);
+
+	/*
 	new_len				=	str->len+src_len;
 
 	str->size			=	new_len+1;
@@ -344,8 +381,10 @@ OS_API_C_FUNC(int) strcat_int(struct string *str, int i)
 	else
 		str->str=malloc_c(str->size);
 
-	memcpy_c	(&str->str[str->len],buff,src_len+1);
+	memcpy_c(&str->str[str->len],buff,src_len+1);
 	str->len = new_len;
+	*/
+
 	return (int)str->len;
 }
 
@@ -448,7 +487,21 @@ OS_API_C_FUNC(void) free_string(struct string *str)
 }
 
 
+OS_API_C_FUNC(int) chopChars(struct string *str,size_t mov_len)
+{
+	if (str->str == NULL)return 0;
+	if (str->len == 0)return 0;
 
+	if (mov_len>str->len)
+		mov_len = str->len;
+
+	str->len -= mov_len;
+	if (str->len>0)
+		memmove_c(str->str, &str->str[mov_len], str->len);
+
+	str->str[str->len] = 0;
+	return (int)mov_len;
+}
 
 OS_API_C_FUNC(void) cat_tag(struct string *str, const char *tag, const char *val)
 {
@@ -617,7 +670,14 @@ OS_API_C_FUNC(int) strbuffer_append_byte(struct string *strbuff, char byte)
 
 OS_API_C_FUNC(int) strbuffer_append_bytes(struct string *strbuff, const char *data, size_t size)
 {
-	if ((strbuff->len + size) >= strbuff->size)
+	if (strbuff->str == PTR_NULL)
+	{
+		strbuff->len = 0;
+		strbuff->size = size+1;
+		strbuff->str = malloc_c(strbuff->size);
+
+	}
+	else if ((strbuff->len + size) >= strbuff->size)
 	{
 		size_t new_size;
 
@@ -627,20 +687,24 @@ OS_API_C_FUNC(int) strbuffer_append_bytes(struct string *strbuff, const char *da
 			|| strbuff->len > STRBUFFER_SIZE_MAX - 1 - size)
 			return -1;
 
-		if ((strbuff->size * STRBUFFER_FACTOR)>(strbuff->len + size + 1))
-			new_size = strbuff->size * STRBUFFER_FACTOR;
-		else
-			new_size = strbuff->len + size + 1;
+		new_size = strbuff->len + size + 1;
 
+		if ((strbuff->size * STRBUFFER_FACTOR)>new_size)
+			new_size = strbuff->size * STRBUFFER_FACTOR;
+	
 
 		strbuff->size = new_size;
 		strbuff->str = realloc_c(strbuff->str, strbuff->size);
 	}
 
+	if (strbuff->str == PTR_NULL)
+		return -1;
+
 
 	memcpy_c(strbuff->str + strbuff->len, data, size);
 	strbuff->len += size;
 	strbuff->str[strbuff->len] = '\0';
+	
 
 	return 0;
 }

@@ -140,6 +140,9 @@ Applications.prototype.update_app_types = function () {
    var n, nn;
    var html = 'new obj address <select name="obj_addr" id="obj_addr" class="browser-default" onchange="$(\'.sel_obj_addr\').html($(this).val());"></select>';
 
+   if (this.my_app.app_types == null)
+       return;
+
    for (n = 0; n < this.my_app.app_types.length; n++) {
        html += '<div class="card">';
        html += '<div class="card-header indigo flex-center">';
@@ -269,7 +272,7 @@ Applications.prototype.get_file_html = function (file,filedivname)
 
         col = document.createElement('div');
         col.innerHTML = file.filename;
-        col.className = "col-md-2";
+        col.className = "col-md-6";
     row.appendChild(col);
     filediv.appendChild(row);
 
@@ -283,7 +286,7 @@ Applications.prototype.get_file_html = function (file,filedivname)
 
         col = document.createElement('div');
         col.innerHTML = file.mime;
-        col.className = "col-md-2";
+        col.className = "col-md-6";
     row.appendChild(col);
     filediv.appendChild(row);
 
@@ -297,7 +300,7 @@ Applications.prototype.get_file_html = function (file,filedivname)
 
         col = document.createElement('div');
         col.innerHTML = file.size;
-        col.className = "col-md-2";
+        col.className = "col-md-6";
     row.appendChild(col);
     filediv.appendChild(row);
 
@@ -311,7 +314,7 @@ Applications.prototype.get_file_html = function (file,filedivname)
 
         col = document.createElement('div');
         col.innerHTML = file.dataHash;
-        col.className = "col-md-2";
+        col.className = "col-md-6";
     row.appendChild(col);
     filediv.appendChild(row);
     return filediv;
@@ -454,6 +457,8 @@ Applications.prototype.update_app_files = function (files, numFiles) {
 
     var uplappfilediv = document.getElementById(this.my_app.txid + '_files');
 
+    if (uplappfilediv == null) return;
+
     for (var n = 0; n < files.length; n++) {
         var row, col, span;
         var myfile;
@@ -489,6 +494,13 @@ Applications.prototype.get_app_header = function (app) {
     inner.className = 'card-header pt-3 indigo';
 
     h1.innerHTML = '<a href="/nodix.site/application/' + app.appName + '" >' + app.appName + '</a>';
+    
+    if (app.locked)
+        h1.innerHTML = '<i class="fa fa-lock"></i><a href="/nodix.site/application/' + app.appName + '" >' + app.appName + '</a>';
+    else
+        h1.innerHTML = '<a href="/nodix.site/application/' + app.appName + '" >' + app.appName + '</a>';
+        
+
     inner.appendChild(h1);
     div.appendChild(inner);
 
@@ -613,6 +625,9 @@ Applications.prototype.get_app_section = function () {
     
 Applications.prototype.update_types_select = function (select_id) {
     var n;
+
+    if (this.nodeTypes == null)
+        return;
 
     $('#' + select_id).empty();
     for (n = 0; n < this.nodeTypes.length; n++) {
@@ -755,7 +770,7 @@ Applications.prototype.set_app_root = function () {
     });
 }
     
-Applications.prototype.create_app = function (app_addr, app_name, tx_fee) {
+Applications.prototype.create_app = function (app_addr, app_name,locked, tx_fee) {
     var arAddr = [];
     var addr = $('#app_addr').val();
     var self = this;
@@ -778,7 +793,7 @@ Applications.prototype.create_app = function (app_addr, app_name, tx_fee) {
     for (var n = 0; n < MyAccount.addrs.length; n++) {
         arAddr[n] = MyAccount.addrs[n].address;
     }
-    rpc_call('makeapptx', [app_addr, app_name, arAddr, tx_fee], function (data) {
+    rpc_call('makeapptx', [app_addr, app_name,locked, arAddr, tx_fee], function (data) {
         var html;
     
         my_tx = data.result.transaction;
@@ -897,15 +912,41 @@ Applications.prototype.load_obj = function (objId, div_id) {
     rpc_call('loadobj', [this.my_app.appName, objId], function (data) {
         $('#' + div_id).html(JSON.stringify(data.result.obj));
     });
+}
+
+
+Applications.prototype.load_obj_p = function (objId,flags) {
+    return rpc_call_promise('loadobj', [this.my_app.appName, objId, flags], true);
 
 }
-    
-Applications.prototype.create_app_obj = function (type_id, objAddr, newObj, tx_fee) {
+
+function updt_new_obj(data) {
+    if (data.error) {
+        my_tx = null;
+        $('#type_tx').empty();
+
+        $('#app_error').css('display', 'block');
+        $('#app_error').html('error creating object tx.');
+    }
+    else {
+        my_tx = data.result.transaction;
+        $('#type_tx').html(get_tx_html(my_tx));
+    }
+}
+
+Applications.prototype.create_app_obj = function (type_id, objAddr, newObj, tx_fee, done) {
     var self = this;
     var arAddr = [];
     var pubKey = $('#selected_' + objAddr).attr('pubkey');
 
     $('#app_error').css('display', 'none');
+
+    if (MyAccount.addrs == null)
+    {
+        $('#app_error').css('display', 'block');
+        $('#app_error').html('select the key for the obj addr ' + objAddr + '.');
+        return;
+    }
 
     for (var n = 0; n < MyAccount.addrs.length; n++) {
         arAddr[n] = MyAccount.addrs[n].address;
@@ -923,25 +964,19 @@ Applications.prototype.create_app_obj = function (type_id, objAddr, newObj, tx_f
         return;
     }
 
-    rpc_call('makeappobjtx', [self.my_app.appName, type_id, pubKey, newObj, arAddr, tx_fee], function (data) {
+    if (done == null)
+        done = updt_new_obj;
 
-        if (data.error) {
-            my_tx = null;
-            $('#type_tx').empty();
-
-            $('#app_error').css('display', 'block');
-            $('#app_error').html('error creating object tx.');
-        }
-        else {
-            my_tx = data.result.transaction;
-            $('#type_tx').html(get_tx_html(my_tx));
-        }
-    });
+    rpc_call_promise('makeappobjtx', [self.my_app.appName, type_id, pubKey, newObj, arAddr, tx_fee],true).done(done);
 
 }
     
-    
-Applications.prototype.add_app_obj_child = function (objHash, keyName, childHash, tx_fee) {
+function update_obj_child(data) {
+    my_tx = data.result.transaction;
+    $('#type_tx').html(get_tx_html(my_tx));
+}
+
+Applications.prototype.add_app_obj_child = function (objHash, keyName, childHash, tx_fee, done) {
      var self = this;
      var arAddr = [];
 
@@ -957,10 +992,11 @@ Applications.prototype.add_app_obj_child = function (objHash, keyName, childHash
         return;
     }
 
-    rpc_call('addchildobj', [this.my_app.appName, objHash, keyName, childHash, arAddr, tx_fee], function (data) {
-        my_tx = data.result.transaction;
-        $('#type_tx').html(get_tx_html(my_tx));
-    });
+    if(done == null)
+        done = update_obj_child;
+
+    rpc_call_promise('addchildobj', [this.my_app.appName, objHash, keyName, childHash, arAddr, tx_fee]).done(done);
+    
 
 }
     
@@ -980,6 +1016,28 @@ Applications.prototype.get_app_type_objs = function (type_id) {
 
     });
 }
+
+Applications.prototype.get_app_type_objs_p = function (type_id) {
+    
+    return rpc_call_promise('get_type_obj_list', [this.my_app.appName, type_id]);
+}
+
+Applications.prototype.find_objs = function (type_id, addrs) {
+    var arAddr=[];
+
+    for (var n = 0; n < addrs.length; n++)
+    {
+        arAddr.push(addrs[n].address)
+    }
+
+    return rpc_call_promise('find_objs', [this.my_app.appName, type_id, arAddr], true);
+}
+Applications.prototype.listobjtxfr = function (type_id, objHash) {
+
+    return rpc_call_promise('listobjtxfr', [this.my_app.appName, type_id, objHash], true);
+}
+
+
     
 Applications.prototype.get_app_file = function (file_hash) {
     var self = this;
@@ -1041,6 +1099,8 @@ Applications.prototype.get_obj_types = function (select_id) {
 
 
 Applications.prototype.setApp = function (app, nodeTypes, appTypes) {
+    var app_div;
+
     this.my_app = app;
     
     if (this.my_app == null) {
@@ -1057,27 +1117,35 @@ Applications.prototype.setApp = function (app, nodeTypes, appTypes) {
      $('#app_infos').css('display', 'block');
      $('#app_error').css('display', 'none');
 
-     document.getElementById('app_hdr').appendChild(this.get_app_header(this.my_app));
-    
-     document.getElementById('app').appendChild(this.get_app_section());
+     app_div = document.getElementById('app_hdr')
 
-   
-     this.update_types_select('new_type_key');
-     this.update_app_types();
+     if (app_div != null) {
+         app_div.appendChild(this.get_app_header(this.my_app));
+     }
     
-     for (var n = 0; n < this.my_app.app_types.length; n++) {
-         this.get_app_type_objs(this.my_app.app_types[n].id);
+     app_div = document.getElementById('app');
+     if (app_div != null) {
+         app_div.appendChild(this.get_app_section());
+
+         this.update_types_select('new_type_key');
+         this.update_app_types();
+
+         if (this.my_app.app_types != null) {
+             for (var n = 0; n < this.my_app.app_types.length; n++) {
+                 this.get_app_type_objs(this.my_app.app_types[n].id);
+             }
+         }
      }
     
      this.get_app_files();
     
-     if (myfile)
+     if (typeof myfile != 'undefined')
          this.update_app_upl(myfile);
     
-     if (mylayout)
+     if (typeof mylayout != 'undefined')
          this.update_app_upl_layout(mylayout);
     
-     if (mymod)
+     if (typeof mymod != 'undefined')
          this.update_app_upl_module(mymod);
 }
 

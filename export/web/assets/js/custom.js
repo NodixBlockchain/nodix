@@ -78,6 +78,31 @@ function rpc_call(in_method, in_params, in_success) {
     });
 }
 
+function rpc_call_promise(in_method, in_params, noenc) {
+
+    if (noenc == true) {
+        obj = { jsonrpc: '2.0', method: in_method, params: in_params, id: 1 };
+    }
+    else {
+        var encMsg = encryptNodeKey(JSON.stringify(in_params));
+        if (encMsg)
+            obj = { jsonrpc: '2.0', method: in_method, pubkey: encMsg.pubkey, params: encMsg.msg, id: 1 };
+        else
+            obj = { jsonrpc: '2.0', method: in_method, params: in_params, id: 1 };
+    }
+
+    var promise = $.ajax({
+        url: api_base_url + rpc_base,
+        data: JSON.stringify(obj),  // id is needed !!
+        contentType: "application/json; charset=utf-8",
+        type: "POST",
+        dataType: "json"
+    });
+
+    return promise;
+}
+
+
 function anon_rpc_call(in_method, in_params, in_success) {
 
     var encMsg = encryptNodeKey(JSON.stringify(in_params));
@@ -472,13 +497,22 @@ function get_tx_html(tx, n) {
                         
                     }
                     else {
-                        if (vin[nn].addresses) {
-                            new_html += '<a href= "' + site_base_url + '/address/' + vin[nn].addresses[0] + '" class="tx_address">' + vin[nn].addresses[0] + '</a>';
+
+                        if (typeof vin[nn].objType == 'number') {
+                            new_html += '<a href="' + site_base_url + '/address/' + vin[nn].srcaddr + '" class="tx_address" >' + vin[nn].srcaddr + '</a>';
+                            new_html += '&nbsp;<span class="objhash" >obj[' + vin[nn].objHash + ']</span>';
+                        } else if (typeof vin[nn].srcapp == 'string') {
+                            new_html += '<a href="/nodix.site/application/' + vin[nn].srcapp + '" class="app-lnk" >app[' + vin[nn].srcapp + ']</a>';
+                        } else if (typeof vin[nn].value == 'number') {
+                            if (vin[nn].addresses) {
+                                new_html += '<a href= "' + site_base_url + '/address/' + vin[nn].addresses[0] + '" class="tx_address">' + vin[nn].addresses[0] + '</a>';
+                            }
+                            else if (vin[nn].srcaddr) {
+                                new_html += '<a href= "' + site_base_url + '/address/' + vin[nn].srcaddr + '" class="tx_address">' + vin[nn].srcaddr + '</a>';
+                            }
+                            new_html += '<span class="tx_amnt" >' + vin[nn].value / unit + '</span>';
                         }
-                        else if (vin[nn].srcaddr) {
-                            new_html += '<a href= "' + site_base_url + '/address/' + vin[nn].srcaddr + '" class="tx_address">' + vin[nn].srcaddr + '</a>';
-                        }
-                        new_html += '<span class="tx_amnt" >' + vin[nn].value / unit + '</span>';
+                         
                     }
                 }
               
@@ -501,21 +535,32 @@ function get_tx_html(tx, n) {
                     new_html += '#0 null &nbsp;';
                 else {
                     var val;
-                    var xval = vout[nn].value.toString(16).substring(0,8);
-
-                    if ((xval.toLowerCase() == 'ffffffff') || (vout[nn].value == 0xFFFFFFFFFFFFFFFF))
-                        val = 0;
-                    else
-                        val = vout[nn].value;
 
                     new_html += '#' + nn + '&nbsp;';
 
-                    if (vout[nn].addresses) {
-                        new_html += '<a href="' + site_base_url + '/address/' + vout[nn].addresses[0] + '" class="tx_address" >' + vout[nn].addresses[0] + '</a>';
-                    } else if (vout[nn].dstaddr) {
-                        new_html += '<a href="' + site_base_url + '/address/' + vout[nn].dstaddr + '" class="tx_address" >' + vout[nn].dstaddr + '</a>';
+
+                    if (typeof vout[nn].value == 'number')
+                    {
+                        var xval = vout[nn].value.toString(16).substring(0, 8);
+
+                        if ((xval.toLowerCase() == 'ffffffff') || (vout[nn].value == 0xFFFFFFFFFFFFFFFF))
+                            val = 0;
+                        else
+                            val = vout[nn].value;
+
+                        if (vout[nn].addresses) {
+                            new_html += '<a href="' + site_base_url + '/address/' + vout[nn].addresses[0] + '" class="tx_address" >' + vout[nn].addresses[0] + '</a>';
+                        } else if (vout[nn].dstaddr) {
+                            new_html += '<a href="' + site_base_url + '/address/' + vout[nn].dstaddr + '" class="tx_address" >' + vout[nn].dstaddr + '</a>';
+                        }
+                        new_html += '<span class="tx_amnt" >' + val / unit + '</span>';
                     }
-                    new_html += '<span class="tx_amnt" >' + val / unit + '</span>';
+                    else if (typeof vout[nn].objType == 'number')
+                    {
+                        new_html += '<a href="' + site_base_url + '/address/' + vout[nn].dstaddr + '" class="tx_address" >' + vout[nn].dstaddr + '</a>';
+                        new_html += '&nbsp;<span class="objhash" >obj[' + vout[nn].objHash + ']</span>';
+                    }
+                    
                 }
                 new_html += '</div>';
                 new_html += '</div>';

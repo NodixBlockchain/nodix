@@ -47,10 +47,11 @@ let NODE_BITCORE_NODE SelfNode = `
 	"privKeyVersion":0x55,
 	(NODE_GFX_BINT)"paytxfee" : 0,
 	"block_height" : 0,
+	"data_dir" : "d:\nodix",
 	"useGC" : false,
 	(NODE_GFX_INT)"version"  : 60018,
 	(NODE_GFX_BOOL)"uPnP":false,
-	(NODE_GFX_INT)"bestChainDepth":3,
+	(NODE_GFX_INT)"bestChainDepth":2,
 	(NODE_GFX_INT)"maxMsgSize":1024,
 	(NODE_GFX_INT)"checktxsign"  : 0,
 	(NODE_GFX_INT)"next_check"  : 0,
@@ -66,7 +67,7 @@ let NODE_BITCORE_NODE SelfNode = `
 	(NODE_BITCORE_BLK_HDR) "last_block" : {},
 	(NODE_BITCORE_BLK_HDR) "lastPOSBlk" : {},
 	(NODE_BITCORE_BLK_HDR) "lastPOWBlk" : {},
-	(NODE_GFX_OBJECT) "trustedApps": { "blog" : true, "raytrace" : true },
+	(NODE_GFX_OBJECT) "trustedApps": { "blog" : true, "raytrace" : true, "Cards" : true },
 	(NODE_BITCORE_ADDR)"p2p_addr" :
 	{
 		"services": 0,
@@ -81,12 +82,12 @@ let NODE_BITCORE_NODE SelfNode = `
 		"apppath"   : "/app/",
 		"name"		: "Nodix webservice",
 		"indexpage" : "/index.site",
-		"mimes"		: {"js":"text/javascript", "css" : "text/css", "woff" : "text/css", "woff2" : "text/css", "png" : "image/png", "pdf" : "application/pdf", "gif" : "image/gif", "svg" : "image/svg+xml", "html" : "text/html" },
+		"mimes"		: {"js":"text/javascript", "css" : "text/css", "woff" : "text/css", "woff2" : "text/css", "png" : "image/png", "pdf" : "application/pdf", "gif" : "image/gif", "mpg":"video/mpeg", "mp4":"video/mp4", "svg" : "image/svg+xml", "html" : "text/html" , "obj":"application/object"},
 	
 		"defaultmime" : "text/plain",
 		"cacheTime" : 0,
 		"nthreads"	: 4,
-		"maxpost"	: 1024,
+		"maxpost"	: 4096,
 		"modules"	: 
 		[
 			{"base" : "/jsonrpc"  , "type" : "rpc", (NODE_MODULE_DEF) "rpc_wallet"     : {"file":"modz/rpc_wallet.tpo"}},
@@ -237,7 +238,7 @@ handler on_block(node, payload) = `
 	
 `
 
-let NODE_GFX_BINT	truncate = 110795
+let NODE_GFX_BINT	truncate = 119703 
 
 proc init_node = `
 
@@ -249,7 +250,6 @@ proc init_node = `
 	configuration.staking.pos_kernel.init_pos(configuration.staking)
 	nodix.init_staking()
 
-	
 	node_adx.node_check_block_index		(checkNum,LastGood) ?
 		nodix.truncate_chain_to (LastGood)	
 	endor

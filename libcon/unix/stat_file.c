@@ -196,7 +196,7 @@ void *thread_start(void *p)
 	thread->h	= gettid();
 	func		= thread->func;
 
-	init_default_mem_area(4 * 1024 * 1024, 8 * 1024);
+	init_default_mem_area(16 * 1024 * 1024, 8 * 1024);
 	ret = func(&thread->params, &thread->status);
 	free_mem_area(0);
 

@@ -94,10 +94,10 @@ BLOCK_API  int	C_API_FUNC	compute_tx_sign_hash		(mem_zone_ref_const_ptr tx, unsi
 BLOCK_API  int	C_API_FUNC	check_tx_input_sig			(mem_zone_ref_const_ptr tx, unsigned int nIn, struct string *vpubK);
 
 /* check tx inputs */
-BLOCK_API  int	C_API_FUNC	check_tx_outputs			(mem_zone_ref_ptr tx, uint64_t *total, unsigned int *is_staking);
+BLOCK_API  int	C_API_FUNC	check_tx_outputs			(mem_zone_ref_ptr tx,uint64_t *total, mem_zone_ref_ptr outobjs, unsigned int *is_staking);
 
 /* check tx outputs */
-BLOCK_API  int	C_API_FUNC	check_tx_inputs				(mem_zone_ref_ptr tx, uint64_t *total_in, unsigned int *is_coinbase,unsigned int check_sig);
+BLOCK_API  int	C_API_FUNC	check_tx_inputs				(mem_zone_ref_ptr tx, uint64_t *total_in, mem_zone_ref_ptr inobjs, unsigned int *is_coinbase,unsigned int check_sig,mem_zone_ref_ptr mempool);
 
 /*check block pow */
 BLOCK_API  int	C_API_FUNC check_block_pow				(mem_zone_ref_ptr hdr, hash_t diff_hash);
@@ -112,7 +112,7 @@ BLOCK_API  int	C_API_FUNC get_tx_output_amount			(mem_zone_ref_ptr tx, unsigned 
 BLOCK_API  int	C_API_FUNC get_tx_output_addr			(const hash_t tx_hash, unsigned int idx, btc_addr_t addr);
 
 /* sign transaction input */
-BLOCK_API  int	C_API_FUNC tx_sign						(mem_zone_ref_const_ptr tx, unsigned int nIn, unsigned int hashType, const struct string *sign, const struct string *inPubKey);
+BLOCK_API  int	C_API_FUNC tx_sign						(mem_zone_ref_const_ptr tx, unsigned int nIn, unsigned int hashType, const struct string *sign, const struct string *inPubKey, mem_zone_ref_ptr mempool);
 
 /* compute sha256d hash from block header */
 BLOCK_API int	C_API_FUNC	compute_block_hash			(mem_zone_ref_ptr block, hash_t hash);
@@ -191,9 +191,14 @@ BLOCK_API int C_API_FUNC make_approot_tx				(mem_zone_ref_ptr tx, ctime_t time, 
 
 BLOCK_API int C_API_FUNC get_root_app_fee				(mem_zone_ref_ptr rootAppFees);
 
-BLOCK_API int C_API_FUNC make_app_tx					(mem_zone_ref_ptr tx,const char *app_name,btc_addr_t appAddr);
+BLOCK_API int C_API_FUNC make_app_tx					(mem_zone_ref_ptr tx,const char *app_name, unsigned int flags,btc_addr_t appAddr);
 BLOCK_API int C_API_FUNC make_app_item_tx				(mem_zone_ref_ptr tx, const struct string *app_name, unsigned int item_id);
+BLOCK_API int C_API_FUNC make_obj_txfr_tx				(mem_zone_ref_ptr tx, const hash_t txh, unsigned int oidx, const btc_addr_t dstAddr,hash_t objHash);
 BLOCK_API int C_API_FUNC parse_approot_tx				(mem_zone_ref_ptr tx);
+BLOCK_API int C_API_FUNC find_obj_tx					(mem_zone_ref_const_ptr tx, hash_t objHash, mem_zone_ref_ptr inputs, mem_zone_ref_ptr outputs);
+BLOCK_API int C_API_FUNC find_obj_ptxfr					(mem_zone_ref_const_ptr tx, hash_t objHash, mem_zone_ref_ptr prev_tx);
+BLOCK_API int C_API_FUNC find_obj_txfr					(const char *app_name, const char *typeStr, const hash_t objHash, hash_t txh);
+BLOCK_API int C_API_FUNC list_obj_txfr					(const char *app_name, const char *typeStr, const hash_t objHash, mem_zone_ref_ptr txfrs);
 
 BLOCK_API int C_API_FUNC								future_drift(ctime_t time1,ctime_t time2);
 
@@ -282,6 +287,8 @@ BLOCK_API int C_API_FUNC  is_pow_block_at(uint64_t height);
 /* store block in local storage */
 BLOCK_API int C_API_FUNC  store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list);
 
+BLOCK_API int C_API_FUNC  get_obj_app(hash_t objHash, char *appName);
+
 /* load tx from a block based on the tx ofset */
 BLOCK_API int C_API_FUNC  blk_load_tx_ofset(unsigned int ofset, mem_zone_ref_ptr tx);
 
@@ -310,7 +317,7 @@ BLOCK_API int C_API_FUNC  load_obj(const char *app_name, const char *objHash, co
 BLOCK_API int C_API_FUNC  load_obj_childs(const char *app_name, const char *objHash, const char *KeyName, size_t first, size_t max, unsigned int opts, size_t *count, mem_zone_ref_ptr objs);
 
 /*add child obj tx */
-BLOCK_API int C_API_FUNC  make_app_child_obj_tx(mem_zone_ref_ptr tx, const char *app_name, hash_t objHash, const char *keyName, unsigned int ktype,hash_t childHash);
+BLOCK_API int C_API_FUNC  make_app_child_obj_tx(mem_zone_ref_ptr tx, const char *app_name, hash_t objHash, unsigned int objType, btc_addr_t objAddr,const char *keyName, unsigned int ktype,hash_t childHash);
 
 /* get obj hashes list */
 BLOCK_API int C_API_FUNC  get_app_obj_hashes(const char *app_name, mem_zone_ref_ptr hash_list);
@@ -368,7 +375,7 @@ BLOCK_API  int	C_API_FUNC has_app_file(struct string *app_name, hash_t fileHash)
 BLOCK_API  int	C_API_FUNC get_app_files(struct string *app_name, size_t first, size_t num, mem_zone_ref_ptr files);
 BLOCK_API  int	C_API_FUNC get_app_missing_files(struct string *app_name, mem_zone_ref_ptr pending, mem_zone_ref_ptr files);
 
-
+BLOCK_API  int	C_API_FUNC tx_is_app_item(const hash_t txh, unsigned int oidx, mem_zone_ref_ptr app_tx, unsigned char *val);
 
 /* staking API definition */
 

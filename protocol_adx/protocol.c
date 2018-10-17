@@ -237,6 +237,60 @@ OS_API_C_FUNC(size_t)	get_node_size(mem_zone_ref_ptr key)
 	case NODE_RT_VEC3:
 		szData += sizeof(float) * 3;
 	break;
+	case NODE_RT_VEC3_ARRAY:
+	{
+		unsigned int nVerts;
+
+		if (!tree_manager_get_child_value_i32(key, NODE_HASH("nVtx"), &nVerts))
+			nVerts = 0;
+
+		if (nVerts < 0xFD)
+			szData += 1;
+		else if (nVerts < 0xFFFF)
+			szData += 3;
+		else
+			szData += 5;
+
+		szData += nVerts * sizeof(float) * 3;
+		break;
+	}
+	case NODE_RT_VEC2:
+		szData += sizeof(float) * 3;
+		break;
+	case NODE_RT_VEC2_ARRAY:
+	{
+		unsigned int nVerts;
+
+		if (!tree_manager_get_child_value_i32(key, NODE_HASH("nVtx"), &nVerts))
+			nVerts = 0;
+
+		if (nVerts < 0xFD)
+			szData += 1;
+		else if (nVerts < 0xFFFF)
+			szData += 3;
+		else
+			szData += 5;
+
+		szData += nVerts * sizeof(float) * 2;
+		break;
+	}
+	case NODE_RT_INT_ARRAY:
+	{
+		unsigned int nVerts;
+
+		if (!tree_manager_get_child_value_i32(key, NODE_HASH("nVtx"), &nVerts))
+			nVerts = 0;
+
+		if (nVerts < 0xFD)
+			szData += 1;
+		else if (nVerts < 0xFFFF)
+			szData += 3;
+		else
+			szData += 5;
+
+		szData += nVerts * sizeof(unsigned int );
+		break;
+	}
 	case NODE_GFX_4UC:
 		szData += sizeof(vec_4uc_t);
 	break;
@@ -512,6 +566,91 @@ OS_API_C_FUNC(char *) write_node(mem_zone_ref_const_ptr key, unsigned char *payl
 		data = tree_mamanger_get_node_data_ptr(key, 0);
 		memcpy_c(payload, data, sizeof(float)*3);
 		payload += sizeof(float) * 3;
+	break;
+	case NODE_RT_VEC3_ARRAY:
+	{
+		unsigned int n,nVerts;
+
+		if (!tree_manager_get_child_value_i32(key, NODE_HASH("nVtx"), &nVerts))
+			nVerts = 0;
+
+		if (nVerts < 0xFD)
+			*((unsigned char*)(payload++)) = nVerts;
+		else if (nVerts < 0xFFFF)
+		{
+			*((unsigned char*)(payload++)) = 0xFD;
+			*((unsigned short*)(payload)) = nVerts;
+			payload += 2;
+		}
+		else
+		{
+			*((unsigned char*)(payload++)) = 0xFE;
+			*((unsigned int*)(payload)) = nVerts;
+			payload += 5;
+		}
+
+		data = tree_mamanger_get_node_data_ptr(key, 0);
+		for (n = 0; n < nVerts; n++)
+		{
+			memcpy_c(payload , data, sizeof(float) * 3);
+			payload += sizeof(float) * 3;
+			data += sizeof(float) * 4;
+		}
+	}
+	break;
+	case NODE_RT_VEC2_ARRAY:
+	{
+		unsigned int nVerts;
+
+		if (!tree_manager_get_child_value_i32(key, NODE_HASH("nVtx"), &nVerts))
+			nVerts = 0;
+
+		if (nVerts < 0xFD)
+			*((unsigned char*)(payload++)) = nVerts;
+		else if (nVerts < 0xFFFF)
+		{
+			*((unsigned char*)(payload++)) = 0xFD;
+			*((unsigned short*)(payload)) = nVerts;
+			payload += 2;
+		}
+		else
+		{
+			*((unsigned char*)(payload++)) = 0xFE;
+			*((unsigned int*)(payload)) = nVerts;
+			payload += 5;
+		}
+
+		data = tree_mamanger_get_node_data_ptr(key, 0);
+		memcpy_c(payload, data, nVerts * sizeof(float) * 2);
+		payload += nVerts * sizeof(float) * 2;
+	}
+	break;
+	case NODE_RT_INT_ARRAY:
+	{
+		unsigned int nVerts;
+
+		if (!tree_manager_get_child_value_i32(key, NODE_HASH("nVtx"), &nVerts))
+			nVerts = 0;
+
+		if (nVerts < 0xFD)
+			*((unsigned char*)(payload++)) = nVerts;
+		else if (nVerts < 0xFFFF)
+		{
+			*((unsigned char*)(payload++)) = 0xFD;
+			*((unsigned short*)(payload)) = nVerts;
+			payload += 2;
+		}
+		else
+		{
+			*((unsigned char*)(payload++)) = 0xFE;
+			*((unsigned int*)(payload)) = nVerts;
+			payload += 5;
+		}
+
+		data = tree_mamanger_get_node_data_ptr(key, 0);
+		memcpy_c(payload, data, nVerts * sizeof(unsigned int));
+		payload += nVerts * sizeof(unsigned int);
+	}
 	break;
 	case NODE_GFX_4UC:
 		tree_manager_get_node_4uc	(key, 0, payload);
@@ -909,6 +1048,134 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		tree_manager_write_node_vec3f(key, 0, data_f[0], data_f[1], data_f[2]);
 		read += sizeof(float) * 3;
 	break;
+	case NODE_RT_VEC3_ARRAY:
+	{
+		unsigned int n,nVerts;
+
+		if ((read + 2) > len)return INVALID_SIZE;
+
+		if (*(payload + read) < 0xFD)
+		{
+			nVerts = *(payload + read);
+			read++;
+		}
+		else if (*(payload + read) == 0xFD)
+		{
+			read++;
+			if ((read + 2) > len)return INVALID_SIZE;
+			nVerts = *((unsigned short *)(payload + read));
+			read += 2;
+		}
+		else if (*(payload + read) < 0xFE)
+		{
+			read++;
+			if ((read + 4) > len)return INVALID_SIZE;
+			nVerts = *((unsigned int *)(payload + read));
+			read += 4;
+		}
+		else if (*(payload + read) < 0xFF)
+		{
+			read++;
+			if ((read + 8) > len)return INVALID_SIZE;
+			nVerts = *((uint64_t *)(payload + read));
+			read += 8;
+		}
+		if ((read + (nVerts * sizeof(float) * 3)) > len)return INVALID_SIZE;
+		for (n = 0; n < nVerts; n++)
+		{
+			data_f = (float *)(payload + read);
+			tree_manager_write_node_vec3f(key, n * sizeof(float) * 4, data_f[0], data_f[1], data_f[2]);
+			read += sizeof(float) * 3;
+		}
+
+		tree_manager_set_child_value_i64(key, "nVtx", nVerts);
+	}
+	break;
+	case NODE_RT_VEC2_ARRAY:
+	{
+		unsigned int n, nVerts;
+
+		if ((read + 2) > len)return INVALID_SIZE;
+
+		if (*(payload + read) < 0xFD)
+		{
+			nVerts = *(payload + read);
+			read++;
+		}
+		else if (*(payload + read) == 0xFD)
+		{
+			read++;
+			if ((read + 2) > len)return INVALID_SIZE;
+			nVerts = *((unsigned short *)(payload + read));
+			read += 2;
+		}
+		else if (*(payload + read) < 0xFE)
+		{
+			read++;
+			if ((read + 4) > len)return INVALID_SIZE;
+			nVerts = *((unsigned int *)(payload + read));
+			read += 4;
+		}
+		else if (*(payload + read) < 0xFF)
+		{
+			read++;
+			if ((read + 8) > len)return INVALID_SIZE;
+			nVerts = *((uint64_t *)(payload + read));
+			read += 8;
+		}
+		if ((read + (nVerts * sizeof(float) * 2)) > len)return INVALID_SIZE;
+		for (n = 0; n < nVerts; n++)
+		{
+			data_f = (float *)(payload + read);
+			tree_manager_write_node_vec2f(key, n * sizeof(float) * 2, data_f[0], data_f[1]);
+			read += sizeof(float) * 2;
+		}
+		tree_manager_set_child_value_i64(key, "nVtx", nVerts);
+	}
+	break;
+	case NODE_RT_INT_ARRAY:
+	{
+		unsigned int n, nVerts;
+
+		if ((read + 2) > len)return INVALID_SIZE;
+
+		if (*(payload + read) < 0xFD)
+		{
+			nVerts = *(payload + read);
+			read++;
+		}
+		else if (*(payload + read) == 0xFD)
+		{
+			read++;
+			if ((read + 2) > len)return INVALID_SIZE;
+			nVerts = *((unsigned short *)(payload + read));
+			read += 2;
+		}
+		else if (*(payload + read) < 0xFE)
+		{
+			read++;
+			if ((read + 4) > len)return INVALID_SIZE;
+			nVerts = *((unsigned int *)(payload + read));
+			read += 4;
+		}
+		else if (*(payload + read) < 0xFF)
+		{
+			read++;
+			if ((read + 8) > len)return INVALID_SIZE;
+			nVerts = *((uint64_t *)(payload + read));
+			read += 8;
+		}
+		if ((read + (nVerts * sizeof(unsigned int))) > len)return INVALID_SIZE;
+		for (n = 0; n < nVerts; n++)
+		{
+			tree_manager_write_node_dword(key, n * sizeof(unsigned int), *((unsigned int *)(payload + read)));
+			read += sizeof(unsigned int);
+		}
+		tree_manager_set_child_value_i64(key, "nVtx", nVerts);
+	}
+
+	break;
+
 	case NODE_GFX_4UC:
 		if ((read + (sizeof(vec_4uc_t))) > len)return INVALID_SIZE;
 		data_uc[0] = payload[read + 0];

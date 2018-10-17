@@ -79,19 +79,31 @@ int compute_script_size(mem_zone_ref_const_ptr script_node)
 				tree_mamanger_get_node_byte(key, 0, &byte);
 				length++;
 
-				if(byte==0x4c)
+				switch (byte)
 				{
-					unsigned char datasz;
-					tree_mamanger_get_node_byte(key, 1, &datasz);
-					length += (datasz+1);
+					case 0x4c:
+					{
+						unsigned char datasz;
+						tree_mamanger_get_node_byte(key, 1, &datasz);
+						length += (datasz + 1);
+					}
+					break;
+					case 0x4d:
+					{
+						unsigned short datasz;
+						tree_mamanger_get_node_word(key, 1, &datasz);
+						length += (datasz + 2);
+					}
+					break;
+					case 0x4e:
+					{
+						unsigned int datasz;
+						tree_mamanger_get_node_dword(key, 1, &datasz);
+						length += (datasz + 5);
+					}
+					break;
 				}
-				if (byte == 0x4d)
-				{
-					unsigned short datasz;
-					tree_mamanger_get_node_word(key, 1, &datasz);
-					length += (datasz + 1);
-				}
-					
+
 			break;
 			case NODE_BITCORE_VSTR:
 				data = (unsigned char	*)tree_mamanger_get_node_data_ptr(key, 0);
@@ -213,6 +225,20 @@ OS_API_C_FUNC(int) serialize_script(mem_zone_ref_const_ptr script_node, struct s
 				if (datasz>0)
 				{
 					data_ptr = tree_mamanger_get_node_data_ptr(key, 3);
+					memcpy_c(script_data, data_ptr, datasz);
+					script_data += datasz;
+				}
+			}
+			if (byte == 0x4e)
+			{
+				unsigned int  datasz;
+				mem_ptr		  data_ptr;
+				tree_mamanger_get_node_dword(key, 1, &datasz);
+				*((unsigned int*)(script_data)) = datasz;
+				script_data += 4;
+				if (datasz>0)
+				{
+					data_ptr = tree_mamanger_get_node_data_ptr(key, 5);
 					memcpy_c(script_data, data_ptr, datasz);
 					script_data += datasz;
 				}
@@ -482,7 +508,12 @@ int add_script_push_data(mem_zone_ref_ptr script_node,const_mem_ptr data, size_t
 		if (ret)ret = tree_manager_write_node_word(&new_var, 1, size);
 		if (ret)ret = tree_manager_write_node_data(&new_var, data, 3, size);
 	}
-
+	else 
+	{
+		ret = tree_manager_write_node_byte(&new_var, 0, 0x4E);
+		if (ret)ret = tree_manager_write_node_dword(&new_var, 1, size);
+		if (ret)ret = tree_manager_write_node_data(&new_var, data, 5, size);
+	}
 	release_zone_ref(&new_var);
 	return ret;
 }
@@ -977,6 +1008,21 @@ int get_script_data(const struct string *script, size_t *offset,struct string *d
 			data->str[data->len] = 0;
 			(*offset) += 3 + data->len;
 		return 1;
+
+		case 0x4E:
+
+			if (((*offset) + 4) >= script->len) return 0;
+
+			data->len = *((unsigned int *)(&script->str[(*offset) + 1]));
+
+			if (((*offset) + 5 + data->len) > script->len)return 0;
+
+			data->size = data->len + 1;
+			data->str = malloc_c(data->size);
+			memcpy_c(data->str, &script->str[(*offset) + 5], data->len);
+			data->str[data->len] = 0;
+			(*offset) += 5 + data->len;
+			return 1;
 		break;
 	}
 

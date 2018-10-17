@@ -734,7 +734,7 @@ DWORD WINAPI thread_start(void *p)
 
 	func			= mythread->func;
 
-	init_default_mem_area(4 * 1024 * 1024, 8 * 1024);
+	init_default_mem_area(16 * 1024 * 1024, 8 * 1024);
 
 	ret = func			 (&mythread->params, &mythread->status);
 	free_mem_area		 (0);

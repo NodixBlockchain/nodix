@@ -60,6 +60,7 @@ LIBBASE_API void					C_API_FUNC free_response(struct http_resp *resp);
 LIBBASE_API struct http_resp *		C_API_FUNC http_request(struct con *mycon, struct http_req *req, unsigned int n_tries, ctime_t timeout);
 LIBBASE_API struct http_resp *		C_API_FUNC http_parse_response_header(struct string *data);
 LIBBASE_API void					C_API_FUNC http_read_data(struct con *mycon, struct http_resp *resp, struct string *data);
+LIBBASE_API void					C_API_FUNC http_write_data(struct con *mycon, struct http_resp *resp, struct string *data);
 LIBBASE_API struct  http_req*		C_API_FUNC http_process_request(struct con *new_con, struct  http_infos	 *infos);
 LIBBASE_API int						C_API_FUNC fetch_http_url(const struct string *url, struct	string *data, const struct	string *cookie);
 LIBBASE_API struct http_req *		C_API_FUNC make_soap_request(const struct string *url, const char *soap_action, const char *soap_body, struct string *data);

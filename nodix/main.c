@@ -343,7 +343,6 @@ int do_staking()
 {
 	struct string username = { 0 };
 	mem_zone_ref mempool = { PTR_NULL }, newblk = { PTR_NULL }, peer_nodes = { PTR_NULL };
-	unsigned int num_nodes;
 	int newblkret;
 
 
@@ -473,7 +472,7 @@ OS_API_C_FUNC(int) accept_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_lis
 	if (!is_staking)
 	{
 		mem_zone_ref		POWSpace = { PTR_NULL }, nBits = { PTR_NULL }, lb = { PTR_NULL };
-		unsigned int		powbits, blkbits,nbits, time, btime,powtime;
+		unsigned int		powbits, blkbits, btime,powtime;
 		hash_t				out_diff, my_hash;
 
 		if (block_pow_limit())
@@ -1662,6 +1661,8 @@ OS_API_C_FUNC(int) init_staking()
 #endif
 	}
 	init_wallet(&self_node, pos_kernel);
+
+	return 1;
 }
 
 OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
@@ -1669,7 +1670,6 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	mem_zone_ref		service = { PTR_NULL };
 	char				**params_ptr;
 	int					rebuild_tx, rebuild_supply;
-	int					ret;
 	uint64_t			height;
 
 
@@ -1706,9 +1706,15 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	log_output("app start\n");
 
 	tree_manager_get_child_value_i64(&self_node, NODE_HASH("block_height"), &height);
-	
-
+	/*
+	node_remove_last_block();
+	node_remove_last_block();
+	node_remove_last_block();
+	node_remove_last_block();
+	node_remove_last_block();
+	*/
 	//truncate_chain(110380);
+
 
 
 	if (rebuild_tx)

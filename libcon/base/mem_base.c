@@ -18,7 +18,7 @@
 #include <stdlib.h>
 
 #define MAX_MEM_AREAS    64
-#define MAX_FREE_ZONES   1024*64
+#define MAX_FREE_ZONES   1024*512
 
 //#define MAX_MEM_ZONES  1024*128
 
@@ -82,6 +82,14 @@ typedef struct
 mem_area	   *__global_mem_areas = PTR_INVALID;
 unsigned int   area_lock = 0xCDCDCDCD;
 unsigned int   gc_lock = 0xFFFFFFF;
+
+#ifdef NATIVE_ALLOC
+
+#define ALLOCATE(size) malloc(size)
+#define REALLOCATE(ptr,size) realloc(ptr,size)
+#define FREE(ptr) free(ptr)
+
+#endif
 
 
 OS_API_C_FUNC(mem_ptr) memset_c(mem_ptr ptr,unsigned char v,mem_size size)
@@ -575,10 +583,12 @@ OS_API_C_FUNC(unsigned int) init_new_mem_area(mem_ptr phys_start,mem_ptr phys_en
 			__global_mem_areas[n].area_id			=n+1;
 			__global_mem_areas[n].type				=type;
 			__global_mem_areas[n].nzones			=nzones;
-			__global_mem_areas[n].zones_buffer		=get_next_aligned_ptr(kernel_memory_map_c(nzones * sizeof(mem_zone)));
+			__global_mem_areas[n].zones_buffer		=get_next_aligned_ptr(kernel_memory_map_c(nzones * sizeof(mem_zone) + 16));
 			/*__global_mem_areas[n].lock_sema		=PTR_NULL;*/
 			__global_mem_areas[n].last_gc_time		=0;
 			__global_mem_areas[n].last_used_zone	=0;
+
+			memset_c(__global_mem_areas[n].zones_buffer,0,nzones * sizeof(mem_zone));
 
 			if (type & 0x10)
 				memset_32_c	(__global_mem_areas[n].trash, 0xFFFFFFFF, sizeof(__global_mem_areas[n].trash));
@@ -739,7 +749,8 @@ int find_free_zone		(const mem_area *area,mem_size size,mem_zone_desc	*desc)
 			}
 		}
 		n++;
-		if (n >= MAX_FREE_ZONES)return 0;
+		if ((n+1) >= MAX_FREE_ZONES)
+			return 0;
 	}
 	desc->ptr	=	PTR_NULL;
 	desc->size	=	0;
@@ -932,9 +943,10 @@ OS_API_C_FUNC(int) 	realloc_zone(mem_zone_ref *zone_ref, mem_size new_size)
 		}
 
 		if (src_zone->mem.size > 0)
-		{
 			memcpy_c(get_zone_ptr(zone_ref, 0), src_ptr, src_zone->mem.size);
-		}
+
+		((mem_zone *)(zone_ref->zone))->free_func = src_zone->free_func;
+		src_zone->free_func = PTR_NULL;
 
 		add_trashed_zone(src_zone);
 		return 1;
@@ -1072,7 +1084,7 @@ int do_allocate(const mem_area *area, mem_size size, mem_zone_desc	*desc)
 {
 	mem_ptr new_ptr;
 
-	new_ptr = _aligned_malloc(size,16);
+	new_ptr = ALLOCATE(size);// _aligned_malloc(size, 16);
 
 	if (new_ptr == PTR_NULL)return 0;
 
@@ -1086,7 +1098,8 @@ int	free_zone_area(unsigned int area_id, mem_zone_desc *mem)
 	if (mem->ptr == 0xFFFFFFFF)
 		return 0;
 
-	_aligned_free(mem->ptr);
+	//_aligned_free(mem->ptr);
+	FREE(mem->ptr);
 
 	mem->ptr = PTR_NULL;
 	mem->size = 0;
@@ -1098,12 +1111,12 @@ OS_API_C_FUNC(int) 	realloc_zone(mem_zone_ref *zone_ref, mem_size new_size)
 {
 	mem_ptr new_ptr;
 
-	if ((((mem_zone *)(zone_ref->zone))->mem.ptr == 0xFFFFFFFF)||
+	if ((((mem_zone *)(zone_ref->zone))->mem.ptr == 0xFFFFFFFF) ||
 		(((mem_zone *)(zone_ref->zone))->mem.ptr == PTR_NULL))
-		new_ptr = _aligned_malloc(new_size,16);
+		new_ptr = ALLOCATE(new_size, 16);// _aligned_malloc(new_size, 16);
 	else
 	{
-		new_ptr = _aligned_realloc(((mem_zone *)(zone_ref->zone))->mem.ptr, new_size,16);
+		new_ptr = REALLOCATE(((mem_zone *)(zone_ref->zone))->mem.ptr, new_size);// _aligned_realloc(((mem_zone *)(zone_ref->zone))->mem.ptr, new_size, 16);
 	}
 
 	if (new_ptr == PTR_NULL)
@@ -1687,6 +1700,10 @@ OS_API_C_FUNC(mem_ptr) malloc_c(mem_size sz)
 	mem_zone_ref	ref;
 	mem_ptr			m_ptr,ret_ptr;
 
+#ifdef NATIVE_ALLOC
+	ret_ptr = ALLOCATE(sz + 16);// _aligned_malloc(sz + 16, 16);
+#else
+
 	ref.zone=PTR_NULL;
 	
 	if(allocate_new_zone(get_mem_area_id(),sz+16,&ref)!=1)
@@ -1699,6 +1716,7 @@ OS_API_C_FUNC(mem_ptr) malloc_c(mem_size sz)
 	*((mem_ptr *)(m_ptr))=ref.zone;
 
 	ret_ptr	=	mem_add(m_ptr,16);
+#endif
 
 	return ret_ptr;
 }
@@ -1708,6 +1726,10 @@ OS_API_C_FUNC(mem_ptr) realloc_c(mem_ptr ptr,mem_size sz)
 {
 	mem_zone_ref	ref;
 	mem_ptr			m_ptr,ret_ptr;
+
+#ifdef NATIVE_ALLOC
+	ret_ptr = REALLOCATE(ptr,sz + 16);// _aligned_realloc(ptr,sz + 16,16);
+#else
 
 	m_ptr		=	mem_dec(ptr,16);
 	ref.zone	=	*((mem_ptr *)(m_ptr));
@@ -1722,7 +1744,7 @@ OS_API_C_FUNC(mem_ptr) realloc_c(mem_ptr ptr,mem_size sz)
 	*((unsigned int *)(m_ptr))=mem_to_uint(ref.zone);
 
 	ret_ptr		=	mem_add(m_ptr,16);
-
+#endif
 	return ret_ptr;
 }
 
@@ -1733,10 +1755,16 @@ OS_API_C_FUNC(void) free_c(mem_ptr ptr)
 	mem_zone_ref	ref;
 	mem_ptr			m_ptr;
 	if(ptr==PTR_NULL)return;
+	if (ptr == 0xDDDDDDDD)return;
+
+#ifdef NATIVE_ALLOC
+	FREE(ptr);// _aligned_free(ptr);
+#else
 
 	m_ptr		=	mem_dec(ptr,16);
 	ref.zone	=	*((mem_ptr *)(m_ptr));
 	release_zone_ref(&ref);
+#endif
 }
 
 OS_API_C_FUNC(void) dump_ptr(mem_ptr ptr)

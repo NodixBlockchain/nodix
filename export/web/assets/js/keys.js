@@ -50,22 +50,41 @@ function privKeyAddr(username, addr, secret) {
 function newkey() {
     var addr, sk, hexk;
     addr = $('#privkey').val();
-    data = from_b58(addr, ALPHABET);
 
-    crc = toHexString(data.slice(34, 38));
-    sk = data.slice(0, 34);
-    hexk = toHexString(sk);
-    h = sha256(hexk);
-    h2 = sha256(h);
-    if (crc != h2.slice(0, 8))
-        alert('bad key');
+    if (addr.length == 64)
+        hexk = addr;
+    else
+    {
+        data = from_b58(addr, ALPHABET);
+        if (!data)
+        {
+            console.log('unable to decode key');
+            return;
+        }
+        
+        crc = toHexString(data.slice(34, 38));
+        sk = data.slice(0, 34);
+        hexk = toHexString(sk);
+        h = sha256(hexk);
+        h2 = sha256(h);
+        if (crc != h2.slice(0, 8))
+            alert('bad key');
 
-    sk = data.slice(1, 33);
-    hexk = toHexString(sk);
+        sk = data.slice(1, 33);
+        hexk = toHexString(sk);
+    }
+    
     key = ec.keyPair({ priv: hexk, privEnc: 'hex' });
+    if (key == null)
+    {
+        console.log('error key');
+        return;
+    }
     pubkey = key.getPublic().encodeCompressed('hex');
     privkey = hexk;
     pubkey_to_addr(pubkey);
+
+    console.log('pub key ' + pubkey);
 }
 
 
@@ -274,8 +293,9 @@ function AccountList(divName,listName,opts) {
     col1.className = 'md-form';
 
     label = document.createElement('label');
+    label.id = 'account-label';
     label.setAttribute('for', 'account_name');
-    label.innerHTML = '';
+    label.innerHTML = 'Enter the name of the new account and press add new address button.';
 
     this.input = document.createElement('input');
     this.input.id = "account_name";
@@ -295,9 +315,12 @@ function AccountList(divName,listName,opts) {
     a.setAttribute('data-toggle', 'modal');
     a.setAttribute('data-target', '#newKeyModal');
     a.setAttribute('data-backdrop', 'false');
+  
 
     if (!this.opts.newAccnt)
         a.style.display = 'none';
+    else
+        a.addEventListener("click", function () { var accountName = self.input.value; if (accountName.length == 0) { $('#import_error').html('Enter or select an account name on the main page'); $('#import_btn').prop('disabled', true); } else { $('#import_error').html(''); $('#import_btn').prop('disabled', false); } });
 
     a.innerHTML = 'add new address';
     col1.appendChild(a);
@@ -318,6 +341,11 @@ function AccountList(divName,listName,opts) {
     input.type = "checkbox";
     input.value = '1';
     input.className = 'custom-control-input';
+
+    if (this.opts.shownull)
+    {
+        input.setAttribute('checked', 'checked');
+    }
 
     input.onchange = function () { self.accountselected(self.accountName); }
 
@@ -755,6 +783,133 @@ AccountList.prototype.check_all_staking = function () {
     this.staketimer = setTimeout(function () { self.check_all_staking(); }, 10000);
 }
 
+AccountList.prototype.update_objects = function () {
+    var total;
+    var n, nrows;
+    var thead;
+    var num_objects;
+
+    this.create_tx_table();
+
+    this.selectedObjects = new Array();
+
+    if (this.objects == null) {
+        return;
+    }
+
+    num_objects = this.objects.length;
+    thead = this.TxTable.tHead;
+    thead.rows[0].cells[2].innerHTML = 'from';
+
+    total = 0;
+    nrows = 0;
+
+
+    for (n = 0; n < num_objects; n++) {
+
+        if (!$('#selected_' + this.objects[n].dstaddr).is(':checked')) continue;
+        var cell;
+        var naddr;
+        var addresses;
+        var row = this.TxTable.tBodies[0].insertRow(nrows++);
+
+        if (this.objects[n].confirmations >= this.minConf) {
+            this.selectedObjects.push(this.objects[n]);
+            row.className = 'tx_ready';
+        }
+        else
+            row.className = 'tx_unconf';
+
+
+        cell = row.insertCell(0);
+        cell.className = "app";
+        cell.innerHTML = this.objects[n].appName;
+
+        cell = row.insertCell(1);
+        cell.className = "type";
+        cell.innerHTML = this.objects[n].appType;
+
+        cell = row.insertCell(2);
+        cell.className = "tx-cell";
+        cell.innerHTML = this.objects[n].objHash;
+
+        cell = row.insertCell(3);
+        cell.className = "time";
+        cell.innerHTML = timeConverter(this.objects[n].time);
+
+        cell = row.insertCell(4);
+        cell.className = "tx-cell";
+        cell.innerHTML = this.objects[n].txid;
+
+
+        cell = row.insertCell(5);
+        cell.className = "addr-cell";
+        naddr = this.objects[n].addresses.length;
+        addresses = '';
+
+        while (naddr--) {
+            addresses += this.objects[n].addresses[naddr] + '<br/>';
+        }
+
+        cell.innerHTML = addresses;
+
+        cell = row.insertCell(6);
+        cell.className = "tx_conf";
+        cell.innerHTML = this.objects[n].confirmations;
+
+    }
+
+    for (n = 0; n < num_objects; n++) {
+
+        if ($('#selected_' + this.objects[n].dstaddr).is(':checked')) continue;
+        var cell;
+        var naddr;
+        var addresses;
+        var row = this.TxTable.tBodies[0].insertRow(nrows++);
+
+        row.className = 'tx_error';
+
+        cell = row.insertCell(0);
+        cell.className = "app";
+        cell.innerHTML = this.objects[n].appName;
+
+        cell = row.insertCell(1);
+        cell.className = "type";
+        cell.innerHTML = this.objects[n].appType;
+
+        cell = row.insertCell(2);
+        cell.className = "tx-cell";
+        cell.innerHTML = this.objects[n].objHash;
+
+        cell = row.insertCell(3);
+        cell.className = "time";
+        cell.innerHTML = timeConverter(this.objects[n].time);
+
+        cell = row.insertCell(4);
+        cell.className = "tx-cell";
+        cell.innerHTML = this.objects[n].txid;
+
+        cell = row.insertCell(5);
+        cell.className = "addr-cell";
+        naddr = this.objects[n].addresses.length;
+        addresses = '';
+
+        while (naddr--) {
+            addresses += this.unspents[n].addresses[naddr] + '<br/>';
+        }
+
+        cell.innerHTML = addresses;
+
+        cell = row.insertCell(6);
+        cell.className = "tx_conf";
+        cell.innerHTML = this.objects[n].confirmations;
+    }
+
+    $('#txtotal').html(0);
+    $('#selected_balance').html(0);
+
+}
+
 AccountList.prototype.update_unspent = function () {
     var total;
     var n,nrows;
@@ -968,6 +1123,44 @@ AccountList.prototype.fetch_unspents = function () {
 
 }
 
+AccountList.prototype.transfer_objects = function (txh, oidx, dstAddr,fee) {
+
+    return rpc_call_promise('makeobjtxfr', [txh, oidx, dstAddr,fee,0, 9999999], true);
+}
+
+AccountList.prototype.fetch_objects = function (appName,appType,addrs) {
+    var n;
+    var self = this;
+    var AddrAr = [];
+    
+    if (addrs != null) {
+        for (n = 0; n < addrs.length; n++) {
+           AddrAr.push(addrs[n].address);
+        }
+    }
+    else {
+
+        if (this.addrs == null) return;
+
+        for (n = 0; n < this.addrs.length; n++) {
+
+            if (this.SelectedAddrs.indexOf(this.addrs[n].address) >= 0)
+                AddrAr.push(this.addrs[n].address);
+        }
+
+        for (n = 0; n < this.addrs.length; n++) {
+
+            if (this.SelectedAddrs.indexOf(this.addrs[n].address) < 0)
+                AddrAr.push(this.addrs[n].address);
+        }
+    }
+
+    this.select_menu("tab_objects");
+
+    return rpc_call_promise('listobjects', [appName, appType, 0, 9999999, AddrAr], true);
+
+}
+
 AccountList.prototype.update_spent = function () {
     var total;
     var thead;
@@ -1108,6 +1301,40 @@ AccountList.prototype.fetch_spents = function () {
         $('#total_tx').html     (data.result.ntx);
 
     });
+}
+
+
+AccountList.prototype.fetch_sentobjs = function (appName, appType, addrs) {
+    var n;
+    var self = this;
+    var AddrAr = [];
+
+    if (addrs != null) {
+        for (n = 0; n < addrs.length; n++) {
+            AddrAr.push(addrs[n].address);
+        }
+    }
+    else {
+
+        if (this.addrs == null) return;
+
+        for (n = 0; n < this.addrs.length; n++) {
+
+            if (this.SelectedAddrs.indexOf(this.addrs[n].address) >= 0)
+                AddrAr.push(this.addrs[n].address);
+        }
+
+        for (n = 0; n < this.addrs.length; n++) {
+
+            if (this.SelectedAddrs.indexOf(this.addrs[n].address) < 0)
+                AddrAr.push(this.addrs[n].address);
+        }
+    }
+
+    this.select_menu("tab_sent-objects");
+
+    return rpc_call_promise('listsentobjs', [appName, appType, 0, 9999999, AddrAr], true);
+
 }
 
 AccountList.prototype.update_recvs = function () {
@@ -1466,7 +1693,7 @@ AccountList.prototype.update_addrs = function ()
                 input = document.createElement('input');
                 input.setAttribute("address", this.addrs[n].address);
                 input.className = 'addr-secret';
-                input.type = "password";
+                input.type = "text";
                 input.id = 'secret_' + this.addrs[n].address;
                 input.value = '';
 
@@ -1623,11 +1850,15 @@ AccountList.prototype.accountselected = function (accnt_name)
 
             $('#newKeyBut').css('display', 'none');
             $('#newaddr').css('display', 'none');
+            $('#account-label').css('display', 'none');
+            $('#account-label').val('');
+            
         }
         else {
             this.input.disabled = false;
             $('#newaddr').css('display', 'block');
             $('#newKeyBut').css('display', 'block');
+            $('#account-label').css('display', 'block');
             this.input.style.display = 'inline';
         }
 
@@ -1656,6 +1887,8 @@ AccountList.prototype.accountselected = function (accnt_name)
         this.input.disabled = true;
         this.input.value = this.accountName;
         this.input.style.display = 'inline';
+
+        $('#account-label').css('display','none');
         
         rpc_call('getpubaddrs', [this.accountName, shownull], function (data) {
 
@@ -1816,6 +2049,8 @@ AccountList.prototype.import_keys = function (label)
     
     if (acVal.length <= 0)
         acVal = $('#account_name').val();
+
+ 
     
     if (acVal.length <= 0) {
         alert('Please select an account or create a new one.')
@@ -1981,7 +2216,7 @@ AccountList.prototype.newAddrForm = function ()
     input.name = "imp_key";
     input.type = "text";
     input.className = 'form-control';
-    input.addEventListener("input", function () { newkey(this.value);});
+    
     
     inner.appendChild(input);
     inner.appendChild(label);
@@ -1993,12 +2228,16 @@ AccountList.prototype.newAddrForm = function ()
     input = document.createElement('button');
     input.className = 'btn btn-primary';
     input.type = "button";
+    input.id = 'import_btn';
     input.addEventListener('click', function () { MyAccount.import_keys($('#addrlabel').val()); });
     input.innerHTML = 'import';
+
+
     inner.appendChild(input);
     form.appendChild(inner);
     
-    span=document.createElement('imp_key_msg');
+    span = document.createElement('div');
+    span.id='imp_key_msg';
     span.style.color='red';
     form.appendChild(span);
     
@@ -2139,6 +2378,85 @@ function signtxinputs(txh, inputs) {
             rpc_call('signtxinput', [txh, inputs[n].index, derSign, pubKey], txinputsigned);
         }
     }
+}
+
+
+
+var inputsToSign = [];
+var txSignPromise = null;
+var signTxHash;
+
+function signtxinput_cb(data) {
+
+    var input = inputsToSign.pop();
+
+    if(data != null)
+        signTxHash = data.result.txid;
+
+    if (input == null) {
+        $('#newtx').empty();
+        $('#type_tx').empty();
+
+        if ((data == null)||(data.error))
+        {
+            if (txSignPromise != null)
+                txSignPromise.reject();
+            return;
+        }
+
+        $('#newtxid').html(signTxHash);
+
+        rpc_call('submittx', [signTxHash], function () {
+            if (txSignPromise != null)
+                txSignPromise.resolve(signTxHash);
+        });
+        return;
+    }
+    var DecHexkey = $('#selected_' + input.srcaddr).attr('privkey');
+    var pubKey = $('#selected_' + input.srcaddr).attr('pubkey');
+    var mykey = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
+    var signature = mykey.sign(input.signHash, 'hex');
+    // Export DER encoded signature in Array
+    //var derSign = signature.toDER('hex');
+    var derSign = signature.toLowS();
+
+    rpc_call_promise('signtxinput', [signTxHash, input.index, derSign, pubKey]).done(signtxinput_cb);
+}
+
+function signtxinputs_promise(txh, inputs, done, error) {
+
+    var prom;
+    my_tx = null;
+    $('#div_newtxid').css('display', 'block');
+    $('#sendtx_but').prop("disabled", true);
+
+    inputsToSign = new Array();
+    txSignPromise = {};
+
+    txSignPromise.resolve = done;
+    txSignPromise.reject = error;
+
+    signTxHash = txh;
+
+    for (var n = 0; n < inputs.length; n++) {
+
+        if ((inputs[n].isApp == true) || ((inputs[n].srcapp) && (!inputs[n].isAppType) && (!inputs[n].isAppObj) && (!inputs[n].isAppLayout) && (!inputs[n].addChild) && (!inputs[n].isAppModule))) {
+
+        }
+        else {
+            inputsToSign.push(inputs[n]);
+        }
+    }
+
+    if (inputsToSign.length > 0) {
+        signtxinput_cb();
+    }
+    else {
+        rpc_call('submittx', [signTxHash], function () { txSignPromise.resolve(signTxHash); });
+    }
+
+    return txSignPromise;
+
 }
 
 function maketxfrom(address, amount, dstAddr) {
