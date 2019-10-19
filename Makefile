@@ -26,7 +26,7 @@ export/raytrace: raytrace/main.c export/libcon.a
 	$(CC) $(CFLAGS) $(COMMON_INCS) raytrace/main.c export/libcon.a -lc -lm -pthread -o export/raytrace
 
 export/libnodix.so:export/libbase.so export/libnode_adx.so export/libcon.so nodix/main.c
-	$(CC) $(CFLAGS) $(COMMON_INCS) nodix/main.c $(MODFLAGS) -Wl,-soname,libnodix.so  -Lexport -lcon -lbase -lblock_adx -lnode_adx -lwallet -o export/libnodix.so
+	$(CC) $(CFLAGS) $(COMMON_INCS) nodix/main.c -Inode_adx/ $(MODFLAGS) -Wl,-soname,libnodix.so  -Lexport -lcon -lbase -lblock_adx -lnode_adx -lwallet -o export/libnodix.so
 
 export/libstake_pos2.so:export/libbase.so export/libcon.so stake_pos2/kernel.c
 	$(CC) $(CFLAGS) $(COMMON_INCS) stake_pos2/kernel.c $(MODFLAGS) -Wl,-soname,libstake_pos2.so -Lexport -lcon -lbase -lblock_adx  -o export/libstake_pos2.so
@@ -41,7 +41,7 @@ export/libblock_explorer.so:export/libblock_adx.so export/libbase.so export/libc
 	$(CC) $(CFLAGS) $(COMMON_INCS) block_explorer/block_explorer.c  $(MODFLAGS) -Wl,-soname,libstake_pos3.so -Lexport -lcon -lbase -lblock_adx -o export/libblock_explorer.so
 
 export/libblock_adx.so:block_adx/main.c block_adx/script.c block_adx/block.c block_adx/scrypt.c block_adx/store.c block_adx/app_store.c export/libprotocol_adx.so export/libbase.so export/libcon.so
-	$(CC) $(CFLAGS) $(COMMON_INCS) block_adx/ripemd160.c block_adx/main.c block_adx/block.cblock_adx/script.c block_adx/scrypt.c  block_adx/store.c block_adx/app_store.c $(MODFLAGS) -Wl,-soname,block_adx.so -Lexport -lcon -lbase -lprotocol_adx -o export/libblock_adx.so
+	$(CC) $(CFLAGS) $(COMMON_INCS) block_adx/ripemd160.c block_adx/main.c block_adx/block.c block_adx/script.c block_adx/scrypt.c  block_adx/store.c block_adx/app_store.c $(MODFLAGS) -Wl,-soname,block_adx.so -Lexport -lcon -lbase -lprotocol_adx -o export/libblock_adx.so
 
 export/libprotocol_adx.so:protocol_adx/main.c protocol_adx/protocol.c export/libbase.so export/libcon.so
 	$(CC) $(CFLAGS) $(COMMON_INCS) protocol_adx/main.c protocol_adx/protocol.c $(MODFLAGS) -Wl,-soname,protocol_adx.so -Lexport -lcon -lbase -o export/libprotocol_adx.so
@@ -91,7 +91,7 @@ export/modz/nodix.tpo:export/mod_maker export/libnodix.so
 
 export/modz/block_adx.tpo:export/mod_maker export/libblock_adx.so
 	export/mod_maker ./export/libblock_adx.so ./export/modz
-	mv export/modz/libblock_adx.tpo export/modz/block_adx.tpo
+	#mv export/modz/libblock_adx.tpo export/modz/block_adx.tpo
 
 export/modz/protocol_adx.tpo:export/mod_maker export/libprotocol_adx.so
 	export/mod_maker ./export/libprotocol_adx.so ./export/modz
