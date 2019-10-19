@@ -15,6 +15,8 @@ block.c
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
 */
 
+BLOCK_API  int	C_API_FUNC ripemd160(const void* in, unsigned long length, void* out);
+
 /* init block module */
 
 
@@ -38,7 +40,7 @@ BLOCK_API  int	C_API_FUNC get_blockreward(uint64_t block, uint64_t *block_reward
 BLOCK_API  int	C_API_FUNC get_hash_list(mem_zone_ref_ptr hdr_list, mem_zone_ref_ptr hash_list);
 
 /* build merklee root */
-BLOCK_API  int	C_API_FUNC build_merkel_tree(mem_zone_ref_ptr txs, hash_t merkleRoot);
+BLOCK_API  int	C_API_FUNC build_merkel_tree(mem_zone_ref_ptr txs, hash_t merkleRoot, mem_zone_ref_ptr branches);
 
 /* build genesis block */
 BLOCK_API  int	C_API_FUNC make_genesis_block(mem_zone_ref_ptr genesis_conf, mem_zone_ref_ptr genesis_blk);
@@ -85,7 +87,7 @@ BLOCK_API  int	C_API_FUNC	create_p2sh_script			(btc_addr_t addr, mem_zone_ref_pt
 /* create paiment script with data */
 BLOCK_API  int	C_API_FUNC	create_p2sh_script_byte		(btc_addr_t addr, mem_zone_ref_ptr script_node, unsigned char val);
 
-BLOCK_API  int	C_API_FUNC	create_p2sh_script_data		(btc_addr_t addr, mem_zone_ref_ptr script_node, const unsigned char *data, size_t len);
+BLOCK_API  int	C_API_FUNC	create_p2sh_script_data		(const btc_addr_t addr, mem_zone_ref_ptr script_node, const unsigned char *data, size_t len);
 
 /* compute transaction signature hash */
 BLOCK_API  int	C_API_FUNC	compute_tx_sign_hash		(mem_zone_ref_const_ptr tx, unsigned int nIn, const struct string *script, unsigned int hash_type, hash_t txh);
@@ -94,7 +96,7 @@ BLOCK_API  int	C_API_FUNC	compute_tx_sign_hash		(mem_zone_ref_const_ptr tx, unsi
 BLOCK_API  int	C_API_FUNC	check_tx_input_sig			(mem_zone_ref_const_ptr tx, unsigned int nIn, struct string *vpubK);
 
 /* check tx inputs */
-BLOCK_API  int	C_API_FUNC	check_tx_outputs			(mem_zone_ref_ptr tx,uint64_t *total, mem_zone_ref_ptr outobjs, unsigned int *is_staking);
+BLOCK_API  int	C_API_FUNC	check_tx_outputs			(mem_zone_ref_ptr tx,uint64_t *total, mem_zone_ref_ptr outobjs, unsigned int *is_staking, unsigned int flags);
 
 /* check tx outputs */
 BLOCK_API  int	C_API_FUNC	check_tx_inputs				(mem_zone_ref_ptr tx, uint64_t *total_in, mem_zone_ref_ptr inobjs, unsigned int *is_coinbase,unsigned int check_sig,mem_zone_ref_ptr mempool);
@@ -135,16 +137,25 @@ BLOCK_API int	C_API_FUNC	blk_check_sign				(const struct string *sign, const str
 /* check validity of input transactions */
 BLOCK_API  int	C_API_FUNC check_tx_list				(mem_zone_ref_ptr tx_list, uint64_t block_reward,hash_t merkle, unsigned int block_time, unsigned int check_sig);
 
+BLOCK_API  int	C_API_FUNC compute_txlist_size			(mem_zone_ref_const_ptr tx_list, size_t *totalSize);
+
+BLOCK_API  int	C_API_FUNC is_opfn_script				(const struct string *script, struct string *fn_name);
 
 /* find input in tx list */
 BLOCK_API  int	C_API_FUNC find_inputs					(mem_zone_ref_ptr tx_list, hash_t txid, unsigned int oidx);
+
+
+/* find input in list */
+BLOCK_API  int	C_API_FUNC find_inner_inputs			(mem_zone_ref_ptr txin_list, hash_t txid, unsigned int oidx);
 
 /* get tx input idx */
 BLOCK_API int	C_API_FUNC	get_tx_input				(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vin);
 
 
 /* set hash from compact from */
-BLOCK_API unsigned int	C_API_FUNC SetCompact			(unsigned int bits, hash_t out);
+BLOCK_API unsigned int	C_API_FUNC	SetCompact			(unsigned int bits, hash_t out);
+
+BLOCK_API unsigned int	C_API_FUNC	GetCompact			(const hash_t in, unsigned int *bits);
 
 
 /*check utxo */
@@ -156,6 +167,12 @@ BLOCK_API int C_API_FUNC get_tx_value					(mem_zone_ref_const_ptr tx, btc_addr_t
 
 /* sdump infos about tx */
 BLOCK_API int C_API_FUNC dump_tx_infos					(mem_zone_ref_ptr tx);
+
+
+
+
+
+
 BLOCK_API int C_API_FUNC dump_txh_infos					(const char *hash);
 
 
@@ -167,10 +184,11 @@ BLOCK_API  int	C_API_FUNC blk_find_last_pow_block		(mem_zone_ref_ptr pindex, uns
 
 BLOCK_API  int	C_API_FUNC blk_find_last_pos_block		(mem_zone_ref_ptr pindex, unsigned int *block_time);
 BLOCK_API  int	C_API_FUNC get_pow_block_limit			(uint64_t *lastPowBlock);
+BLOCK_API  int	C_API_FUNC get_pow_diff_limit			(unsigned int *min_diff);
 BLOCK_API  int	C_API_FUNC extract_key					(dh_key_t priv, dh_key_t pub);
 BLOCK_API  int	C_API_FUNC compress_key					(dh_key_t pub, dh_key_t cpub);
 BLOCK_API  int	C_API_FUNC extract_pub					(const dh_key_t priv, dh_key_t pub);
-BLOCK_API  int	C_API_FUNC derive_secret				(dh_key_t pub, dh_key_t priv, hash_t secret);
+BLOCK_API  int	C_API_FUNC derive_secret				(const dh_key_t pub, dh_key_t priv, hash_t secret);
 BLOCK_API  int	C_API_FUNC sign_hash					(const hash_t hash, const dh_key_t privkey, struct string *signature);
 
 BLOCK_API  int	C_API_FUNC remove_tx_index				(hash_t tx_hash);
@@ -194,6 +212,12 @@ BLOCK_API int C_API_FUNC get_root_app_fee				(mem_zone_ref_ptr rootAppFees);
 BLOCK_API int C_API_FUNC make_app_tx					(mem_zone_ref_ptr tx,const char *app_name, unsigned int flags,btc_addr_t appAddr);
 BLOCK_API int C_API_FUNC make_app_item_tx				(mem_zone_ref_ptr tx, const struct string *app_name, unsigned int item_id);
 BLOCK_API int C_API_FUNC make_obj_txfr_tx				(mem_zone_ref_ptr tx, const hash_t txh, unsigned int oidx, const btc_addr_t dstAddr,hash_t objHash);
+BLOCK_API int C_API_FUNC make_op_tx						(mem_zone_ref_ptr tx, const struct string *op_name, mem_zone_ref_ptr arg1, mem_zone_ref_ptr arg2);
+BLOCK_API int C_API_FUNC make_fn_tx						(mem_zone_ref_ptr tx, const struct string *op_name, mem_zone_ref_ptr arg1);
+
+
+BLOCK_API int C_API_FUNC make_coinbase_script			(uint64_t block_height, size_t nonce_size, struct string *script, size_t *extranonce_offset);
+
 BLOCK_API int C_API_FUNC parse_approot_tx				(mem_zone_ref_ptr tx);
 BLOCK_API int C_API_FUNC find_obj_tx					(mem_zone_ref_const_ptr tx, hash_t objHash, mem_zone_ref_ptr inputs, mem_zone_ref_ptr outputs);
 BLOCK_API int C_API_FUNC find_obj_ptxfr					(mem_zone_ref_const_ptr tx, hash_t objHash, mem_zone_ref_ptr prev_tx);
@@ -228,6 +252,10 @@ BLOCK_API  int	C_API_FUNC block_load_index(uint64_t *block_height);
 BLOCK_API  int	C_API_FUNC write_block_index(uint64_t height);
 BLOCK_API  int	C_API_FUNC rebuild_time_index(uint64_t height);
 BLOCK_API  int	C_API_FUNC create_sorted_block_index(uint64_t height);
+
+BLOCK_API  int	C_API_FUNC load_utxo(const char *txh, unsigned int oidx, uint64_t *amount, btc_addr_t addr, hash_t objh);
+BLOCK_API int C_API_FUNC  get_block_size(mem_zone_ref_ptr block, mem_zone_ref_ptr tx_list);
+
 /*
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
 script.c
@@ -316,6 +344,9 @@ BLOCK_API int C_API_FUNC  load_obj(const char *app_name, const char *objHash, co
 /*load app child objects */
 BLOCK_API int C_API_FUNC  load_obj_childs(const char *app_name, const char *objHash, const char *KeyName, size_t first, size_t max, unsigned int opts, size_t *count, mem_zone_ref_ptr objs);
 
+/* load operation tree from root tx */
+BLOCK_API int C_API_FUNC  load_op_tx(const hash_t tx_hash, mem_zone_ref_ptr inputs, mem_zone_ref_ptr out, mem_zone_ref_const_ptr mempool);
+
 /*add child obj tx */
 BLOCK_API int C_API_FUNC  make_app_child_obj_tx(mem_zone_ref_ptr tx, const char *app_name, hash_t objHash, unsigned int objType, btc_addr_t objAddr,const char *keyName, unsigned int ktype,hash_t childHash);
 
@@ -326,7 +357,9 @@ BLOCK_API int C_API_FUNC  get_app_obj_hashes(const char *app_name, mem_zone_ref_
 OS_API_C_FUNC(int) get_app_type_last_objs_hashes(const char *app_name, unsigned int type_id, size_t first, size_t max, size_t *total, mem_zone_ref_ptr hash_list);
 
 /* load block size from local store */
-BLOCK_API int C_API_FUNC  get_block_size(const hash_t blk_hash, size_t *size);
+BLOCK_API int C_API_FUNC  load_block_size(const hash_t blk_hash, size_t *size);
+
+
 
 /* load tx hashes from block hash */
 BLOCK_API int C_API_FUNC  get_blk_txs(const hash_t blk_hash,uint64_t block_height, mem_zone_ref_ptr txs, size_t max);

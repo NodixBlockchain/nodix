@@ -159,7 +159,6 @@ LIBVEC3_API void C_API_FUNC init_mat3_fncs();
 
 
 
-
 static __inline void zero_vec3			(vec3f_t v)
 {
 	_mm_store_ps(v,_mm_setzero_ps());
@@ -168,7 +167,6 @@ static __inline void copy_vec3			(vec3f_t v,const vec3f_t v2)
 {
 	_mm_store_ps(v,_mm_load_ps(v2));
 }
-
 
 
 static __inline void sub_vec3			(const vec3f_t v,const vec3f_t v2,vec3f_t out)
@@ -327,14 +325,18 @@ static __inline float sq_dist_vec3(const vec3f_t vec1,const vec3f_t vec2)
 static __inline float dist_vec3(const vec3f_t vec1,const vec3f_t vec2)
 {
 	vec3f_t  dv;
+	float    sqrt;
 	sub_vec3(vec2,vec1,dv);
-	return libc_sqrtf (dot_self_vec3(dv));
+	sqrtf_c(dot_self_vec3(dv), &sqrt);
+	return sqrt;
 }
 
 
 static __inline float length_vec3(vec3f_t v)
 {
-	return libc_sqrtf	(dot_self_vec3(v));
+	float    sqrt;
+	sqrtf_c(dot_self_vec3(v), &sqrt);
+	return sqrt;
 }
 
 

@@ -8,11 +8,13 @@ let NODE_JSON_ARRAY stylesheets = `[
 	"/assets/css/blocks.css",
 	"/assets/css/font-awesome.min.css",
 	"/assets/css/mdb.min.css",
+	"https://materialdesignicons.com/cdn/2.0.46/css/materialdesignicons.min.css",
 	"/assets/css/custom.css"
 ]`
 
 let NODE_JSON_ARRAY scripts = `["/assets/js/jquery-3.3.1.min.js","/assets/js/popper.min.js", "/assets/js/bootstrap.min.js" ,"/assets/js/mdb.min.js","/assets/js/custom.js","/assets/js/app.js"]`
 
+let NODE_JSON_ARRAY assets = `["/assets/font/roboto/Roboto-Bold.woff2","/assets/font/roboto/Roboto-Light.woff2","/assets/font/roboto/Roboto-Medium.woff2","/assets/font/roboto/Roboto-Regular.woff2","/assets/font/roboto/Roboto-Thin.woff2"]`
 
 let NODE_JSON_ARRAY metas = `[
 	
@@ -23,13 +25,16 @@ let NODE_JSON_ARRAY metas = `[
 ]`
 
 
+let NODE_BITCORE_VSTR http_service_name =  "http_service" 
+let NODE_BITCORE_VSTR http_service = `{}`
+
+
+
 
 	
 let NODE_MODULE_DEF node_adx = ` {"file" : "modz/node_adx.tpo"} `
 let NODE_MODULE_DEF wallet = ` {"file" : "modz/wallet.tpo"} `
 let NODE_GFX_BINT logged = 0
-
-let NODE_GFX_BINT has_site_api = 0
 
 let NODE_JSON_ARRAY node_modules  = `[]`
 
@@ -53,6 +58,10 @@ let NODE_GFX_OBJECT my_app = `{}`
 let NODE_JSON_ARRAY app_types = `[]`
 
 
+
+
+
+let NODE_GFX_OBJECT myParseTree = `{}`
 
 	 
 page index = `
@@ -93,6 +102,7 @@ page index = `
 
 		MyNode.setInfos				(SelfNode);
 		MyNode.make_node_html		('node_div',SelfNode);
+		MyNode.seteventsrc			('/newblock_event', on_new_block);
 
 		for(var n=0;n<SelfNode.peer_nodes.length;n++)
 		{
@@ -112,7 +122,6 @@ page index = `
 
 `
 
-
 	
 page services = `
 
@@ -125,7 +134,10 @@ page services = `
 	
 	html_scripts
 
-	html_var SelfNode.http_service;
+
+	node_adx.node_get_service_desc(http_service_name,http_service)
+
+	html_data http_service;
 
 	html_js
 		$(document).ready(function () 
@@ -163,6 +175,8 @@ page services = `
 `
 
 
+
+
 page blocks = `
 
 	push stylesheets,"/assets/css/plugins/blocks.css"
@@ -192,13 +206,16 @@ page blocks = `
 		$('#menu_blocks').addClass('active');
 
 		$('#datepicker').datepicker({format: "yyyy-mm-dd" , todayHighlight:true});
-		$('#datepicker').datepicker('setDate',new Date());
-
+	
 		MyBlocks = new BlockExplorer();
 
 		MyBlocks.create_day_nav		('navday', Math.round(new Date().getTime() / 1000));
 		MyBlocks.create_block_list	('blocks');
 		MyBlocks.create_block_infos ('blockInfos');
+
+		/* MyBlocks.setlongpoll ('/newblock'); */
+
+		MyBlocks.seteventsrc ('/newblock_event', on_new_block);
 
 		$('#datepicker').on('changeDate', function() {
 			
@@ -215,10 +232,8 @@ page blocks = `
 			
 		});
 
-        selectedDate = $('#datepicker').datepicker('getFormattedDate');
+		$('#datepicker').datepicker('setDate',new Date(%SelfNode.last_block.time% * 1000));
 
-        MyBlocks.list_blocks	(selectedDate, 0);
-        MyBlocks.list_txs		(selectedDate);
 
     });
 	
@@ -354,6 +369,7 @@ page wallet(account_name) = `
 	push scripts,"/assets/js/blocks.js"	
 	push scripts,"/assets/js/ecdsa_bundle.js"
 	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
+	push scripts,"/assets/js/ripmd160.js"
 	push scripts,"/assets/js/keys.js"
 	push scripts,"/assets/js/md5.min.js"
 	
@@ -382,8 +398,10 @@ page wallet(account_name) = `
 
 			MyAccount = new AccountList	('account_list','my_wallet',{'withSecret':true,'staking':true,'newAccnt':true});
 			MyAccount.setAccounts (%node_accounts%,'%account_name%');
+
+			MyAccount.seteventsrc('/newspent_event',on_new_spent,on_new_unspent);
 	
-			check_anon_access ();
+			MyAccount.check_anon_access ();
 
 			update_unit	(document.getElementById('units'));
    
@@ -401,6 +419,7 @@ page application(app_name,account_name) = `
 	push scripts,"/assets/js/blocks.js"
 	push scripts,"/assets/js/ecdsa_bundle.js"
 	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
+	push scripts,"/assets/js/ripmd160.js"
 	push scripts,"/assets/js/keys.js"
 	push scripts,"/assets/js/apps.js"
 
@@ -409,7 +428,7 @@ page application(app_name,account_name) = `
 
 	node_adx.node_list_accounts	(node_accounts)
 
-	if(cookies.sessionid ! "" )
+	if(cookies.sessionid)
 		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
 	endif
 
@@ -421,12 +440,6 @@ page application(app_name,account_name) = `
 		node_adx.node_get_root_app_addr(root_app_addr)
 		node_adx.node_get_root_app_fee(root_app_fees)
 	endif
-
-	set has_site_api = 0;
-	
-	node_adx.node_has_service_module("site_cgi") ? 
-		set has_site_api = 1;
-	endor
 
 	set app_found = 0;
 
@@ -460,7 +473,6 @@ page application(app_name,account_name) = `
 	html_var formvars.myfile;
 	html_var formvars.mylayout;
 	html_var formvars.mymod;
-	html_var has_site_api;
 	html_var logged;
 	html_var cookies.sessionid;
 
@@ -531,6 +543,7 @@ page applications(account_name) = `
 	push scripts,"/assets/js/blocks.js"
 	push scripts,"/assets/js/ecdsa_bundle.js"
 	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
+	push scripts,"/assets/js/ripmd160.js"
 	push scripts,"/assets/js/keys.js"
 	push scripts,"/assets/js/apps.js"
 
@@ -553,19 +566,13 @@ page applications(account_name) = `
 		node_adx.node_get_root_app_fee(root_app_fees)
 	endif
 
-	set has_site_api = 0;
-	
-	node_adx.node_has_service_module("site_cgi") ? 
-		set has_site_api = 1;
-	endor
-
 	html_head "NodiX Applications" 
 	html_block "templates/menu.html"
 	html_block "templates/applications.html"
 	html_scripts
 
 	
-	html_var has_site_api;
+	
 	html_var logged;
 	html_var cookies.sessionid;
 
@@ -603,3 +610,113 @@ page applications(account_name) = `
 
 	html_block "templates/footer.html"
 `
+
+
+page play(graphHash, lengthMs, scaleFac) = `
+
+	push scripts,"/assets/js/webAudio.js"
+	push scripts,"/assets/js/composer.js"
+
+	html_head "NodiX Player" 
+	html_block "templates/menu.html"
+	html_block "templates/playgraph.html"
+	html_scripts
+
+
+	node_adx.node_load_parse_tree(graphHash, myParseTree);
+
+	html_var graphHash;
+	html_var myParseTree;
+	
+	html_js
+	jQuery(document).ready(function() 
+	{
+		
+		lang			='en';
+		api_base_url	='';
+		site_base_url	='/nodix.site';
+	
+		MyComposer		=	new Composer('AST', null , { createTx:false });
+
+		MyComposer.parse_inputs = myParseTree.inputs;
+		MyComposer.parse_tree = myParseTree.tree;
+
+		MyComposer.read_input_obj(%query_vars%);
+
+        MyComposer.parse_inputs.t = { value: 0, end: parseInt('%lengthMs%'), scaleFac: parseInt('%scaleFac%') };
+
+		Composer.prototype.graphDone = myGraphDone;
+
+		MyComposer.graphDone();
+
+		/*
+		if(graphHash != '')
+			MyComposer.load_tree(graphHash);
+		*/
+
+		MyAudio	= new webAudio();
+	
+	});
+	end_js
+
+	
+	html_block "templates/footer.html"
+
+`
+
+
+longpoll newblock(node, payload, handler_data) = `
+
+	push data< handler_data.write_group;
+
+	if(payload.block)
+		push data< payload.block
+		success 
+	endif
+
+	if(payload.header)
+		push data< payload.header
+		success 
+	endif
+	
+	error
+`
+
+event {"cmd=newblock"} newblock_event(node, payload, handler_data) = `
+
+	push data< handler_data.write_group;
+
+	if(payload.block)
+		push data< payload.block;
+		success 
+	endif
+
+	if(payload.header)
+		push data< payload.header;
+		success 
+	endif
+	
+	error
+`
+
+
+event {"cmd=newspent|cmd=newunspent"} newspent_event(node, payload, handler_data) = `
+
+	push data< handler_data.write_group;
+
+	if(payload.spent)
+		push data< payload.spent;
+		push data, "newspent";
+		success
+	endif
+
+	if(payload.unspent)
+		push data< payload.unspent;
+		push data, "newunspent";
+		success
+	endif
+	
+	error
+	
+`
+

@@ -47,10 +47,9 @@ let NODE_BITCORE_NODE SelfNode = `
 	"privKeyVersion":0x55,
 	(NODE_GFX_BINT)"paytxfee" : 0,
 	"block_height" : 0,
-	"data_dir" : "d:\nodix",
 	"useGC" : false,
 	(NODE_GFX_INT)"version"  : 60018,
-	(NODE_GFX_BOOL)"uPnP":false,
+	(NODE_GFX_BOOL)"uPnP":true,
 	(NODE_GFX_INT)"bestChainDepth":2,
 	(NODE_GFX_INT)"maxMsgSize":1024,
 	(NODE_GFX_INT)"checktxsign"  : 0,
@@ -67,34 +66,12 @@ let NODE_BITCORE_NODE SelfNode = `
 	(NODE_BITCORE_BLK_HDR) "last_block" : {},
 	(NODE_BITCORE_BLK_HDR) "lastPOSBlk" : {},
 	(NODE_BITCORE_BLK_HDR) "lastPOWBlk" : {},
-	(NODE_GFX_OBJECT) "trustedApps": { "blog" : true, "raytrace" : true, "Cards" : true },
+	(NODE_GFX_OBJECT) "trustedApps": { "blog" : true, "raytrace" : true, "Cards" : true, "NodixSite" : true },
 	(NODE_BITCORE_ADDR)"p2p_addr" :
 	{
 		"services": 0,
 		(NODE_NET_IP)"addr" : "127.0.0.1",
 		(NODE_GFX_SHORT)"port" : 16819
-	},
-	(NODE_SERVICE)"http_service":
-	{
-		"port"		: 16820,
-		(NODE_NET_IP)"addr" : "127.0.0.1",
-		"docroot"   : "web",
-		"apppath"   : "/app/",
-		"name"		: "Nodix webservice",
-		"indexpage" : "/index.site",
-		"mimes"		: {"js":"text/javascript", "css" : "text/css", "woff" : "text/css", "woff2" : "text/css", "png" : "image/png", "pdf" : "application/pdf", "gif" : "image/gif", "mpg":"video/mpeg", "mp4":"video/mp4", "svg" : "image/svg+xml", "html" : "text/html" , "obj":"application/object"},
-	
-		"defaultmime" : "text/plain",
-		"cacheTime" : 0,
-		"nthreads"	: 4,
-		"maxpost"	: 4096,
-		"modules"	: 
-		[
-			{"base" : "/jsonrpc"  , "type" : "rpc", (NODE_MODULE_DEF) "rpc_wallet"     : {"file":"modz/rpc_wallet.tpo"}},
-			{"base" : "/pubwal"   , "allowed_ip":["127.0.0.1"] , "type" : "rpc", (NODE_MODULE_DEF) "anon_wallet"     : {"file":"modz/anon_rpc.tpo"}},
-			{"base" : "/api/"     , "type" : "cgi", (NODE_MODULE_DEF) "block_explorer" : {"file":"modz/block_explorer.tpo"}},
-			{"base" : "/siteapi/" , "type" : "cgi", (NODE_MODULE_DEF) "site_cgi"	   : {"file":"modz/site_cgi.tpo"}}
-		]
 	},
 	(NODE_BITCORE_NODE_LIST) "peer_nodes" : [],
 	(NODE_BITCORE_WALLET_ADDR_LIST) "addr scan list" : null,
@@ -102,10 +79,48 @@ let NODE_BITCORE_NODE SelfNode = `
 	(NODE_BITCORE_MSG_LIST) "emitted_queue" : [],
 	(NODE_BITCORE_TX_LIST) "mempool" : [],
 	(NODE_BITCORE_TX_LIST) "submitted txs" : [],
-	(NODE_BITCORE_HASH_LIST) "pending files" : [],
+	(NODE_JSON_ARRAY) "pending files" : [],
 	(NODE_BITCORE_BLOCK_LIST) "submitted blocks" : []
 }`
 
+let NODE_SERVICE stratum_service = `
+{
+	"port"		: 10000,
+	(NODE_NET_IP)"addr" : "127.0.0.1",
+	"name"		: "Nodix stratum service",
+	"mining_addr":"BH6o52jv2SjzCfmQmKRACFEAxooo2UF47A",
+	"difficulty" : 0x1D000FFF,
+	(NODE_MODULE_DEF) "module" : {"file":"modz/stratum_service.tpo"}
+} `
+
+let NODE_SERVICE http_service = `
+{
+	"port"		: 16820,
+	(NODE_NET_IP)"addr" : "127.0.0.1",
+	"docroot"   : "web",
+	"apppath"   : "/app/",
+	"useThread" : true,
+	"name"		: "Nodix webservice",
+	(NODE_MODULE_DEF) "module" : {"file":"modz/http_service.tpo"},
+	"indexpage" : "/app/NodixSite/page/index.site",
+	"mimes"		: {"js":"text/javascript", "css" : "text/css", "woff" : "text/css", "woff2" : "text/css", "png" : "image/png", "pdf" : "application/pdf", "gif" : "image/gif", "mpg":"video/mpeg", "mp4":"video/mp4", "svg" : "image/svg+xml", "html" : "text/html" , "obj":"application/object", "wav":"audio/wave"},
+
+	"defaultmime" : "text/plain",
+	"cacheTime" : 0,
+	"nthreads"	: 4,
+	"maxpost"	: 4096,
+	"sitemap"	: 
+	{
+		path	: "/sitemap.xml"
+	},
+	"modules"	: 
+	[
+		{"base" : "/jsonrpc/"  , "type" : "rpc", (NODE_MODULE_DEF) "rpc_wallet"     : {"file":"modz/rpc_wallet.tpo"}},
+		{"base" : "/pubwal"   , "allowed_ip":["127.0.0.1"] , "type" : "rpc", (NODE_MODULE_DEF) "anon_wallet"     : {"file":"modz/anon_rpc.tpo"}},
+		{"base" : "/api/"     , "type" : "cgi", (NODE_MODULE_DEF) "block_explorer" : {"file":"modz/block_explorer.tpo"}},
+		{"base" : "/siteapi/" , "type" : "cgi", (NODE_MODULE_DEF) "site_cgi"	   : {"file":"modz/site_cgi.tpo"}}
+	]
+} `
 
 
 let NODE_MODULE_DEF	vec			 = `{"order":0, "file" : "modz/vec3.tpo"}`
@@ -165,7 +180,9 @@ handler on_version(node,payload) = `
 	set node.version = payload.proto_ver;
 	set node.block_height = payload.last_blk;
 
-	node_adx.node_log_version_infos(node)
+	node_adx.node_find_peer(node) ? node_adx.node_disconnect(node); error endor
+
+	node_adx.node_log_version_infos (node)
 
 	node_adx.node_set_bookmark		(node.p2p_addr, one);
 	node_adx.queue_verack_message	(node)
@@ -238,8 +255,6 @@ handler on_block(node, payload) = `
 	
 `
 
-let NODE_GFX_BINT	truncate = 119703 
-
 proc init_node = `
 
 	protocol_adx.init_protocol	(configuration)
@@ -250,12 +265,16 @@ proc init_node = `
 	configuration.staking.pos_kernel.init_pos(configuration.staking)
 	nodix.init_staking()
 
+	
+
 	node_adx.node_check_block_index		(checkNum,LastGood) ?
 		nodix.truncate_chain_to (LastGood)	
 	endor
 
 	node_adx.node_load_block_indexes	()
 
+
+	
 	
 	block_adx.make_genesis_block(configuration.genesis, genesis_blk)
 	
@@ -296,11 +315,6 @@ proc init_node = `
 	sethandler SelfNode.emitted_queue{ "cmd=inv" } = on_inv;
 	sethandler SelfNode.emitted_queue{ "cmd=addr" } = on_addr;
 	sethandler SelfNode.emitted_queue{ "cmd=mempool" } = on_mempool;
-	
-	if(SelfNode.scriptBlock ! 0)
-		sethandler SelfNode.emitted_queue{ "cmd=block" } = on_block;
-	endif
-
 	sethandler SelfNode.emitted_queue{ "cmd=tx" } = on_tx;
 	
 	

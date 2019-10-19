@@ -3,7 +3,7 @@ Copyright (c) 1998, 1999, 2000 Thai Open Source Software Center Ltd
 See the file copying.txt for copying permission.
 */
 #define LIBC_API C_EXPORT
-#include <stddef.h>
+/* #include <stddef.h> */
 #include "xmldef.h"
 #include "../../base/std_def.h"
 #include "../../base/std_mem.h"
@@ -1455,7 +1455,7 @@ doContent(XML_Parser parser,
 	rawName = s + enc->minBytesPerChar*2;
 	len = XmlNameLength(enc, rawName);
 	if (len != tag->rawNameLength
-	    || memcmp(tag->rawName, rawName, len) != 0) {
+	    || memcmp_c(tag->rawName, rawName, len) != 0) {
 	  *eventPP = rawName;
 	  return XML_ERROR_TAG_MISMATCH;
 	}
@@ -3245,8 +3245,10 @@ getAttributeId(XML_Parser parser, const ENCODING *enc, const char *start, const 
     poolDiscard(&dtd.pool);
   else {
     poolFinish(&dtd.pool);
-    if (!ns)
-      ;
+	if (!ns)
+	{
+		id->prefix = NULL;
+	}
     else if (name[0] == 'x'
 	&& name[1] == 'm'
 	&& name[2] == 'l'
@@ -3677,6 +3679,7 @@ NAMED *lookup(HASH_TABLE *table, KEY name, size_t createSize)
     if (!createSize)
       return 0;
     table->v = calloc_c(INIT_SIZE, sizeof(NAMED *));
+	memset_c(table->v, 0, INIT_SIZE* sizeof(NAMED *));
     if (!table->v)
       return 0;
     table->size = INIT_SIZE;
@@ -3719,6 +3722,7 @@ NAMED *lookup(HASH_TABLE *table, KEY name, size_t createSize)
     }
   }
   table->v[i] = calloc_c(1, createSize);
+  memset_c(table->v[i], 0, createSize);
   if (!table->v[i])
     return 0;
   table->v[i]->name = name;

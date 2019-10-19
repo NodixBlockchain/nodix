@@ -49,7 +49,7 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>libbase.lib;libcon.lib;block_adx.lib;</AdditionalDependencies>
+      <AdditionalDependencies>libbase.lib;libcon.lib;protocol_adx.lib;block_adx.lib;</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)export\</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>

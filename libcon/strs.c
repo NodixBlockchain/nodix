@@ -4,6 +4,7 @@
 #include "base/std_mem.h"
 #include "base/mem_base.h"
 #include "base/std_str.h"
+#include "base/utf.h"
 #include "strs.h"
 
 extern char path_sep;
@@ -56,6 +57,36 @@ OS_API_C_FUNC(int) make_string(struct string *str, const char *toto)
 	return 1;
 }
 
+
+OS_API_C_FUNC(int) make_utf8_string(struct string *dst, const struct string *src)
+{
+	size_t n, totSz;
+	totSz = 0;
+
+	for (n = 0; n < src->len; n++)
+	{
+		char buffer[8];
+		size_t size = 8;
+		utf8_encode(src->str[n], buffer, &size);
+		totSz += size;
+	}
+
+	dst->len = totSz;
+	dst->size = dst->len + 1;
+	dst->str = malloc_c(dst->size);
+
+	totSz = 0;
+	for (n = 0; n < src->len; n++)
+	{
+		size_t size = 8;
+		utf8_encode(src->str[n], &dst->str[totSz], &size);
+		totSz += size;
+	}
+
+	
+	return 1;
+}
+
 OS_API_C_FUNC(int) make_string_l(struct string *str, const char *toto, size_t len)
 {
 	str->len			=	len;
@@ -98,7 +129,7 @@ OS_API_C_FUNC(int) make_string_from_url(struct string *str, const char *toto, si
 
 OS_API_C_FUNC(int) cat_cstring(struct string *str, const char *src)
 {
-	size_t		new_len,src_len;
+	size_t	src_len;
 
 	src_len				=	strlen_c(src);
 	if(src_len==0)return (int)str->len;
@@ -126,7 +157,7 @@ OS_API_C_FUNC(int) cat_cstring(struct string *str, const char *src)
 
 OS_API_C_FUNC(int) cat_cstring_p(struct string *str, const char *src)
 {
-	size_t		new_len, src_len;
+	size_t		src_len;
 
 	src_len = strlen_c(src);
 	if (src_len == 0)return (int)str->len;
@@ -154,7 +185,7 @@ OS_API_C_FUNC(int) cat_cstring_p(struct string *str, const char *src)
 
 OS_API_C_FUNC(int) cat_ncstring(struct string *str, const char *src, size_t src_len)
 {
-	size_t new_len,cpy_len,n;
+	size_t cpy_len,n;
 
 	if (src_len == 0)return str->len;
 
@@ -188,7 +219,7 @@ OS_API_C_FUNC(int) cat_ncstring(struct string *str, const char *src, size_t src_
 
 OS_API_C_FUNC(int) cat_ncstring_p(struct string *str, const char *src, size_t src_len)
 {
-	size_t		new_len;
+
 
 	strbuffer_append_byte(str, path_sep);
 	strbuffer_append_bytes(str, src, src_len);
@@ -215,7 +246,7 @@ OS_API_C_FUNC(int) cat_ncstring_p(struct string *str, const char *src, size_t sr
 
 OS_API_C_FUNC(size_t) cat_string(struct string *str, const struct string *src)
 {
-	size_t new_len, cpy_len, n;
+	size_t cpy_len, n;
 
 	if(src->len==0)return str->len;
 
@@ -305,6 +336,9 @@ OS_API_C_FUNC(int) str_start_with(const struct string *str, const char *start)
 
 OS_API_C_FUNC(int) vstr_to_str(mem_ptr data_ptr, struct string *str)
 {
+	if (data_ptr == PTR_NULL)
+		return 0;
+
 	if (*((unsigned char *)(data_ptr)) < 0xFD)
 	{
 		str->len = *((unsigned char *)(data_ptr));
@@ -334,7 +368,7 @@ OS_API_C_FUNC(int) vstr_to_str(mem_ptr data_ptr, struct string *str)
 
 OS_API_C_FUNC(int) strcat_uint(struct string *str, size_t i)
 {
-	size_t		new_len,src_len;
+	size_t		src_len;
 	char		buff[32];
 
 	uitoa_s				(i,buff,32,16);
@@ -363,7 +397,7 @@ OS_API_C_FUNC(int) strcat_uint(struct string *str, size_t i)
 
 OS_API_C_FUNC(int) strcat_int(struct string *str, int i)
 {
-	size_t		new_len,src_len;
+	size_t		src_len;
 	char		buff[32];
 
 	itoa_s				(i,buff,32,10);
@@ -637,7 +671,7 @@ OS_API_C_FUNC(int) b58enc(const struct string *in, struct string *out)
 	out->str = malloc_c(out->size);
 
 	if (zcount)
-		memset(out->str, '1', zcount);
+		memset_c(out->str, '1', zcount);
 
 	for (i = zcount; j < size; ++i, ++j)
 		out->str[i] = b58digits_ordered[buf[j]];
@@ -657,7 +691,68 @@ OS_API_C_FUNC(int) b58enc(const struct string *in, struct string *out)
 	return 1;
 }
 
+static const unsigned char base64_table[65] =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
+OS_API_C_FUNC(int) base64_decode(const unsigned char *src, size_t len, unsigned char *out, size_t *out_len)
+{
+	unsigned char dtable[256], *pos, block[4], tmp;
+	size_t i, count, olen;
+	int pad = 0;
+
+	memset_c(dtable, 0x80, 256);
+
+	for (i = 0; i < sizeof(base64_table) - 1; i++)
+		dtable[base64_table[i]] = (unsigned char)i;
+	dtable['='] = 0;
+
+	count = 0;
+	for (i = 0; i < len; i++) {
+		if (dtable[src[i]] != 0x80)
+			count++;
+	}
+
+	if (count == 0 || count % 4)
+		return 0;
+
+	olen = count / 4 * 3;
+	pos = out;
+
+	if (out == NULL)
+		return 0;
+
+	count = 0;
+	for (i = 0; i < len; i++) {
+		tmp = dtable[src[i]];
+		if (tmp == 0x80)
+			continue;
+
+		if (src[i] == '=')
+			pad++;
+		block[count] = tmp;
+		count++;
+		if (count == 4) {
+			*pos++ = (block[0] << 2) | (block[1] >> 4);
+			*pos++ = (block[1] << 4) | (block[2] >> 2);
+			*pos++ = (block[2] << 6) | block[3];
+			count = 0;
+			if (pad) {
+				if (pad == 1)
+					pos--;
+				else if (pad == 2)
+					pos -= 2;
+				else {
+					/* Invalid padding */
+					return 0;
+				}
+				break;
+			}
+		}
+	}
+
+	*out_len = pos - out;
+	return 1;
+}
 OS_API_C_FUNC(int) strbuffer_append(struct string *strbuff, const char *string)
 {
 	return strbuffer_append_bytes(strbuff, string, strlen_c(string));
@@ -706,5 +801,57 @@ OS_API_C_FUNC(int) strbuffer_append_bytes(struct string *strbuff, const char *da
 	strbuff->str[strbuff->len] = '\0';
 	
 
+	return 0;
+}
+
+OS_API_C_FUNC(int) parse_query_line(const struct string *line, size_t *offset, struct key_val *key)
+{
+	const char  *data;
+	enum op_type op;
+	size_t		data_sz;
+	unsigned int i;
+
+	for (i = ((offset == PTR_NULL) ? 0 : (*offset)); i < line->len; i++)
+	{
+		if ((line->str[i] == '=') || (line->str[i] == '>') || (line->str[i] == '<'))
+		{
+			size_t n, klen = 0;
+			if (i < 1)continue;
+			switch (line->str[i])
+			{
+			case '=':op = (line->str[i - 1] == '*') ? CMPL_E : CMP_E; break;
+			case '>':op = (line->str[i - 1] == '*') ? CMPL_G : CMP_G; break;
+			case '<':op = (line->str[i - 1] == '*') ? CMPL_L : CMP_L; break;
+			case '!':op = (line->str[i - 1] == '*') ? CMPL_N : CMP_N; break;
+			}
+			data = line->str + (i + 1);
+			data_sz = line->len - (i);
+			while ((*data) == ' ') { data++; data_sz--; }
+
+			for (n = 0; n < data_sz; n++)
+			{
+				if (!isalpha_c(line->str[n]))break;
+				key->key[klen++] = line->str[n];
+				if (klen >= 31)break;
+			}
+			key->key[klen] = 0;
+			key->kcrc = calc_crc32_c(key->key, 32);
+
+			data = line->str + (i + 1);
+			data_sz = line->len - (i + 1);
+			key->value.len = 0;
+			while ((key->value.len < data_sz) && ((data[key->value.len] == '_') || (data[key->value.len] == '-') || (isalpha_c(data[key->value.len]) || (isdigit_c(data[key->value.len]))))) { key->value.len++; }
+
+			key->value.str = malloc_c(key->value.len + 1);
+			memcpy_c(key->value.str, data, key->value.len);
+			key->value.str[key->value.len] = 0;
+			key->op = op;
+
+			if (offset != PTR_NULL)
+				(*offset) = i + 1 + key->value.len;
+
+			return 1;
+		}
+	}
 	return 0;
 }

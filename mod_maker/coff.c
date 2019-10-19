@@ -1033,19 +1033,6 @@ for(i=0;i<Coff->num_section;i++)
 	WriteSection(Coff->Sections[i],out);
 }
 
-/*
-if(Coff->CodeSection!=NULL)
-	fwrite(&Coff->CodeSection->SectionHeader		,sizeof(SCNHDR),1,out);
-
-fwrite(&Coff->DataSection->SectionHeader		,sizeof(SCNHDR),1,out);
-fwrite(&Coff->UDataSection->SectionHeader		,sizeof(SCNHDR),1,out);
-
- if(Coff->CodeSection!=NULL)
-	WriteSection(Coff->CodeSection,out);
-
-WriteSection(Coff->DataSection,out);
-WriteSection(Coff->UDataSection,out);
-*/
 
 
 if(!strcmp(Coff->Sections[0]->Name,".text"))

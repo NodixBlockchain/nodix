@@ -1587,7 +1587,7 @@ OS_API_C_FUNC(int) crypto_get_pub(const dh_key_t sk,dh_key_t pk)
 {
 	if (maincurve == PTR_INVALID)
 		maincurve = uECC_secp256k1();
-	return EccPoint_compute_public_key(pk, sk, maincurve);
+	return EccPoint_compute_public_key((uECC_word_t *)pk, (uECC_word_t *)sk, maincurve);
 }
 
 
@@ -1627,7 +1627,7 @@ OS_API_C_FUNC(int) crypto_sign_open(const struct string *sign, const hash_t msg,
 	return uECC_verify(npk, msg, 32, sign->str, maincurve);
 }
 
-OS_API_C_FUNC(int) derive_key(dh_key_t public_key, dh_key_t private_key, hash_t secret)
+OS_API_C_FUNC(int) derive_key(const dh_key_t public_key, dh_key_t private_key, hash_t secret)
 {
 	dh_key_t pkey;
 	if (maincurve == PTR_INVALID)

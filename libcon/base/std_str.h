@@ -26,6 +26,7 @@ LIBC_API size_t			C_API_FUNC strrpos_c				(const char *string,char c);
 
 LIBC_API int			C_API_FUNC itoa_s					(int value, char *string,size_t len, int radix);
 LIBC_API int			C_API_FUNC uitoa_s					(size_t value, char *string, size_t len, int radix);
+LIBC_API int			C_API_FUNC uitoa_pad_s				(unsigned int num, char* str, size_t len, int base);
 LIBC_API int			C_API_FUNC luitoa_s					(uint64_t value, char *string, size_t len, int radix);
 LIBC_API int			C_API_FUNC litoa_s					(int64_t value, char *str, size_t len, int base);
 
@@ -44,14 +45,15 @@ LIBC_API int			C_API_FUNC isdigit_c				(int _c);
 LIBC_API int			C_API_FUNC isdigit_c				(int _c);
 LIBC_API int			C_API_FUNC isxdigit_c				(int _c);
 LIBC_API int			C_API_FUNC isspace_c				(int _c);
-LIBC_API void			C_API_FUNC snooze_c					(unsigned int micro_sec);
+LIBC_API void			C_API_FUNC snooze_c					(size_t micro_sec);
 LIBC_API void			C_API_FUNC dtoa_c					(char *buff, char conv, int bsize, int dplace, double value);
 LIBC_API unsigned int	C_API_FUNC parseDate				(const char *date);
+LIBC_API int			C_API_FUNC time_to_date				(ctime_t time, char *date, size_t date_len);
 LIBC_API void			C_API_FUNC store_bigendian			(unsigned char *x, uint64_t u);
 LIBC_API uint64_t		C_API_FUNC load_bigendian			(const unsigned char *x);
 
 LIBC_API void			C_API_FUNC strtod_c					(const char *str, double *d);
-LIBC_API void			C_API_FUNC strtof_c					(const char *str, float *f);
+/*LIBC_API void			C_API_FUNC strtof_c					(const char *str, float *f);*/
 
 LIBC_API int			C_API_FUNC b58tobin					(void *bin, size_t *binszp, const char *b58, size_t b58sz);
 
@@ -97,9 +99,16 @@ static INLINE_C_FUNC void hex_2_bin_r(const char *chex, unsigned char *bin, size
 {
 	unsigned int b2hn, b2hnn;
 	char         hex[3];
-	hex[2] = 0;
+	size_t		slen;
 
-	for (b2hn = strlen_c(chex) / 2 - 1, b2hnn = 0; chex[b2hnn] != 0, b2hn < len; b2hn--, b2hnn += 2)
+	slen = strlen_c(chex);
+	if (slen < len * 2)
+		return;
+
+	slen = len * 2;
+
+	hex[2] = 0;
+	for (b2hn = slen / 2 - 1, b2hnn = 0; chex[b2hnn] != 0, b2hn < len; b2hn--, b2hnn += 2)
 	{
 		hex[0] = chex[b2hnn + 0];
 		hex[1] = chex[b2hnn + 1];

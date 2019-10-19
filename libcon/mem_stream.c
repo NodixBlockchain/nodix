@@ -52,6 +52,8 @@ OS_API_C_FUNC(void) mem_stream_init(mem_stream *stream,mem_zone_ref *stream_zone
 
 		stream->current_ptr	=	0;
 	}
+
+	stream->error = 0;
 }
 
 OS_API_C_FUNC(void) mem_stream_close(mem_stream *stream)
@@ -62,9 +64,10 @@ OS_API_C_FUNC(void) mem_stream_close(mem_stream *stream)
 
 OS_API_C_FUNC(size_t) mem_stream_get_pos(mem_stream *stream)
 {
-	return mem_sub(get_zone_ptr(&stream->data, stream->buf_ofs), stream->current_ptr);
+	return mem_sub(get_zone_ptr(&stream->data, stream->buf_ofs), uint_to_mem(stream->current_ptr));
 }
 
+/*
 OS_API_C_FUNC(size_t)	mem_stream_write(mem_stream *stream,unsigned char *data,size_t len)
 {
 	if(realloc_zone (&stream->data,(stream->current_ptr+stream->buf_ofs+len))<0)return 0;
@@ -82,7 +85,7 @@ OS_API_C_FUNC(size_t)	mem_stream_write_8(mem_stream *stream, unsigned char data)
 	stream->current_ptr ++;
 	return 1;
 }
-
+*/
 OS_API_C_FUNC(size_t)	mem_stream_write_16(mem_stream *stream, unsigned short data)
 {
 	if (realloc_zone(&stream->data, (stream->current_ptr + stream->buf_ofs + 2))<0)return 0;
@@ -97,6 +100,7 @@ OS_API_C_FUNC(size_t)	mem_stream_write_32(mem_stream *stream, unsigned int data)
 	stream->current_ptr += 4;
 	return 1;
 }
+
 OS_API_C_FUNC(size_t)	mem_stream_read		(mem_stream *stream,char *data,size_t len)
 {
 	mem_size		left;
@@ -219,7 +223,10 @@ OS_API_C_FUNC(int) mem_stream_decomp	(mem_stream *stream,unsigned int comp_size,
 OS_API_C_FUNC(unsigned int) mem_stream_read_32(mem_stream *stream)
 {
 	unsigned int res;
-	if((stream->current_ptr+stream->buf_ofs+4)>=get_zone_size(&stream->data))return 0;
+	if((stream->current_ptr+stream->buf_ofs+4)>=get_zone_size(&stream->data)) {
+		stream->error = 1;
+		return 0;
+	}
 	res=*(((unsigned int *)(get_zone_ptr(&stream->data,stream->current_ptr+stream->buf_ofs))));
 	stream->current_ptr+=4;
 	return res;
@@ -237,13 +244,17 @@ OS_API_C_FUNC(unsigned int) mem_stream_peek_32(mem_stream *stream)
 OS_API_C_FUNC(unsigned short) mem_stream_read_16(mem_stream *stream)
 {
 	unsigned short res;
-	if((stream->current_ptr+stream->buf_ofs+2)>=get_zone_size(&stream->data))return 0;
+	if ((stream->current_ptr + stream->buf_ofs + 2) >= get_zone_size(&stream->data))
+	{
+		stream->error = 1;
+		return 0;
+	}
 	res=*(((unsigned short *)(get_zone_ptr(&stream->data,stream->current_ptr+stream->buf_ofs))));
 	stream->current_ptr+=2;
 	return res;
 
 }
-
+/*
 OS_API_C_FUNC(unsigned char) mem_stream_peek_8(mem_stream *stream)
 {
 	unsigned char res;
@@ -251,7 +262,7 @@ OS_API_C_FUNC(unsigned char) mem_stream_peek_8(mem_stream *stream)
 	res=*(((unsigned char *)(get_zone_ptr(&stream->data,stream->current_ptr+stream->buf_ofs))));
 	return res;
 }
-
+*/
 OS_API_C_FUNC(unsigned char) mem_stream_read_8(mem_stream *stream)
 {
 	unsigned char res;

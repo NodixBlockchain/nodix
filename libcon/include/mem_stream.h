@@ -7,6 +7,7 @@ typedef struct
 	mem_zone_ref		data;
 	mem_size			current_ptr;
 	mem_size			buf_ofs;
+	int					error;
 }mem_stream;
 
 typedef struct

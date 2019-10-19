@@ -37,6 +37,9 @@
     <Filter Include="Fichiers sources\minizip">
       <UniqueIdentifier>{c7358604-12b6-4e82-95ea-74657010895d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Fichiers sources\x86">
+      <UniqueIdentifier>{1b59c2c1-8eeb-42e3-ade4-286bdf556c8c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="strs.c">
@@ -181,11 +184,11 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="runtime.asm">
-      <Filter>Fichiers sources</Filter>
+    <CustomBuild Include="x86\runtime.asm">
+      <Filter>Fichiers sources\x86</Filter>
     </CustomBuild>
-    <CustomBuild Include="tpo.asm">
-      <Filter>Fichiers sources</Filter>
+    <CustomBuild Include="x86\tpo.asm">
+      <Filter>Fichiers sources\x86</Filter>
     </CustomBuild>
   </ItemGroup>
 </Project>

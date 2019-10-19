@@ -78,9 +78,9 @@ char strbuffer_pop(struct string *strbuff);
 int lex_set_value_string(lex_t *lex, struct string *str);
 int  lex_init		(lex_t *lex,  void *data);
 void lex_close		(lex_t *lex);
-int  lex_scan		(lex_t *lex);
+
 extern int  parse_value	(lex_t *lex,const char *name,unsigned int type,mem_zone_ref_ptr out);
 void lex_steal_string(lex_t *lex, char *str, unsigned int str_len);
 
-
+LIBBASE_API int C_API_FUNC   lex_scan(lex_t *lex);
 LIBBASE_API void C_API_FUNC write_json(mem_zone_ref_ptr params, unsigned int mode, struct string *json_req);

@@ -18,7 +18,7 @@
 }
 
 body {
- color: #33b5e5;
+ color: #0b0f38;
  font-size: 13px;
  line-height: 1.6;
 }
@@ -39,11 +39,19 @@ body.header-fixed-space-v2 {
 
 p,
 li,
-li a,
-label {
- color: #0FF;
+li a {
+    color: #4765a0;
+    font-weight:400;
 }
 
+label {
+     font-weight: bold;
+}
+
+nav label {
+    color: #111;
+    font-weight: 400;
+}
 a {
  color: #72c02c;
  text-decoration: none;
@@ -100,3 +108,12 @@ select::-ms-expand {
     font-size:14px;
     font-weight:bold;
 }
+
+#apiKeys {
+    font-size: 0.8em;
+    display: none;
+    font-family: 'Consolas';
+    max-width: 512px;
+    margin: 0px 18px 0px 0px;
+}
+

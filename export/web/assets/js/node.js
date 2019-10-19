@@ -9,19 +9,25 @@ function Node () {
 Node.prototype.make_node_html= function (name, node) {
     var html = '<div class="container" style="border-bottom:2px #000 dashed;" >';
     
-    html += make_var_html("user agent", node.user_agent);
+    html += make_var_html("user agent", node.user_agent,'');
 
     if (typeof node.p2p_addr != 'undefined') {
-        html += make_var_html("address", node.p2p_addr.addr);
-        html += make_var_html("port", node.p2p_addr.port);
+        html += make_var_html("address", node.p2p_addr.addr, '');
+        html += make_var_html("port", node.p2p_addr.port, '');
     }
-    html += make_var_html("version", node.version);
-    html += make_var_html("height", node.block_height);
-    html += make_var_html("ping", node.ping_delay + ' ms');
+
+    html += make_var_html("version", node.version, '');
+    html += make_var_html("height", node.block_height, '');
+
+    if (typeof node.node_pubkey != 'undefined') {
+        html += make_var_html("public key", node.node_pubkey, 'hash-lnk');
+    }
+
+    html += make_var_html("ping", node.ping_delay + ' ms','');
 
     if (typeof (node.last_block) != 'undefined')
     {
-        html += make_var_html("last block", node.last_block);
+        html += make_var_html("last block", node.last_block, 'hash-lnk');
     }
 
     html += '</div>';
@@ -258,47 +264,114 @@ Node.prototype.fill_module_def_html = function (def) {
     
 Node.prototype.make_scripts_html = function (name, script_list) {
     var scripts = script_list;
-
+    var html = '';
     $('#' + name).empty();
+
+    html = '<div style="padding-left:8px;" class="accordion" id="service_scripts">';
     
     for (var i = 0; i < scripts.length; i++) {
-        var html = '';
-        html = '<div>'
+       
         html += '<section>'
-        html += '<h1><strong>' + scripts[i].file + '</strong></h1>';
+        html += '<div>';
+        html += '<h2 id="service_script_header_' + i + '" data-toggle="collapse" data-target="#service_script_container_' + i + '" aria-expanded="false" aria-controls="service_script_container_' + i + '"  class="service_script_hdr"><strong>' + scripts[i].file.toString() + '</strong></h2>';
+        
+        html += '<div id="service_script_container_' + i + '" role="tabpanel" aria-labelledby = "service_script_header_' + i + '" data-parent="#service_scripts" class="service_script_container collapse" >';
+        html += '<div id="service_script_' + i + '" style="padding-left:18px;" class="accordion" >';
+
+
         for (var scriptk in scripts[i]) {
             var script_var = scripts[i][scriptk];
+            if (script_var == null) continue;
 
-            if (script_var != null) {
-                html += '<div>';
-                html += '<label  ><h3 onclick=" $(\'#var_' + scriptk + '\').slideToggle();">' + scriptk + '</h3></label>';
-                if ((typeof script_var == 'object') || (typeof script_var == 'Array') || (script_var.length < 32)) {
-                    if (typeof script_var == 'object') {
-                        for (var ne = 0; ne < script_var.length; ne++) {
-                            html += '<div>' + script_var[ne] + '</div>';
+            if (script_var.length == 0) continue;
+
+            html += '<div class="row script_var_row">';
+
+            var value_html = '';
+          
+            if ((typeof script_var == 'object') || (typeof script_var == 'array') || (script_var.length < 48)) {
+                if (typeof script_var == 'object') {
+
+                    var objkeys = Object.keys(script_var);
+
+                    for (var ne = 0; ne < objkeys.length; ne++) {
+
+                        if ((typeof script_var[objkeys[ne]] == 'object') || (typeof script_var[objkeys[ne]] == 'array'))
+                            value_html += objkeys[ne] + ': object' + '<br/>';
+                        else
+                            value_html += objkeys[ne] + ':' + script_var[objkeys[ne]].toString() + '<br/>';
+                    }
+                }
+                else if (typeof script_var == 'array')
+                {
+                    for (var ne = 0; ne < script_var.length; ne++) {
+                        {
+                            if ((typeof script_var[ne] == 'object') || (typeof script_var[ne] == 'array'))
+                                value_html += ne + ': object' + '<br/>';
+                            else
+                                value_html += ne + ':' + script_var[ne].toString() + '<br/>';
                         }
                     }
-                    else
-                        html += '&nbsp;:&nbsp;<span>' + script_var + '</span>';
+                }
+                else
+                {
+                    value_html += script_var.toString();
                 }
 
-                else {
-                    var str = '';
-
-                    if (typeof script_var == 'string')
-                        str = script_var.replace(/(?:\r\n|\r|\n)/g, '<br />');
-                    else if (typeof script_var == 'integer')
-                        str = script_var.toString();
-
-                    html += '<div id="var_' + scriptk + '" class="script_proc">' + str + '</div>';
-                }
-                html += '</div>'
+                html += '<div class="col-md-3"><label><h3>' + scriptk + '</h3></label></div>';
+                html += '<div class="col script_var" >' + value_html + '</div>';
             }
+            else if ((typeof script_var == 'integer') || (typeof script_var == 'number')) {
+                value_html = script_var.toString();
+
+                html += '<div class="col-md-3"><label><h3>' + scriptk + '</h3></label></div>';
+                html += '<div class="col script_var" >' + value_html + '</div>';
+            }
+            else
+            {
+                var str = '';
+                var script_id = i + '_' + scriptk;
+
+                if (typeof script_var == 'string')
+                {
+                    if ( ((script_var.length == 64)||(script_var.length == 66)) && (isHexStr(script_var)))
+                    {
+                        value_html = script_var.toString();
+
+                        html += '<div class="col-md-3"><label><h3>' + scriptk + '</h3></label></div>';
+                        html += '<div class="col script_var"  id="var_script_' + script_id + '" >' + value_html + '</div>';
+                    }
+                    else
+                    {
+                        var page_url;
+
+                        value_html = script_var.replace(/<br\/>/g, '\n');
+                        value_html = value_html.replace(/</g, '&lt;');
+                        value_html = value_html.replace(/>/g, '&gt;');
+                        value_html = value_html.replace(/(?:\r\n|\r|\n)/g, '<br/>');
+
+
+                        page_url = scripts[i].script_url + '/' + scriptk;
+                            
+    
+                        html += '<div class="col-md-3">';
+                        html += '<h3 id= "script_hdr_' + script_id + '"  data-toggle="collapse" data-target="#var_script_' + script_id + '" aria-expanded="false" aria-controls="var_script_' + script_id + '"  script_key="' + scriptk + '" script_id="' + i + '" class="script_proc_hdr">' + scriptk + '</h3></div><div class="col-md-1"><a target="_blank" class="script-page-link" href="' + page_url + '"><i class="fa fa-link"></i></a></div>';
+                        html += '</div>';
+                        html += '<div class="row">';
+                        html += '<div id = "var_script_' + script_id + '" role="tabpanel" aria-labelledby = "script_hdr_' + script_id + '" data-parent="#service_script_container_' + i + '"  class="col script_proc collapse" >' + value_html + '</div>';
+
+                    }
+                }
+            }
+
+            html += '</div>';
         }
+        html += '</div>';
         html += '</section>';
-        html += '</div>'
-        $('#' + name).append(html);
+
+       
     }
+    $('#' + name).append(html);
 }
 
 
@@ -345,6 +418,8 @@ Node.prototype.make_mime_table = function (div_name, mimes) {
     $('#' + div_name).html(html);
 }
 
+
+
 Node.prototype.setInfos = function (node)
 {
 
@@ -377,7 +452,39 @@ Node.prototype.setInfos = function (node)
     $('#posreward').html(node.pos_reward);
 }
 
+Node.prototype.updateBlockInfos = function () {
+    var self = this;
+    rpc_call('getinfo', [], function (data) {
 
+        var infos = data.result;
+
+        SelfNode.user_agent= infos.version;
+        SelfNode.version = infos.protocolversion;
+        SelfNode.block_height= infos.blocks;
+        SelfNode.p2p_addr.port= infos.p2pport;
+        SelfNode.p2p_addr.addr = infos.ip;
+
+        SelfNode.current_pow_diff = infos.difficulty.ipow;
+        SelfNode.current_pos_diff = infos.difficulty.ipos;
+
+        SelfNode.pow_reward = infos.reward.mining;
+        SelfNode.pos_reward = infos.reward.staking;
+
+        $('#node_div').empty();
+        self.setInfos(SelfNode);
+        self.make_node_html('node_div', SelfNode);
+    });
+
+}
+
+Node.prototype.seteventsrc = function (in_url, handler) {
+    var self = this;
+
+    this.evtSource = new EventSource(site_base_url + in_url);
+
+    this.evtSource.addEventListener("newblock", handler, false);
+
+}
 
 
 var MyNode = null;

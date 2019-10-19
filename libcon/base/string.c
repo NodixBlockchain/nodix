@@ -171,8 +171,9 @@ OS_API_C_FUNC(int) b58tobin(void *bin, size_t *binszp, const char *b58, size_t b
 
 OS_API_C_FUNC(int) itoa_s(int num, char* str, size_t len, int base)
 {
+	size_t i = 0;
 	int sum;
-	int i = 0, sign;
+	int sign;
 	int digit;
 
 	if (len == 0)
@@ -216,7 +217,7 @@ OS_API_C_FUNC(int) itoa_s(int num, char* str, size_t len, int base)
 OS_API_C_FUNC(int) uitoa_s(unsigned int num, char* str, size_t len, int base)
 {
 	unsigned int sum = num;
-	int i = 0;
+	size_t i = 0;
 	unsigned int digit;
 
 	if (len == 0)
@@ -246,11 +247,46 @@ OS_API_C_FUNC(int) uitoa_s(unsigned int num, char* str, size_t len, int base)
 	return 1;
 }
 
+OS_API_C_FUNC(int) uitoa_pad_s(unsigned int num, char* str, size_t len, int base)
+{
+	unsigned int sum = num;
+	size_t i = 0;
+	unsigned int digit;
+
+	if (len == 0)
+		return 0;
+	if (base == 0)
+		return 0;
+
+	do
+	{
+		digit = sum % base;
+		if (digit < 0xA)
+			str[i++] = '0' + digit;
+		else
+			str[i++] = 'A' + digit - 0xA;
+		sum /= base;
+	} while (sum && (i < len));
+
+	memset_c(&str[i], '0', len - i);
+
+	str[len] = 0;
+
+	strrev_c(str);
+
+	if (i == (len - 2) && sum)
+		return 0;
+
+
+
+	return 1;
+}
+
 
 OS_API_C_FUNC(int) luitoa_s(uint64_t value, char *str, size_t len, int base)
 {
 	uint64_t sum = value;
-	int i = 0;
+	size_t i = 0;
 	unsigned int digit;
 
 	if (len == 0)
@@ -279,7 +315,8 @@ OS_API_C_FUNC(int) luitoa_s(uint64_t value, char *str, size_t len, int base)
 OS_API_C_FUNC(int) litoa_s(int64_t value, char *str, size_t len, int base)
 {
 	int64_t sum;
-	int i = 0,sign;
+	size_t i = 0;
+	int sign;
 	unsigned int digit;
 
 	if (len == 0)
@@ -1349,3 +1386,4 @@ OS_API_C_FUNC(void) dtoll_c(double dAmount, uint64_t *nAmount)
 {
 	(*nAmount) = dAmount;
 }
+

@@ -8,13 +8,18 @@
 #include <strs.h>
 #include <tree.h>
 
-#include <http.h>
+
 #include <fsio.h>
 #include <mem_stream.h>
 #include <tpo_mod.h>
 
 #include <crypto.h>
+#include <parser.h>
+
+
 #include "../block_adx/block_api.h"
+
+#include "../node_adx/http.h"
 #include "../node_adx/node_api.h"
 
 C_IMPORT size_t			C_API_FUNC	  get_node_size(mem_zone_ref_ptr key);
@@ -24,7 +29,7 @@ typedef int  C_API_FUNC get_blk_staking_infos_func(mem_zone_ref_ptr blk, mem_zon
 typedef get_blk_staking_infos_func *get_blk_staking_infos_func_ptr;
 
 
-#ifdef _DEBUG
+#ifdef _NATIVE_LINK_
 	C_IMPORT int					C_API_FUNC get_blk_staking_infos(mem_zone_ref_ptr blk, mem_zone_ref_ptr infos);
 	get_blk_staking_infos_func_ptr  _get_blk_staking_infos = PTR_INVALID;
 #else
@@ -43,7 +48,7 @@ OS_API_C_FUNC(int) set_node_block_explorer(mem_zone_ref_ptr node, tpo_mod_file *
 	my_node.zone = PTR_NULL;
 	copy_zone_ref	(&my_node, node);
 
-#ifndef _DEBUG
+#ifndef _NATIVE_LINK_
 	get_blk_staking_infos = (get_blk_staking_infos_func_ptr)get_tpo_mod_exp_addr_name(pos_mod, "get_blk_staking_infos", 0);
 #endif
 	return 1;
@@ -102,7 +107,7 @@ int get_block_infos(mem_zone_ref_ptr block, const struct http_req *req, mem_zone
 
 	tree_manager_get_child_value_hash(block, NODE_HASH("blkHash"), block_hash);
 
-	if (!get_block_size(block_hash, &size))
+	if (!load_block_size(block_hash, &size))
 		size = 0;
 
 	tree_manager_get_child_value_i64(block, NODE_HASH("height"), &height);
@@ -112,7 +117,7 @@ int get_block_infos(mem_zone_ref_ptr block, const struct http_req *req, mem_zone
 		get_blockreward(height, &reward);
 		tree_manager_set_child_value_i64(result, "reward", reward);
 	}
-	else
+	else if (get_blk_staking_infos)
 	{
 		get_blk_staking_infos(block, result);
 	}
@@ -822,7 +827,6 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 	{
 		hash_t			txhash, blk_hash;
 		mem_zone_ref	tx = { PTR_NULL },my_tx = { PTR_NULL };
-		int				n;
 
 		if ((idx >= page_num*limit))
 		{
@@ -1093,3 +1097,242 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 	return 1;
 }
 
+OS_API_C_FUNC(int) getwav(const char *params, const struct http_req *req, mem_zone_ref_ptr result)
+{
+	mem_stream	  wavstream = { 0 };
+	mem_zone_ref  t_var = { PTR_NULL }, inputs = { PTR_NULL }, tree = { PTR_NULL }, streamMem = { PTR_NULL };
+	mem_zone_ref  treeHashNode = { PTR_NULL }, parseTree = { PTR_NULL },root = { PTR_NULL };
+	mem_zone_ref_ptr	node = PTR_NULL;
+	size_t		 nxt_prm_pos, prev_prm_pos, qv, totalSz, strLen;
+	unsigned int t, max,length, scaleFac;
+	short		*finalPtr;
+
+	strLen		= strlen_c(params);
+	nxt_prm_pos = strlpos_c(params, 0, '/');
+
+	if (nxt_prm_pos == INVALID_SIZE)
+		nxt_prm_pos = strLen;
+
+	if (nxt_prm_pos < 64)
+		return 0;
+
+	if (!tree_manager_create_node("h", NODE_BITCORE_HASH, &treeHashNode))
+		return 0;
+
+	//hex_2_bin_r(params, treeHash, 32);
+
+	tree_manager_write_node_str(&treeHashNode, 0, params);
+	
+	prev_prm_pos = nxt_prm_pos + 1;
+	nxt_prm_pos  = strlpos_c(params, prev_prm_pos, '/');
+	if (nxt_prm_pos != INVALID_SIZE)
+	{
+		length = strtol_c(params + prev_prm_pos, PTR_NULL, 10);
+		if (nxt_prm_pos < strLen)
+		{
+			prev_prm_pos = nxt_prm_pos + 1;
+			scaleFac = strtol_c(params + prev_prm_pos, PTR_NULL, 10);
+		}
+		else
+			scaleFac = 48000;
+	}
+	else
+	{
+		scaleFac = 48000;
+		length = 1000;
+	}
+		
+
+
+
+	tree_manager_create_node("tree", NODE_GFX_OBJECT, &parseTree);
+	
+	if (!node_load_parse_tree(&treeHashNode, &parseTree))
+	{
+		release_zone_ref(&parseTree);
+		release_zone_ref(&treeHashNode);
+		return 0;
+	}
+
+	tree_manager_get_child_at(&parseTree, 0, &inputs);
+	tree_manager_get_child_at(&parseTree, 1, &tree);
+
+	for (qv = 0; req->query_vars[qv].value.len > 0; qv++)
+	{
+		mem_zone_ref input = { PTR_NULL }, root = { PTR_NULL };
+
+		if (!tree_manager_find_child_node(&inputs, req->query_vars[qv].kcrc, 0xFFFFFFFF, &input))
+			continue;
+		
+		tree_manager_write_node_str		(&input, 0, req->query_vars[qv].value.str);
+		release_zone_ref				(&input);
+	}
+
+	tree_manager_get_child_at(&tree, 0, &root);
+
+	load_parse_tree_input(&root);
+
+	release_zone_ref(&root);
+
+	if (!tree_manager_find_child_node(&inputs, NODE_HASH("t"), 0xFFFFFFFF, &t_var))
+		tree_manager_add_child_node(&inputs, "t", NODE_GFX_OBJECT, &t_var);
+
+
+	tree_manager_set_child_value_i32(&t_var, "scaleFac", scaleFac);
+	tree_manager_set_child_value_i32(&t_var, "end", length);
+	tree_manager_set_child_value_i32(&t_var, "value", 0);
+
+	max			= (length * scaleFac) / 1000;
+	totalSz		= 44 + max * sizeof(unsigned short);
+
+	finalPtr = (short *)malloc_c(totalSz);
+
+	for (t = 0; t < max; t++)
+	{
+		float f;
+		int ret;
+		uint64_t ival;
+		tree_manager_set_child_value_i32(&t_var, "value", t);
+
+		ret = eval_tree_to_float(&tree, &inputs, &f, 0);
+		dtoll_c(f * 32767.0f, &ival);
+
+		finalPtr[t+22] = ival;
+
+		if (!ret)
+			break;
+	}
+
+	ptr_to_ref		(finalPtr, &streamMem);
+	mem_stream_init	(&wavstream, &streamMem, 16);
+	make_wav_data	(&wavstream,  max * sizeof(unsigned short), 44100);
+	mem_stream_close(&wavstream);
+
+	release_zone_ref	(&t_var);
+	
+	release_zone_ref	(&inputs);
+	release_zone_ref	(&tree);
+	release_zone_ref	(&parseTree);
+	release_zone_ref	(&treeHashNode);
+
+
+	tree_manager_set_child_value_ptr(result, "ptr", finalPtr);
+	tree_manager_set_child_value_i32(result, "size", totalSz);
+	tree_manager_set_child_value_str(result, "mime", "audio/wav");
+
+	//release_zone_ref(&resData);
+	
+	return 2;
+	
+}
+
+OS_API_C_FUNC(int) getbuffer(const char *params, const struct http_req *req, mem_zone_ref_ptr result)
+{
+	mem_stream	  wavstream = { 0 };
+	mem_zone_ref  t_var = { PTR_NULL }, inputs = { PTR_NULL }, tree = { PTR_NULL }, streamMem = { PTR_NULL };
+	mem_zone_ref  treeHashNode = { PTR_NULL }, parseTree = { PTR_NULL }, root = { PTR_NULL };
+	mem_zone_ref_ptr	node = PTR_NULL;
+	size_t		 nxt_prm_pos, prev_prm_pos, qv, totalSz, strLen;
+	unsigned int t, max, length, scaleFac;
+	float		*finalPtr;
+
+	strLen = strlen_c(params);
+	nxt_prm_pos = strlpos_c(params, 0, '/');
+
+	if (nxt_prm_pos == INVALID_SIZE)
+		nxt_prm_pos = strLen;
+
+	if (nxt_prm_pos < 64)
+		return 0;
+
+	if (!tree_manager_create_node("h", NODE_BITCORE_HASH, &treeHashNode))
+		return 0;
+
+	//hex_2_bin_r(params, treeHash, 32);
+
+	tree_manager_write_node_str(&treeHashNode, 0, params);
+
+	prev_prm_pos = nxt_prm_pos + 1;
+	nxt_prm_pos = strlpos_c(params, prev_prm_pos, '/');
+	if (nxt_prm_pos != INVALID_SIZE)
+	{
+		length = strtol_c(params + prev_prm_pos, PTR_NULL, 10);
+		if (nxt_prm_pos < strLen)
+		{
+			prev_prm_pos = nxt_prm_pos + 1;
+			scaleFac = strtol_c(params + prev_prm_pos, PTR_NULL, 10);
+		}
+		else
+			scaleFac = 48000;
+	}
+	else
+		length = 1000;
+
+
+
+	tree_manager_create_node("tree", NODE_GFX_OBJECT, &parseTree);
+
+	if (!node_load_parse_tree(&treeHashNode, &parseTree))
+	{
+		release_zone_ref(&parseTree);
+		release_zone_ref(&treeHashNode);
+		return 0;
+	}
+
+	tree_manager_get_child_at(&parseTree, 0, &inputs);
+	tree_manager_get_child_at(&parseTree, 1, &tree);
+
+	for (qv = 0; req->query_vars[qv].value.len > 0; qv++)
+	{
+		mem_zone_ref input = { PTR_NULL }, root = { PTR_NULL };
+
+		if (!tree_manager_find_child_node(&inputs, req->query_vars[qv].kcrc, 0xFFFFFFFF, &input))
+			continue;
+
+		tree_manager_write_node_str(&input, 0, req->query_vars[qv].value.str);
+		release_zone_ref(&input);
+	}
+
+	tree_manager_get_child_at(&tree, 0, &root);
+
+	load_parse_tree_input(&root);
+
+	release_zone_ref(&root);
+
+	if (!tree_manager_find_child_node(&inputs, NODE_HASH("t"), 0xFFFFFFFF, &t_var))
+		tree_manager_add_child_node(&inputs, "t", NODE_GFX_OBJECT, &t_var);
+
+
+	tree_manager_set_child_value_i32(&t_var, "scaleFac", scaleFac);
+	tree_manager_set_child_value_i32(&t_var, "end", length);
+	tree_manager_set_child_value_i32(&t_var, "value", 0);
+
+	max = (length * scaleFac) / 1000;
+	totalSz = max * sizeof(float);
+
+	finalPtr =(float*) malloc_c(totalSz);
+
+	for (t = 0; t < max; t++)
+	{
+		int ret;
+		tree_manager_set_child_value_i32(&t_var, "value", t);
+		ret = eval_tree_to_float		(&tree, &inputs, finalPtr, t * sizeof(float));
+
+		if (!ret)
+			break;
+	}
+	
+	release_zone_ref(&t_var);
+
+	release_zone_ref(&inputs);
+	release_zone_ref(&tree);
+	release_zone_ref(&parseTree);
+	release_zone_ref(&treeHashNode);
+
+
+	tree_manager_set_child_value_ptr(result, "ptr", finalPtr);
+	tree_manager_set_child_value_i32(result, "size", totalSz);
+
+	return 2;
+
+}

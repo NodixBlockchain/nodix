@@ -15,7 +15,7 @@
 
 hash_t				nullhash = { 0xCD };
 hash_t				Difflimit = { 0xCD };
-unsigned int		Di = PTR_INVALID, last_diff = PTR_INVALID;
+unsigned int		Di = 0xABCDABCD, last_diff = 0xABCDABCD;
 static int64_t		TargetSpacing = 0xABCDABCD;
 static int64_t		nTargetTimespan = 0xABCDABCD;
 static int64_t		nStakeReward = 0xABCDABCD;
@@ -102,7 +102,7 @@ OS_API_C_FUNC(int) generated_stake_modifier(uint64_t height, hash_t StakeMod)
 	unsigned char	*data;
 	size_t			len;
 	int				ret = 0;
-	uint64_t		block_height, tx_offset;
+	uint64_t		tx_offset;
 
 
 	if (get_file_chunk("blocks", mul64(height, 512), &data, &len) <= 0)
@@ -717,6 +717,9 @@ OS_API_C_FUNC(int) create_pos_block(uint64_t height, mem_zone_ref_ptr tx, mem_zo
 		tree_manager_set_child_value_i32	(newBlock, "time", time);
 		tree_manager_set_child_value_i32	(newBlock, "bits", last_diff);
 		tree_manager_set_child_value_i32	(newBlock, "nonce", 0);
+		tree_manager_set_child_value_i64	(newBlock, "height", height + 1);
+		tree_manager_set_child_value_i64	(newBlock, "block_height", height + 1);
+		
 		tree_manager_set_child_value_vint	(newBlock, "ntx", vntx);
 		tree_manager_add_child_node			(newBlock, "signature", NODE_BITCORE_ECDSA_SIG, PTR_NULL);
 
@@ -735,7 +738,7 @@ OS_API_C_FUNC(int) create_pos_block(uint64_t height, mem_zone_ref_ptr tx, mem_zo
 			tree_manager_node_dup	(&txs, tx, &mtx,0xFFFFFFFF);
 			release_zone_ref		(&mtx);
 			
-			build_merkel_tree		(&txs, merkle);
+			build_merkel_tree		(&txs, merkle, PTR_NULL);
 			release_zone_ref		(&txs);
 		}
 		else

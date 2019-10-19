@@ -1,7 +1,7 @@
 CONSRC=libcon/bintree.c libcon/base/utf.c libcon/base/string.c libcon/base/mem_base.c libcon/unix/stat_file.c libcon/unix/connect.c libcon/strs.c libcon/mem_stream.c libcon/tpo_mod.c libcon/exp.c libcon/zlibexp.c
 XMLSRC=libcon/expat/xmlparse/xmlparse.c libcon/expat/xmltok/xmltok.c libcon/expat/xmltok/xmlrole.c
 ZLIBSRC=libcon/zlib-1.2.8/zutil.c libcon/zlib-1.2.8/uncompr.c libcon/zlib-1.2.8/inftrees.c libcon/zlib-1.2.8/compress.c libcon/zlib-1.2.8/infback.c libcon/zlib-1.2.8/trees.c libcon/zlib-1.2.8/inflate.c libcon/zlib-1.2.8/crc32.c libcon/zlib-1.2.8/inffast.c libcon/zlib-1.2.8/adler32.c libcon/zlib-1.2.8/deflate.c libcon/minizip-master/ioapi_mem.c libcon/minizip-master/zip.c libcon/dozip.c libcon/minizip-master/ioapi.c 
-LIBBASESRC=libbase/md5.c libbase/qsort.c libbase/sha256.c libbase/tree.c libbase/http.c libbase/main.c libbase/parser.c libbase/ripemd160.c libbase/strbuffer.c libbase/upnp.c libbase/crypto_hashblocks/sha512/ref/blocks.c libbase/crypto_hash/sha512/ref/hash.c
+LIBBASESRC=libbaseimpl/funcs.c
 
 
 CFLAGS = -m32 -msse  #-O2 -msse -pedantic -std=c89 -D_DEFAULT_SOURCE
@@ -16,8 +16,8 @@ export/launcher: launcher/main.c export/libcon.a
 	$(CC) $(CFLAGS) -lc -lm -pthread $(COMMON_INCS) launcher/main.c export/libcon.a -Lexport/ -o export/launcher
 
 export/libcon.a: $(CONSRC) $(XMLSRC) $(ZLIBSRC)
-	nasm -f elf32 libcon/tpo.asm -o tpo.o
-	nasm -f elf32 libcon/runtime.asm -o runtime.o
+	nasm -f elf32 libcon/x86/tpo.asm -o tpo.o
+	nasm -f elf32 libcon/x86/runtime.asm -o runtime.o
 	$(CC) $(CFLAGS) $(COMMON_INCS) -Ilibcon/unix/include -Ilibcon/expat/xmlparse -Ilibcon/expat/xmltok $(CONSRC) $(XMLSRC) $(ZLIBSRC) -DNOCRYPT -c
 	$(CC) *.o -Wl,--export-dynamic,-melf_i386 -m32 -lc -lm -lpthread -shared -o export/libcon.so
 	ar -cvq export/libcon.a *.o
@@ -41,13 +41,13 @@ export/libblock_explorer.so:export/libblock_adx.so export/libbase.so export/libc
 	$(CC) $(CFLAGS) $(COMMON_INCS) block_explorer/block_explorer.c  $(MODFLAGS) -Wl,-soname,libstake_pos3.so -Lexport -lcon -lbase -lblock_adx -o export/libblock_explorer.so
 
 export/libblock_adx.so:block_adx/main.c block_adx/script.c block_adx/block.c block_adx/scrypt.c block_adx/store.c block_adx/app_store.c export/libprotocol_adx.so export/libbase.so export/libcon.so
-	$(CC) $(CFLAGS) $(COMMON_INCS) block_adx/main.c block_adx/block.cblock_adx/script.c block_adx/scrypt.c  block_adx/store.c block_adx/app_store.c $(MODFLAGS) -Wl,-soname,block_adx.so -Lexport -lcon -lbase -lprotocol_adx -o export/libblock_adx.so
+	$(CC) $(CFLAGS) $(COMMON_INCS) block_adx/ripemd160.c block_adx/main.c block_adx/block.cblock_adx/script.c block_adx/scrypt.c  block_adx/store.c block_adx/app_store.c $(MODFLAGS) -Wl,-soname,block_adx.so -Lexport -lcon -lbase -lprotocol_adx -o export/libblock_adx.so
 
 export/libprotocol_adx.so:protocol_adx/main.c protocol_adx/protocol.c export/libbase.so export/libcon.so
 	$(CC) $(CFLAGS) $(COMMON_INCS) protocol_adx/main.c protocol_adx/protocol.c $(MODFLAGS) -Wl,-soname,protocol_adx.so -Lexport -lcon -lbase -o export/libprotocol_adx.so
 
-export/libnode_adx.so: node_adx/main.c node_adx/node.c node_adx/rpc.c node_adx/node_api.h
-	$(CC) $(CFLAGS) $(COMMON_INCS) node_adx/main.c node_adx/node.c node_adx/rpc.c $(MODFLAGS) -Wl,-soname,node_adx.so -Lexport -lcon -lprotocol_adx -lblock_adx -o export/libnode_adx.so
+export/libnode_adx.so: node/node_impl.c node_adx/node_api.h
+	$(CC) $(CFLAGS) $(COMMON_INCS) node/node_impl.c $(MODFLAGS) -Wl,-soname,node_adx.so -Lexport -lcon -lprotocol_adx -lblock_adx -o export/libnode_adx.so
 
 export/libwallet.so:wallet/wallet.c export/libblock_adx.so export/libbase.so export/libcon.so
 	$(CC) $(CFLAGS) $(COMMON_INCS) wallet/wallet.c  $(MODFLAGS) -Wl,-soname,libwallet.so -Lexport -lcon -lbase -lblock_adx -o export/libwallet.so
@@ -93,13 +93,6 @@ export/modz/block_adx.tpo:export/mod_maker export/libblock_adx.so
 	export/mod_maker ./export/libblock_adx.so ./export/modz
 	mv export/modz/libblock_adx.tpo export/modz/block_adx.tpo
 
-export/modz/node_adx.tpo:export/mod_maker export/libnode_adx.so
-	export/mod_maker ./export/libnode_adx.so ./export/modz
-	mv export/modz/libnode_adx.tpo export/modz/node_adx.tpo
-	
-export/modz/libbase.tpo:export/mod_maker export/libbase.so
-	export/mod_maker ./export/libbase.so ./export/modz
-	
 export/modz/protocol_adx.tpo:export/mod_maker export/libprotocol_adx.so
 	export/mod_maker ./export/libprotocol_adx.so ./export/modz
 	mv export/modz/libprotocol_adx.tpo export/modz/protocol_adx.tpo

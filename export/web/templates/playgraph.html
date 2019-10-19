@@ -1,0 +1,157 @@
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<script type="text/javascript">
+
+    var audioCtx;
+    var GeneratedSample = null;
+    
+    function data_finished(values, smin, smax)
+    {
+        var plots = { x: [], y: values };
+
+        GeneratedSample = {};
+        GeneratedSample.name = 'generated';
+        GeneratedSample.samplerate = 44100;
+        GeneratedSample.samples = values;
+
+        $('#genPlot').empty();
+
+        // Copy floats
+        for (var i = 0; i < values.length; i++) {
+            plots.x[i] = i;
+        }
+        plots.type = 'scattered';
+
+        if (typeof Plotly != 'undefined')
+            Plotly.newPlot('genPlot', [plots], {}, {});
+        else
+            $('#genPlot').html('no plotly');
+
+
+
+        $('#playGenBtn').prop('disabled', false);
+    }
+    
+    function myGraphDone() {
+     
+        $('#inputs').html(this.create_inputs());
+
+        this.read_input_form();
+
+        this.execute_tree().onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                // Typical action to be performed when the document is ready:
+                var out = getOutputBuffer(this.responseText);
+                data_finished(out.values, out.smin, out.smax);
+            }
+        };;
+
+
+        var plots = {
+            type: "sankey",
+            orientation: "h",
+            node: {
+                pad: 15,
+                thickness: 30,
+                line: {
+                    color: "black",
+                    width: 0.5
+                },
+                label: [],
+                
+                color: []
+            },
+
+            link: {
+                source: [],
+                target: [],
+                label: [],
+                value: []
+            }
+        }
+
+        make_plotly_diag(plots, null, this.parse_tree[0]);
+
+        var layout = {
+            title: "Abstract synthax tree " + this.parse_tree[0].txid,
+            font: {
+                size: 10
+            }
+        }
+
+        if (typeof Plotly != 'undefined')
+        {
+            Plotly.newPlot(this.graphDiv, [plots], layout, {});
+            this.graphDiv.on('plotly_click', function (data) {
+
+                if (data.points[0].label.length > 0)
+                    window.open(site_base_url + '/play/' + data.points[0].label);
+
+            });
+        }
+        else
+            this.graphDiv.innerHTML = 'no plotly';
+    }
+</script>
+
+<style>
+    h2{
+        color:white;
+    }
+
+    #objHash
+    {
+        font-size:0.4em;
+    }
+
+   .graph_args {
+        padding-left:14px;
+    }
+    .graph_op{
+        padding:4px;
+        background-color:black;
+        color:white;
+        margin:2px;
+        border:1px solid #888;
+    }
+    .graph_func{
+        padding:4px;
+        background-color:black;
+        color:white;
+        margin:2px;
+        border:1px solid #888;
+    }
+    .graph_val
+    {
+        background-color:white;
+        color:black;
+        font-weight:bold;
+        text-align:right;
+    }
+    .graph_var
+    {
+        background-color:white;
+        color:black;
+        font-weight:bold;
+        text-align:right;
+    }
+    label{
+        color:#000;
+        font-weight:bold;
+    }
+
+</style>
+
+<div class="container">
+    <h2>Composition player</h2>
+    <div class="jumbotron">
+        <div class="container" id="AST"></div>
+        <div class="container">
+            <div class="card mb-3 bg-primary">
+                <div class="card-header"><h2>Generated sample</h2><div id="inputs"></div></div>
+                <div class="card-body"><div id="genPlot"></div></div>
+               <div class="card-footer"><button class="btn btn-secondary" onclick="var audioCtx = new AudioContext(); MyAudio.playSample(audioCtx, GeneratedSample);" id="playGenBtn" disabled="disabled">play</button></div>
+           </div>
+        </div>
+    </div>
+</div>

@@ -71,6 +71,7 @@
     <ClCompile Include="app_store.c" />
     <ClCompile Include="block.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="ripemd160.c" />
     <ClCompile Include="script.c" />
     <ClCompile Include="scrypt.c" />
     <ClCompile Include="store.c" />

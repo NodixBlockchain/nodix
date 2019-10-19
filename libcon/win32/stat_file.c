@@ -36,6 +36,7 @@ struct thread
 {
 	thread_func_ptr		func;
 	mem_zone_ref		params;
+	mem_zone_ref		thread_data;
 	mem_ptr				stack;
 	unsigned int		status;
 	unsigned int		tree_area_id;
@@ -124,24 +125,53 @@ OS_API_C_FUNC(int) set_ftime(const char *path,ctime_t time)
 	FILETIME ft;
 	if ((hFile = CreateFile(path, FILE_WRITE_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
 	{
-		return 0;
+		struct string t;
+		clone_string(&t, &exe_path);
+		cat_cstring_p(&t, path);
+		hFile = CreateFile(t.str, FILE_WRITE_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+		free_string(&t);
+		if (hFile == INVALID_HANDLE_VALUE)
+		{
+			return 0;
+		}
 	}
-
 	UnixTimeToFileTime(time, &ft);
 
 	ret = SetFileTime(hFile, &ft, &ft, &ft);
 	CloseHandle(hFile);
-	return ret;
+	return 1;
 }
+
+OS_API_C_FUNC(int)  time_to_date(ctime_t time,char *date,size_t date_len)
+{
+	struct tm  ts;
+	ts = *localtime(&time);
+	return strftime(date, date_len, "%Y-%m-%d", &ts);
+}
+
+
+
+
 OS_API_C_FUNC(int) get_ftime(const char *path, ctime_t *time)
 {
 	int ret;
 	HANDLE hFile;
 	FILETIME ft;
 	if ((hFile = CreateFile(path, FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
-		return 0;
+	{
+		struct string t;
+		clone_string(&t, &exe_path);
+		cat_cstring_p(&t, path);
+		hFile = CreateFile(t.str, FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+		free_string(&t);
+		if (hFile == INVALID_HANDLE_VALUE)
+		{
+			return 0;
+		}
+	}
+		
 
-	ret = GetFileTime(hFile, &ft, NULL, NULL);
+	ret = GetFileTime(hFile, NULL, NULL, &ft);
 	CloseHandle(hFile);
 	
 	if (ret)
@@ -281,19 +311,19 @@ OS_API_C_FUNC(int) get_file_to_memstream(const char *path, mem_stream *stream)
 }
 
 
-OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data_len)
+OS_API_C_FUNC(int) get_file(const char *path, mem_ptr *data, size_t *data_len)
 {
 	HANDLE hFile;
 	size_t len;
 
 	if (path == PTR_NULL)return 0;
 
-	if ((hFile = CreateFile(path, FILE_READ_DATA|FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	if ((hFile = CreateFile(path, FILE_READ_DATA|FILE_READ_ATTRIBUTES, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
 	{
 		struct string t;
 		clone_string		(&t, &exe_path);
 		cat_cstring_p		(&t, path);
-		hFile = CreateFile	(t.str, FILE_READ_DATA|FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+		hFile = CreateFile	(t.str, FILE_READ_DATA|FILE_READ_ATTRIBUTES, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
 		free_string(&t);
 		if (hFile == INVALID_HANDLE_VALUE)
 		{
@@ -311,7 +341,7 @@ OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data
 		{
 			SetFilePointer	(hFile, 0, 0, FILE_BEGIN);
 			ReadFile		(hFile, (*data), (*data_len), &len, PTR_NULL);
-			(*data)[*data_len] = 0;
+			((char *)(*data))[*data_len] = 0;
 		}
 		else
 			len = 0;
@@ -368,7 +398,7 @@ OS_API_C_FUNC(int) get_file_len(const char *path, size_t size, unsigned char **d
 	return (int)len;
 }
 
-OS_API_C_FUNC(int) put_file(const char *path, void *data, size_t data_len)
+OS_API_C_FUNC(int) put_file(const char *path, const void *data, size_t data_len)
 {
 	HANDLE		hFile;
 	size_t		len;
@@ -466,6 +496,8 @@ OS_API_C_FUNC(int) get_file_chunk(const char *path, size_t ofset, unsigned char 
 				ReadFile(hFile, (*data), (*data_len), &len, PTR_NULL);
 				(*data)[*data_len] = 0;
 			}
+			else
+				len = 0;
 		}
 		else
 			len = 0;
@@ -577,9 +609,17 @@ OS_API_C_FUNC(int) get_exe_path(struct string *outPath)
 
 OS_API_C_FUNC(int) set_data_dir(const struct string *path,const char *name)
 {
-	clone_string  (&home_path,path);	
+	clone_string	(&home_path,path);
+	create_dir		(path->str);
+
 	cat_cstring_p (&home_path, name);
 	create_dir	  (home_path.str);
+	if (stat_file(home_path.str) != 0)
+	{
+		console_print("unable to access data dir");
+		return 0;
+	}
+
 	set_cwd		  (home_path.str);
 	return 1;
 }
@@ -713,6 +753,44 @@ OS_API_C_FUNC(unsigned int) get_mem_area_id()
 
 	return threads[cur].mem_area_id;
 }
+
+OS_API_C_FUNC(unsigned int) get_thread_id()
+{
+	DWORD  h;
+	unsigned int cur;
+	h = GetCurrentThreadId();
+	cur = get_current_thread(h);
+	return cur;
+}
+
+OS_API_C_FUNC(int) get_thread_data(mem_zone_ref_ptr thread_data)
+{
+	DWORD  h;
+	unsigned int cur;
+	h = GetCurrentThreadId();
+	cur = get_current_thread(h);
+	if (cur == 0xFFFFFFFF)
+		return 0;
+
+	copy_zone_ref(thread_data, &threads[cur].thread_data);
+
+	return 1;
+}
+
+OS_API_C_FUNC(int) set_thread_data(mem_zone_ref_const_ptr thread_data)
+{
+	DWORD  h;
+	unsigned int cur;
+	h = GetCurrentThreadId();
+	cur = get_current_thread(h);
+	if (cur == 0xFFFFFFFF)
+		return 0;
+
+	copy_zone_ref(&threads[cur].thread_data,thread_data);
+
+	return 1;
+}
+
 unsigned int next_ttid = 1;
 extern ASM_API_FUNC scan_stack_c(mem_ptr lower, mem_ptr upper, mem_ptr stack_frame, mem_ptr stack);
 extern mem_ptr ASM_API_FUNC get_stack_frame_c();
@@ -768,8 +846,11 @@ void scan_threads_stack(mem_ptr lower, mem_ptr upper)
 		
 		if (GetThreadContext(threads[n].th, &ctx))
 		{ 
+
+#if defined(__i386) || defined(_M_IX86)
 			if ((ctx.Esp != 0) && (ctx.Ebp!=0) && (ctx.Ebp > ctx.Esp))
 				scan_stack_c(lower, upper, ctx.Ebp, ctx.Esp);
+#endif
 		}
 		else
 		{

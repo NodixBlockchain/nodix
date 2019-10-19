@@ -13,6 +13,7 @@ function BlockExplorer() {
     this.PrevTime = null;
 
     this.lastLastBlock = null;
+    this.evtSource = null;
     this.selectedhash = null;
     this.currentAddr = null;
     this.txs = null;
@@ -183,6 +184,8 @@ BlockExplorer.prototype.update_blocks = function  ()
     
             if (this.blocks[n].tx)
                 cell.innerHTML = this.blocks[n].tx.length;
+            else if (this.blocks[n].nTx)
+                cell.innerHTML = this.blocks[n].nTx;
     
             cell = row.insertCell(5);
             cell.className = "block_info";
@@ -567,6 +570,8 @@ BlockExplorer.prototype.list_block_txs = function (hash) {
             self.txs = data.txs;
         else
             self.txs.push.apply(self.txs, data.txs);
+
+        self.txs.sort(function (a, b) { return (b.blockheight - a.blockheight); });
     
         self.update_txs();
     
@@ -641,7 +646,7 @@ BlockExplorer.prototype.list_blocks = function  (date, lastBlock) {
     if (lastBlock > 0)
     {
         if (!first) urlq += '&';
-        urlq += 'height<' + lastBlock;
+        urlq += 'height<' + (lastBlock+1);
         first = 0;
         this.lastLastBlock = lastBlock;
     }
@@ -802,6 +807,34 @@ BlockExplorer.prototype.get_lastblock = function () {
         self.txs = null;
         self.list_blocks(tdate);
     });
+}
+
+
+
+BlockExplorer.prototype.setlongpoll = function(in_url)
+{
+    var self = this;
+    console.log("long poll " + site_base_url + in_url);
+
+    $.ajax({
+        url: site_base_url + in_url,
+        type: "GET",
+        dataType: "json",
+        success: function () { self.get_lastblock(); self.setlongpoll(in_url); },
+        error: function (err) { /*alert("Error");*/ }
+    });
+
+
+    
+}
+
+BlockExplorer.prototype.seteventsrc = function (in_url, handler) {
+    var self = this;
+    
+    this.evtSource = new EventSource(site_base_url + in_url);
+
+    this.evtSource.addEventListener("newblock", handler, false);
+
 }
 
 BlockExplorer.prototype.get_addr_balance = function ()

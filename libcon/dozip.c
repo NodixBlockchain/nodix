@@ -35,7 +35,7 @@ OS_API_C_FUNC(int) do_zip(const char *fileName, struct string *initial_data,cons
 
 	while (nFiles--)
 	{
-		unsigned char *data;
+		mem_ptr		  data;
 		size_t		  size;
 		if (get_file(files[nFiles], &data, &size)>0)
 		{

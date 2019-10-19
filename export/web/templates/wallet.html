@@ -16,11 +16,20 @@
         display:none;
     }
    
-}
 </style>
 <script>
     var unit = 1;
     var ec;
+
+    function tx_ok(txh)
+    {
+    
+    }
+
+    function tx_error()
+    {
+
+    }
 
     function update_unit(select_obj) {
         var amount = parseFloat($('#amount').val()) * unit;
@@ -54,8 +63,88 @@
         MyAccount.maketx(amount, fee, dstAddr);
     }
 
+    function on_new_unspent(e) {
+        var unspent = JSON.parse(e.data);
+        var myaddrs = [];
+        var idx;
+
+        if (MyAccount.addrs == null)
+            return;
+
+        for (var n = 0; n < MyAccount.addrs.length; n++) {
+            myaddrs.push(MyAccount.addrs[n].address);
+        }
+
+        if ((idx = myaddrs.indexOf(unspent.addr)) >= 0) {
+            if (unspent.canceled)
+                MyAccount.addrs[idx].unconf_amount -= unspent.amount;
+            else
+                MyAccount.addrs[idx].unconf_amount += unspent.amount;
+
+            $('#balance_unconf_' + unspent.addr).html(MyAccount.addrs[idx].unconf_amount / unit);
+        }
+    }
+
+    function on_new_spent(e) {
+        var spent = JSON.parse(e.data);
+        var myaddrs=[];
+        var idx;
+
+        if (MyAccount.addrs == null)
+            return;
+
+        for (var n = 0; n < MyAccount.addrs.length; n++) {
+            myaddrs.push(MyAccount.addrs[n].address);
+        }
+
+        if ((idx = myaddrs.indexOf(spent.addr)) >= 0)
+        {
+            if (spent.canceled)
+                MyAccount.addrs[idx].unconf_amount += spent.amount;
+            else
+                MyAccount.addrs[idx].unconf_amount -= spent.amount;
 
 
+            $('#balance_unconf_' + spent.addr).html(MyAccount.addrs[idx].unconf_amount / unit);
+        }
+
+
+        if (spent.canceled)
+        {
+            MyAccount.unspents.push(spent);
+            MyAccount.update_unspent();
+        }
+        else {
+            if (MyAccount.unspents != null) {
+                var num_unspents = MyAccount.unspents.length;
+                var newlist = new Array();
+                for (var n = 0; n < num_unspents; n++) {
+
+                    if ((MyAccount.unspents[n].txid != spent.txid) || (MyAccount.unspents[n].vout != spent.idx))
+                        newlist.push(MyAccount.unspents[n]);
+                }
+                MyAccount.unspents = newlist;
+                MyAccount.update_unspent();
+            }
+        }
+
+        if (($('#do_staking').prop('checked')) && (MyAccount.staking_unspents != null)) {
+            var num_stake_unspents = MyAccount.staking_unspents.length;
+            
+            for (var n = 0; n < num_stake_unspents; n++) {
+
+                if ((MyAccount.staking_unspents[n].txid == spent.txid) && (MyAccount.staking_unspents[n].vout == spent.idx))
+                {
+                    if (spent.canceled)
+                        MyAccount.staking_unspents[n].inactive = false;
+                    else
+                        MyAccount.staking_unspents[n].inactive = true;
+                }
+                    
+            }
+            MyAccount.update_staking_infos();
+        }
+    }
 </script>
 
 
@@ -82,8 +171,10 @@
         <div class="card" id="anon_wallet">
             <div class="card-header  pt-3 aqua-gradient">
                 <h3 class="white-text mb-3 pt-3 font-weight-bold">Anonymous wallet</h3>
+                <h4 id="anon_locked"></h4>
             </div>
             <div class="card-body px-lg-5 pt-0">
+
                 <div class="md-form">
                     <input type="password" id="anon_pw" class="form-control" />
                     <label for="anon_pw">password </label>
@@ -92,7 +183,12 @@
                     <input type="text" id="anon_timeout" value="1800" class="form-control" />
                     <label for="anon_timeout">timeout</label>
                 </div>
-                <button type="button" class="btn btn-primary waves-effect waves-light" onclick="set_anon_pw($('#anon_pw').val(), parseInt($('#anon_timeout').val()));">set passphrase</button>
+                <div class="md-form" style="height: 32px;">
+                    <input type="checkbox" id="enable_staking" checked="checked" value="1" class="custom-control-input" />
+                    <label class="custom-control-label" for="enable_staking">staking</label>
+                </div>
+
+                <button type="button" class="btn btn-primary waves-effect waves-light" onclick="MyAccount.set_anon_pw($('#anon_pw').val(), parseInt($('#anon_timeout').val()), $('#enable_staking').prop('checked') ? true : false);">set passphrase</button>
                 <span id="anon_pw_ok"></span>
                 <span id="anon_pw_error"></span>
             </div>
@@ -132,7 +228,7 @@
 
                 <div class="col-md" id="div_newtxid">new tx id : <span id="newtxid"></span></div>
                 <div class="col-md"><div id="newtx"></div></div>
-                <div class="col-md"><button id="sendtx_but" type="button" class="btn btn btn-primary" disabled="disabled" onclick="signtxinputs(my_tx.txid, my_tx.txsin);">sign & send</button></div>
+                <div class="col-md"><button id="sendtx_but" type="button" class="btn btn btn-primary" disabled="disabled" onclick="signtxinputs_promise(my_tx.txid, my_tx.txsin, tx_ok, tx_error);">sign & send</button></div>
             </div>
         </div>
     </div>

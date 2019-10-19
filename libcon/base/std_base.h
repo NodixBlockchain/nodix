@@ -11,13 +11,17 @@
 	#define INLINE_C_FUNC		__inline
 
 	#if defined(_M_X64) || defined(__amd64__)
-
+		#define C_API_FUNC			__stdcall
+		#define ASM_API_FUNC		__cdecl
+		#define KERN_API_FUNC		ASM_API_FUNC
+		#define	MOD_NAME_DECO		MSVC_CALL_64
 	#else
 		#define C_API_FUNC			__stdcall
 		#define ASM_API_FUNC		__cdecl
 		#define KERN_API_FUNC		ASM_API_FUNC
 		#define	MOD_NAME_DECO		MSVC_STDCALL_32
 	#endif	
+
 #elif defined(__GNUC__)
 
 	#define C_EXPORT __attribute__ ((visibility ("default")))
@@ -67,7 +71,8 @@ typedef enum
 	MSVC_STDCALL_32 = 1,
 	MSVC_CDECL_32 = 2,
 	GCC_STDCALL_32 = 3,
-	GCC_CDECL_32 = 4
+	GCC_CDECL_32 = 4, 
+	MSVC_CALL_64 = 5
 }mod_name_decoration_t;
 
 #define OS_API_C_FUNC(return_type) C_EXPORT return_type C_API_FUNC 

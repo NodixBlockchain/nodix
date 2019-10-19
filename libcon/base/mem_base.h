@@ -42,8 +42,10 @@ struct gfx_rect
 	extern "C" {
 #endif
 LIBC_API void			C_API_FUNC init_default_mem_area	(size_t size, size_t nzones);
-LIBC_API unsigned int	C_API_FUNC mem_area_enable_sem		(unsigned int area_id);
-LIBC_API unsigned int	C_API_FUNC init_new_mem_area		(mem_ptr phys_start,	mem_ptr phys_end,unsigned int nzones,mem_area_type_t type);
+
+LIBC_API unsigned int	C_API_FUNC init_new_mem_area		(mem_ptr phys_start, mem_ptr phys_end, size_t nzones, mem_area_type_t type);
+
+
 LIBC_API unsigned int	C_API_FUNC free_mem_area			(unsigned int area_id);
 LIBC_API unsigned int	C_API_FUNC allocate_new_zone		(unsigned int area_id,	mem_size zone_size,	mem_zone_ref *zone_ref);
 LIBC_API unsigned int	C_API_FUNC allocate_new_empty_zone	(unsigned int area_id,mem_zone_ref *zone_ref);
@@ -51,10 +53,10 @@ LIBC_API int			C_API_FUNC expand_zone				(mem_zone_ref *ref,mem_size new_size);
 LIBC_API int 			C_API_FUNC realloc_zone				(mem_zone_ref *zone_ref,mem_size new_size);
 LIBC_API void 			C_API_FUNC empty_trash				();
 		
-LIBC_API void			C_API_FUNC copy_zone_ref			(mem_zone_ref_ptr dest_zone_ref,mem_zone_ref_const_ptr zone_ref);
-LIBC_API void			C_API_FUNC copy_zone_const_ref		(mem_zone_const_ref_ptr dest_zone_ref,mem_zone_const_ref_ptr zone_ref);
+LIBC_API void			C_API_FUNC copy_zone_ref			(mem_zone_ref_ptr dest_zone_ref, const mem_zone_ref *zone_ref);
+
 LIBC_API unsigned int	C_API_FUNC get_zone_area_type		(mem_zone_ref_const_ptr zone);
-LIBC_API unsigned int	C_API_FUNC create_zone_ref			(mem_zone_ref *dest_zone_ref,mem_ptr ptr,mem_size size);
+
 LIBC_API void			C_API_FUNC init_mem_system			();
 LIBC_API size_t			C_API_FUNC dump_mem_used			(unsigned int area_id);
 
@@ -84,10 +86,13 @@ LIBC_API int			C_API_FUNC set_tree_mem_area_id				(unsigned int area_id);
 LIBC_API void			C_API_FUNC aquire_lock_excl					(volatile unsigned int *lock, unsigned int excl);
 LIBC_API void			C_API_FUNC release_lock_excl				(volatile unsigned int *lock);
 
-LIBC_API unsigned int	C_API_FUNC get_mem_area_id					();
-LIBC_API unsigned int	C_API_FUNC get_tree_mem_area_id				();
+LIBC_API unsigned int	C_API_FUNC get_mem_area_id					(void);
+LIBC_API unsigned int	C_API_FUNC get_tree_mem_area_id				(void);
+LIBC_API int			C_API_FUNC get_thread_data					(mem_zone_ref_ptr thread_data);
+LIBC_API int			C_API_FUNC set_thread_data					(mem_zone_ref_const_ptr thread_data);
 LIBC_API int			C_API_FUNC background_func					(thread_func_ptr func, mem_zone_ref_ptr params);
-
+LIBC_API void			C_API_FUNC ptr_to_ref						(mem_ptr ptr, mem_zone_ref_ptr out);
+LIBC_API unsigned int	C_API_FUNC get_thread_id					(void);
 
 static __inline unsigned int mem_to_uint(const_mem_ptr ptr)
 {
@@ -170,7 +175,7 @@ static __inline void copy_vec4u_c	(vec_4uc_t d,const vec_4uc_t s)
 
 LIBC_API void			C_API_FUNC  release_zone_ref	(mem_zone_ref_ptr zone_ref);
 LIBC_API void			C_API_FUNC  dec_zone_ref		(mem_zone_ref_ptr zone_ref);
-LIBC_API unsigned int   C_API_FUNC	inc_zone_ref		(mem_zone_ref_ptr zone_ref);
+LIBC_API void		    C_API_FUNC	inc_zone_ref		(mem_zone_ref_ptr zone_ref);
 LIBC_API mem_size	    C_API_FUNC	set_zone_free		(mem_zone_ref_ptr ref, zone_free_func_ptr	free_func);
 
 

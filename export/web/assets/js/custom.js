@@ -22,6 +22,11 @@ while (i < ALPHABET.length) {
     i++;
 }
 
+function isHexStr(inputString) {
+    var re = /[0-9A-Fa-f]{6}/g;
+    return re.test(inputString);
+}
+
 
 function encryptNodeKey(msg)
 {   
@@ -46,12 +51,17 @@ function encryptNodeKey(msg)
          mykey = ec.keyPair({ priv: myprivX, privEnc: 'hex' });
     }
 
+    
+    $('#apiKeys').css('display', 'block');
+    $('#nodePubKey-nav').html(NodePubKey);
+    $('#myPubKey-nav').html(mykey.getPublic().encodeCompressed('hex'));
+
     var mypub       = hex2b(mykey.getPublic().encodeCompressed('hex'));
     var theirkey    = ec.keyPair({ pub: NodePubKey, pubEnc: 'hex' });
     var theirpub    = theirkey.getPublic();
     var thekey      = mykey.derive(theirpub);
-    var EArr        = rc4_cypher_ak (hex2b (thekey.toString(16)) , msg);
-    
+    var EArr = rc4_cypher_ak(hex2b(thekey.toString(16)), msg);
+
     return { 'pubkey': to_b58(mypub), 'msg': to_b58(EArr) };
 
 }
@@ -103,7 +113,7 @@ function rpc_call_promise(in_method, in_params, noenc) {
 }
 
 
-function anon_rpc_call(in_method, in_params, in_success) {
+function anon_rpc_call(in_method, in_params, in_success,in_error) {
 
     var encMsg = encryptNodeKey(JSON.stringify(in_params));
 
@@ -121,7 +131,7 @@ function anon_rpc_call(in_method, in_params, in_success) {
         type: "POST",
         dataType: "json",
         success: in_success,
-        error: function (err) { /*alert("Error");*/ }
+        error: in_error
     });
 }
 
@@ -242,6 +252,32 @@ function base64ToText(t) {
 }
 
 
+function Uint8ToBase64(u8Arr) {
+    var CHUNK_SIZE = 0x8000; //arbitrary number
+    var index = 0;
+    var length = u8Arr.length;
+    var result = '';
+    var slice;
+    while (index < length) {
+        slice = u8Arr.subarray(index, Math.min(index + CHUNK_SIZE, length));
+        result += String.fromCharCode.apply(null, slice);
+        index += CHUNK_SIZE;
+    }
+    return btoa(result);
+}
+
+function longToByteArray(/*long*/long) {
+    // we want to represent the input as a 8-bytes array
+    var byteArray = new Uint8Array(4);
+
+    for (var index = 0; index < byteArray.length; index++) {
+        var byte = long & 0xff;
+        byteArray[index] = byte;
+        long = (long - byte) / 256;
+    }
+
+    return byteArray;
+};
 
 function to_b58(buffer) {
     var carry, digits, j;
@@ -406,9 +442,9 @@ function check_hash(twit_id, parent) {
 
 
 
-function make_var_html(label,val)
+function make_var_html(label,val, val_class)
 {
-    return '<div class="row"><div class="col-sm-2"><label>' + label + '</label></div><div class="col-md" style="text-align:left"><span >' + val + '</span></div></div>';
+    return '<div class="row"><div class="col-sm-2"><label>' + label + '</label></div><div class="col-md" style="text-align:left"><span class="' + val_class + '" >' + val + '</span></div></div>';
 }
 
 function get_tx_html(tx, n) {
@@ -503,7 +539,19 @@ function get_tx_html(tx, n) {
                             new_html += '&nbsp;<span class="objhash" >obj[' + vin[nn].objHash + ']</span>';
                         } else if (typeof vin[nn].srcapp == 'string') {
                             new_html += '<a href="/nodix.site/application/' + vin[nn].srcapp + '" class="app-lnk" >app[' + vin[nn].srcapp + ']</a>';
-                        } else if (typeof vin[nn].value == 'number') {
+                        } else if (typeof vin[nn].imvalue == 'number') {
+                            new_html += '<span class="ptree_val" >' + vin[nn].imvalue + '</span>';
+                        }
+                        else if (typeof vin[nn].keyName == 'string') {
+                            new_html += '<span class="ptree_var" >' + vin[nn].appName + '&nbsp;object&nbsp;' + vin[nn].objHash + '&nbsp;key&nbsp;' + vin[nn].keyName + '</span>';
+                        } else if (typeof vin[nn].var_name == 'string') {
+                            new_html += '<span class="ptree_var" >var&nbsp;' + vin[nn].var_name + '</span>';
+                        } else if (typeof vin[nn].op_name == 'string') {
+                            new_html += '<span class="ptree_op" >operation &nbsp;' + vin[nn].op_name + '</span>';
+                        } else if (typeof vin[nn].fn_name == 'string') {
+                            new_html += '<span class="ptree_fbn" >function &nbsp;' + vin[nn].fn_name + '</span>';
+                        }
+                        else if (typeof vin[nn].value == 'number') {
                             if (vin[nn].addresses) {
                                 new_html += '<a href= "' + site_base_url + '/address/' + vin[nn].addresses[0] + '" class="tx_address">' + vin[nn].addresses[0] + '</a>';
                             }
@@ -538,8 +586,12 @@ function get_tx_html(tx, n) {
 
                     new_html += '#' + nn + '&nbsp;';
 
-
-                    if (typeof vout[nn].value == 'number')
+                    if (typeof vout[nn].op_name == 'string') {
+                        new_html += '<span class="ptree_op" >operation &nbsp;' + vout[nn].op_name + '</span>';
+                    } else if (typeof vout[nn].fn_name == 'string') {
+                        new_html += '<span class="ptree_fbn" >function &nbsp;' + vout[nn].fn_name + '</span>';
+                    }
+                    else if (typeof vout[nn].value == 'number')
                     {
                         var xval = vout[nn].value.toString(16).substring(0, 8);
 
@@ -560,7 +612,7 @@ function get_tx_html(tx, n) {
                         new_html += '<a href="' + site_base_url + '/address/' + vout[nn].dstaddr + '" class="tx_address" >' + vout[nn].dstaddr + '</a>';
                         new_html += '&nbsp;<span class="objhash" >obj[' + vout[nn].objHash + ']</span>';
                     }
-                    
+                   
                 }
                 new_html += '</div>';
                 new_html += '</div>';
@@ -605,18 +657,19 @@ function get_tmp_tx_html(tx) {
         nins = vin.length;
         for (nn = 0; nn < nins; nn++) {
             new_html += '<div class="row">';
-
-            new_html += '<div class="col-md-8" >';
-            new_html += '#' + vin[nn].index + '&nbsp;';
+            new_html += '<div class="col-1 no-padding" ><i id="tx_input_' + vin[nn].index + '" class="mdi mdi-lock-open"></i></div>';
+            new_html += '<div class="col-1 no-padding" >#' + vin[nn].index + '</div>';
+            new_html += '<div class="col-md-5 no-padding" >';
             if ((vin[nn].isApp == true)) {
                 new_html += '<span class="app_name" >' + vin[nn].appName + '</span>';
             }
             else if (vin[nn].srcapp) {
                 new_html += 'App&nbsp; : ' + vin[nn].srcapp;
-                
             }
             else {
                 new_html += '<a href= "' + site_base_url + '/address/' + vin[nn].srcaddr + '" class="tx_address">' + vin[nn].srcaddr + '</a>';
+                new_html += '</div>';
+                new_html += '<div class="col-md-5 no-padding" >';
                 new_html += '<span class="tx_amnt" >' + vin[nn].value / unit + '</span>';
             }
             new_html += '</div>';
@@ -633,15 +686,18 @@ function get_tmp_tx_html(tx) {
             var xval = vout[nn].value.toString(16).substring(0, 8);
             var val;
             new_html += '<div class="row">';
-            new_html += '<div class="col-md-8" >';
+            new_html += '<div class="col-1 no-padding">';
             new_html += '#' + nn + '&nbsp;';
+            new_html += '</div>';
+            new_html += '<div class="col-md-5 no-padding" >';
             new_html += '<a href="' + site_base_url + '/address/' + vout[nn].dstaddr + '" class="tx_address" >' + vout[nn].dstaddr + '</a>&nbsp;';
 
             if ((xval.toLowerCase() == 'ffffffff') || (val == 0xFFFFFFFFFFFFFFFF))
                 val = 0;
             else
                 val = vout[nn].value;
-
+            new_html += '</div>';
+            new_html += '<div class="col-md-5 no-padding" >';
             new_html += '<span class="tx_amnt" >' + val / unit + '</span>';
             new_html += '</div>';
             new_html += '</div>';

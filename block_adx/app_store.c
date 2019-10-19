@@ -24,12 +24,12 @@ extern hash_t		app_root_hash;
 extern mem_zone_ref	apps;
 
 
-C_IMPORT size_t			C_API_FUNC	compute_payload_size(mem_zone_ref_ptr payload_node);
-C_IMPORT char*			C_API_FUNC	write_node(mem_zone_ref_const_ptr key, unsigned char *payload);
-C_IMPORT size_t			C_API_FUNC	get_node_size(mem_zone_ref_ptr key);
-C_IMPORT void			C_API_FUNC	serialize_children(mem_zone_ref_ptr node, unsigned char *payload);
-C_IMPORT const unsigned char*	C_API_FUNC read_node(mem_zone_ref_ptr key, const unsigned char *payload, size_t len);
-C_IMPORT size_t			C_API_FUNC init_node(mem_zone_ref_ptr key);
+C_IMPORT size_t		C_API_FUNC	compute_payload_size(mem_zone_ref_ptr payload_node);
+C_IMPORT char*		C_API_FUNC	write_node(mem_zone_ref_const_ptr key, unsigned char *payload);
+C_IMPORT size_t		C_API_FUNC	get_node_size(mem_zone_ref_ptr key);
+C_IMPORT void		C_API_FUNC	serialize_children(mem_zone_ref_ptr node, unsigned char *payload);
+C_IMPORT size_t		C_API_FUNC read_node(mem_zone_ref_ptr key, const unsigned char *payload, size_t len);
+C_IMPORT size_t		C_API_FUNC init_node(mem_zone_ref_ptr key);
 
 
 
@@ -38,7 +38,9 @@ extern int add_app_tx(mem_zone_ref_ptr new_app, const char *app_name);
 
 extern struct string get_next_script_var(const struct string *script, size_t *offset);
 extern int get_script_file(struct string *script, mem_zone_ref_ptr file);
-extern int	load_utxo(const char *txh, unsigned int oidx, uint64_t *amount, btc_addr_t addr, hash_t objh);
+
+
+
 
 int blk_del_app_root()
 {
@@ -749,12 +751,8 @@ int blk_load_app_scripts(mem_zone_ref_ptr app)
 				clone_string(&path, &script_path);
 				cat_ncstring_p(&path, optr, sz);
 				if (load_script(path.str, script_name, &script_var, 1))
-				{
-					ctime_t ftime;
-					get_ftime(path.str, &ftime);
-					tree_manager_write_node_dword(&script_var, 0, ftime);
-					add_app_script(app, &script_var);
-				}
+					add_app_script	(app, &script_var);
+				
 				free_string(&path);
 				release_zone_ref(&script_var);
 			}
@@ -2249,6 +2247,8 @@ int rebuild_app_index(const char *appName)
 			dir_list_len -= sz;
 		}
 	}
+
+	return 1;
 }
 
 
@@ -2381,35 +2381,64 @@ int store_app_item(mem_zone_ref_const_ptr tx, unsigned int app_item, unsigned in
 			if (ret)
 			{
 				struct string	app_path = { 0 };
-
-				make_string(&app_path, "apps");
-				cat_cstring_p(&app_path, app_name.str);
-				cat_cstring_p(&app_path, "modz");
-				cat_cstring_p(&app_path, filename.str);
-				put_file(app_path.str, fileData.str, fileData.len);
+				unsigned int	txtime;
 
 
-				tree_manager_find_child_node(&apps, NODE_HASH(app_name.str), NODE_BITCORE_TX, &app);
+				tree_manager_get_child_value_i32(tx, NODE_HASH("time"), &txtime);
 
-				if ((filename.len >= 5) && (!strncmp_c(&filename.str[filename.len - 5], ".site", 5)))
+				make_string		(&app_path, "apps");
+				cat_cstring_p	(&app_path, app_name.str);
+				cat_cstring_p	(&app_path, "modz");
+				cat_cstring_p	(&app_path, filename.str);
+				put_file		(app_path.str, fileData.str, fileData.len);
+				set_ftime		(app_path.str, txtime);
+				
+				if (tree_manager_find_child_node(&apps, NODE_HASH(app_name.str), NODE_BITCORE_TX, &app))
 				{
-					mem_zone_ref scripts = { PTR_NULL }, script = { PTR_NULL };
-
-					get_app_scripts(&app, &scripts);
-					tree_remove_child_by_name(&scripts, NODE_HASH(filename.str));
-					release_zone_ref(&scripts);
-
-					if (load_script(app_path.str, filename.str, &script, 1))
+					if ((filename.len >= 5) && (!strncmp_c(&filename.str[filename.len - 5], ".site", 5)))
 					{
-						ctime_t ftime;
+						mem_zone_ref new_script = { PTR_NULL };
 
-						get_ftime(app_path.str, &ftime);
-						tree_manager_write_node_dword(&script, 0, ftime);
-						add_app_script(&app, &script);
-						release_zone_ref(&script);
+						if (load_script(app_path.str, filename.str, &new_script, 1))
+						{
+							mem_zone_ref scripts = { PTR_NULL };
+							tree_manager_set_child_value_i32	(&new_script, "scriptTime", txtime);
+
+							get_app_scripts						(&app, &scripts);
+
+							if (!tree_manager_swap_child_ref(&scripts, NODE_HASH(filename.str), NODE_SCRIPT, &new_script)) {
+								
+								if (load_script(app_path.str, filename.str, &new_script, 1))
+								{
+									tree_manager_set_child_value_i32	(&new_script, "scriptTime", txtime);
+									add_app_script						(&app, &new_script);
+								}
+							}
+							release_zone_ref					(&new_script);
+							release_zone_ref					(&scripts);
+							
+						}
+
+						/*
+						mem_zone_ref scripts = { PTR_NULL }, script = { PTR_NULL };
+
+						get_app_scripts				(&app, &scripts);
+						tree_remove_child_by_name	(&scripts, NODE_HASH(filename.str));
+						release_zone_ref			(&scripts);
+
+						
+
+						if (load_script(app_path.str, filename.str, &script, 1))
+						{
+							tree_manager_set_child_value_i32(&script, "scriptTime", txtime);
+							add_app_script					(&app, &script);
+							release_zone_ref				(&script);
+						}
+						*/
 					}
+					release_zone_ref(&app);
 				}
-				release_zone_ref(&app);
+				
 				free_string(&app_path);
 			}
 			release_zone_ref(&file);
@@ -2488,7 +2517,6 @@ int store_app_obj_txfr(mem_zone_ref_const_ptr tx)
 		char			appName[32];
 		hash_t			th, objHash;
 		char			buff[32];
-		btc_addr_t		srcAddr;
 		struct string	idx_path = { 0 };
 		uint64_t		amount;
 		unsigned int	idx,oc;

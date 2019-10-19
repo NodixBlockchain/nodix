@@ -11,10 +11,10 @@ LIBC_API int			C_API_FUNC truncate_file(const char *path, size_t ofset, const vo
 LIBC_API int			C_API_FUNC stat_file(const char *path);
 LIBC_API int			C_API_FUNC create_dir(const char *path);
 LIBC_API int			C_API_FUNC del_dir(const char *path);
-LIBC_API int			C_API_FUNC put_file(const char *path, void *data, size_t data_len);
+LIBC_API int			C_API_FUNC put_file(const char *path, const void *data, size_t data_len);
 LIBC_API int			C_API_FUNC get_sub_dirs(const char *path, struct string *dir_list);
 LIBC_API int			C_API_FUNC get_sub_files(const char *path, struct string *file_list);
-LIBC_API int			C_API_FUNC get_file(const char *path, unsigned char **data, size_t *data_len);
+LIBC_API int			C_API_FUNC get_file(const char *path, mem_ptr *data, size_t *data_len);
 LIBC_API int			C_API_FUNC get_file_range(const char *path, size_t ofset, size_t end, unsigned char **data, size_t *data_len);
 LIBC_API int			C_API_FUNC get_file_len(const char *path, size_t size, unsigned char **data, size_t *data_len);
 LIBC_API int			C_API_FUNC get_file_chunk(const char *path, size_t ofset, unsigned char **data, size_t *data_len);
@@ -39,7 +39,7 @@ LIBC_API int			C_API_FUNC get_home_dir(struct string *path);
 LIBC_API int			C_API_FUNC set_cwd(const char *path);
 LIBC_API int			C_API_FUNC get_cwd(char *path, size_t len);
 LIBC_API int			C_API_FUNC rm_dir(const char *dir);
-LIBC_API unsigned int	C_API_FUNC get_tree_mem_area_id(void);
+
 LIBC_API unsigned int	C_API_FUNC get_mem_area_id(void);
 LIBC_API unsigned int	C_API_FUNC isRunning(void);
 LIBC_API int C_API_FUNC default_RNG(unsigned char *dest, size_t size);

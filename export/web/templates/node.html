@@ -1,3 +1,23 @@
+<script language="javascript">
+
+    function on_new_block(event)
+    {
+        var block = JSON.parse(event.data);
+
+        SelfNode.block_height = block.height;
+        SelfNode.last_block = block.blkHash;
+
+        if (typeof block["blk pos"] == 'string')
+            SelfNode.lastPOSBlk = block.blkHash;
+        else
+            SelfNode.lastPOWBlk = block.blkHash;
+
+        MyNode.updateBlockInfos();
+
+    }
+
+</script>
+
 <section>
     <div class="container">
         <div class="card">
@@ -14,10 +34,10 @@
             <div class="card-header"><h2>mining info</h2></div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-2">last POW block</div><div class="col-md-2"><a class="hash-lnk" onclick="MyBlocks.selectBlock(SelfNode.lastPOWBlk); return false;" id="lastpowblock"></a></div>
+                    <div class="col-md-2">last POW block</div><div class="col-md"><a class="hash-lnk" onclick="MyBlocks.selectBlock(SelfNode.lastPOWBlk); return false;" id="lastpowblock"></a></div>
                 </div>
                 <div class="row">
-                    <div class="col-md-2">POW difficulty</div><div class="col-md-2"><span id="currentpowdiff"></span></div>
+                    <div class="col-md-2">POW difficulty</div><div class="col-md"><span id="currentpowdiff"></span></div>
                 </div>
                 <div class="row">
                     <div class="col-md-2">POW reward</div><div class="col-md-2"><span id="powreward"></span></div>

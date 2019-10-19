@@ -11,8 +11,7 @@
 typedef unsigned char dh_key_t[64];
 
 typedef int				C_API_FUNC crypto_extract_key_func	(dh_key_t pk, const dh_key_t sk);
-typedef int 			C_API_FUNC crypto_sign_open_func	(const struct string *sign, struct string *msg, const struct string *pk);
-
+typedef int 			C_API_FUNC crypto_sign_open_func(const struct string *sign, const hash_t msgh, const struct string *pk);
 typedef int 			C_API_FUNC compress_pubkey_func		(dh_key_t pk, dh_key_t cpk);
 typedef int				C_API_FUNC derive_key_func			(dh_key_t public_key, dh_key_t private_key, hash_t secret);
 
@@ -25,7 +24,7 @@ typedef derive_key_func			*derive_key_func_ptr;
 typedef crypto_get_pub_func		*crypto_get_pub_func_ptr;
 
 #ifdef FORWARD_CRYPTO
-	typedef struct string	C_API_FUNC crypto_sign_func(const struct string *msg, const dh_key_t sk);
+	typedef struct string	C_API_FUNC crypto_sign_func(const hash_t msgh, const dh_key_t sk);
 	typedef crypto_sign_func		*crypto_sign_func_ptr;
 #endif 
 

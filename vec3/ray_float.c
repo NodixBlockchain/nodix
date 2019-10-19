@@ -8,6 +8,8 @@
 
 #include "tree.h"
 #include "libc_math.h"
+
+#include <xmmintrin.h>
 #include "vec_types.h"
 #include "ray_float.h"
 
@@ -330,7 +332,7 @@ OS_API_C_FUNC(int) rayIntersectCube(cubef_t *cube, const rayf_t *ray, float *out
 
 		// normalize_vec3	(O);
 		 dd		  = dot_vec3	(raydir, O);
-		 sqr	  = libc_sqrtf	(sqradius - d * d);
+		 sqrtf_c	(sqradius - d * d,&sqr);
          s		  = libc_fabsf	(sqr/dd);
          tVals[0] = t - s; // Entering distance.
          tVals[1] = t + s; // Exiting distance.
@@ -468,7 +470,7 @@ OS_API_C_FUNC(int)	Sphere_intersect(const rayf_t *ray,/*mem_zone_ref_ptr sphere,
 
 
     // compute q as described above
-    distSqrt = libc_sqrtf(disc);
+	sqrtf_c(disc,&distSqrt);
 
 
 

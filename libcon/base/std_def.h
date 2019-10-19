@@ -6,12 +6,17 @@
 	
 #if defined(_M_X64) || defined(__amd64__)
 	typedef int64_t			ptrdiff_t;
-	typedef unsigned int	size_t;
+	typedef uint64_t		size_t;
+	typedef int64_t			ctime_t;
 
 	#define INVALID_SIZE	0xffffffffUL
 
 	#define LONG_MAX		0x7FFFFFFFL
 	#define LONG_MIN		((long) 0x80000000L)
+
+	
+	#define LONGLONG_MAX	0x8000000000000000
+	#define LONGLONG_MIN    (-LONGLONG_MAX - 1)
 	
 	#define UINT_MAX	    0xffffffffUL
 	#define ULONG_MAX	    0xffffffffUL
@@ -32,8 +37,10 @@
 	typedef unsigned int	size_t;
 	typedef int64_t			ctime_t;
 
+
+
 	typedef int				ptrdiff_t;
-	#define offsetof(s,m)   (size_t)&(((s *)0)->m)
+	#define offsetof(s,m)   ((size_t)&(((s *)0)->m))
 
 
 	#define INVALID_SIZE	0xffffffffUL

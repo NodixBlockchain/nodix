@@ -7,6 +7,8 @@
 #include <math.h>
 
 #include "libc_math.h"
+
+#include <xmmintrin.h>
 #include "vec_types.h"
 
 #ifndef _DEBUG
@@ -889,7 +891,9 @@ OS_API_C_FUNC(void) create_rotation_mat(mat3x3f_t m,float angle, float aX, float
 		   }
 
 	if (!optimized) {
-		const float mag = libc_sqrtf(x * x + y * y + z * z);
+		float mag;
+
+		sqrtf_c(x * x + y * y + z * z, &mag);
 
 		if (mag <= 1.0e-4) {
 			/* no rotation, leave mat as-is */

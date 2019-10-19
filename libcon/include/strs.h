@@ -6,7 +6,11 @@ struct string
 	size_t  size;		/*memory size of the string*/
 };
 
-
+struct data_buffer
+{
+	mem_ptr	data;	/*pointer to data*/
+	size_t  size;			/*memory size of the data*/
+};
 struct host_def
 {
 	struct string		host;		/*host name*/
@@ -14,6 +18,16 @@ struct host_def
 	unsigned short		port;		/*port integer*/
 };
 
+
+const enum op_type { CMP_E, CMP_L, CMP_G, CMPL_E, CMPL_L, CMPL_G, CMPL_N, CMP_N };
+
+struct key_val
+{
+	char			key[64];
+	unsigned int	kcrc;
+	enum op_type	op;
+	struct string	value;
+};
 
 /* Initialize string structure */
 LIBC_API		void				C_API_FUNC init_string			(struct string *str);
@@ -26,6 +40,8 @@ LIBC_API		int					C_API_FUNC clone_string			(struct string *str, const struct st
 
 /* Create string from C string */
 LIBC_API		int					C_API_FUNC make_string			(struct string *str, const char *toto);
+
+LIBC_API		int					C_API_FUNC make_utf8_string		(struct string *dst, const struct string *src);
 
 /* Create string with n chars from C string */
 LIBC_API		int 				C_API_FUNC make_string_l		(struct string *str, const char *toto, size_t len);
@@ -98,6 +114,10 @@ LIBC_API		int					C_API_FUNC vstr_to_str			(mem_ptr data_ptr, struct string *str
 LIBC_API		int					C_API_FUNC find_mem_hash		(hash_t hash, unsigned char *mem_hash, unsigned int num);
 
 LIBC_API		int					C_API_FUNC b58enc				(const struct string *in, struct string *out);
+
+LIBC_API		int					C_API_FUNC base64_decode		(const unsigned char *src, size_t len, unsigned char *out, size_t *out_len);
+
+LIBC_API		int					C_API_FUNC parse_query_line(const struct string *line, size_t *offset, struct key_val *key);
 
 #define STRBUFFER_MIN_SIZE  16
 #define STRBUFFER_FACTOR    2

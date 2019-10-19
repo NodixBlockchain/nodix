@@ -8,8 +8,49 @@
         overflow: scroll;
         word-break: keep-all;
         word-wrap: normal;
-        display: none;
     }
+    .script_proc_hdr {
+        background: url('/assets/img/services-64.png') no-repeat;
+        height: 32px;
+        padding-left: 48px;
+        cursor: pointer;
+        display: inline-block;
+    }
+    .service_script_hdr {
+        
+        background: url('/assets/img/script.svg') no-repeat;
+        height: 48px;
+        padding-left: 48px;
+        cursor: pointer;
+
+    }
+    .script_var, script_var_row {
+        margin: 4px 0px 4px 0px;
+    }
+
+    .script_var_row
+    {
+        border-top:dashed #808080;
+    }
+    .service_script_container {
+        padding-left: 8px;
+        overflow: scroll;
+        word-break: keep-all;
+        word-wrap: normal;
+    }
+    .script-page-link
+    {
+        font-size:24px;
+    }
+    @media only screen and (max-width: 800px) {
+        h2{
+            font-size:14px;
+        }
+        h3 {
+            font-size: 12px;
+        }
+    }
+
 </style>
 <script type="text/javascript">
     function click_cgi_method(mod, method) {
@@ -98,11 +139,12 @@
                 </div>
             </div>
         </div>
+        <hr/>
         <div class="row">
             <div class="col-md">
                 <div class="card">
                     <div class="card-header"><h2 id="serv_name">Scripts</h2></div>
-                    <div class="card-body"><div style="padding-left:18px;" id="service_scriptz_div"></div></div>
+                    <div class="card-body"><div id="service_scriptz_div"></div></div>
                 </div>
             </div>
         </div>

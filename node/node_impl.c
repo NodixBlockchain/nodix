@@ -6,6 +6,8 @@
 #include "base/mem_base.h"
 
 #include "strs.h"
+#include "mem_stream.h"
+#include "crypto.h"
 
 #include "../node_adx/node_api.h"
 //node module
@@ -37,7 +39,7 @@ NODE_API int			C_API_FUNC		node_init_service(mem_zone_ref_ptr service, mem_zone_
 NODE_API int			C_API_FUNC		proccess_http_reqs(mem_zone_ref_ptr service){ return 0; }
 NODE_API int			C_API_FUNC		get_file_mime(mem_zone_ref_const_ptr service, const char *filepath, struct string *mime){ return 0; }
 NODE_API int			C_API_FUNC		check_http_request(mem_zone_ref_const_ptr service){ return 0; }
-NODE_API int			C_API_FUNC		node_process_event_handler(const char *msg_list_name, mem_zone_ref_ptr node, mem_zone_ref_ptr msg){ return 0; }
+NODE_API int			C_API_FUNC		node_process_event_handler(mem_zone_ref_ptr node, mem_zone_ref_ptr handler_list, mem_zone_ref_ptr msg){ return 0; }
 NODE_API int			C_API_FUNC		has_peers() { return 0; }
 NODE_API int			C_API_FUNC		node_is_next_block(mem_zone_ref_const_ptr header){return 0;}
 NODE_API int			C_API_FUNC		new_peer_node(mem_zone_ref_ptr node_def){return 0;}
@@ -66,9 +68,17 @@ NODE_API int			C_API_FUNC		add_moneysupply(uint64_t amount){return 0;}
 NODE_API int			C_API_FUNC		sub_moneysupply(uint64_t amount){return 0;}
 NODE_API int			C_API_FUNC		get_locator_next_blocks(mem_zone_ref_ptr locator, mem_zone_ref_ptr inv_pack){ return 0; }
 NODE_API int			C_API_FUNC		node_check_new_connections(){ return 0; }
+NODE_API int			C_API_FUNC		node_mempool_getobjs_type(const char *appName, unsigned int type, mem_zone_ref_ptr objs) { return 0; }
 
+NODE_API int			C_API_FUNC		node_load_parse_tree(mem_zone_ref_ptr hash, mem_zone_ref_ptr out) { return 0; }
+NODE_API int			C_API_FUNC		load_parse_tree_input(mem_zone_ref_ptr node) { return 0; }
 
 NODE_API int			C_API_FUNC		node_release_mining_lock(){ return 0; }
+
+NODE_API int			C_API_FUNC		make_wav_data(mem_stream *stream, size_t dataSz, unsigned int samplerate) { return 0; }
+
+NODE_API int			C_API_FUNC		create_write_group(mem_zone_ref_ptr new_write_group) { return 0; }
+NODE_API int			C_API_FUNC		add_handler_done_msg(mem_zone_ref_ptr handler, const char *cmd) { return 0; }
 
 NODE_API int			C_API_FUNC		queue_addr_message(mem_zone_ref_ptr node, mem_zone_ref_ptr addrs){ return 0; }
 NODE_API int			C_API_FUNC		node_release_mempool_lock(){ return 0; }
@@ -88,3 +98,13 @@ NODE_API int			C_API_FUNC		node_check_mempool_unique(mem_zone_ref_const_ptr node
 NODE_API int			C_API_FUNC		store_last_pow_hash(hash_t hash) { return 0; }
 NODE_API int			C_API_FUNC		store_last_pos_hash(hash_t hash) { return 0; }
 NODE_API int			C_API_FUNC		node_get_hash_idx(uint64_t block_idx, hash_t hash) { return 0; }
+
+NODE_API int			C_API_FUNC		process_submitted_txs() { return 0; }
+NODE_API int			C_API_FUNC		node_get_script_var(const char *var_name, unsigned int type, mem_zone_ref_ptr var) { return 0; }
+
+NODE_API int			C_API_FUNC		init_upnp() { return; }
+NODE_API const struct http_hdr *	C_API_FUNC		find_key(const struct http_hdr *hdrs, const char *key) { return PTR_NULL; }
+NODE_API struct http_hdr *			C_API_FUNC		add_key(struct http_hdr *hdrs, const char *key, size_t key_len, const char *data, size_t data_len) { return PTR_NULL; }
+
+OS_API_C_FUNC(void) free_http_infos(struct http_infos *infos) {}
+

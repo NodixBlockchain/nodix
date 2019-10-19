@@ -5,48 +5,97 @@
         }
     }
 </style>
+<script type="text/javascript">
+
+    function on_new_block(e) {
+        var block = JSON.parse(e.data);
+
+        var selectedDate = $('#datepicker').datepicker('getFormattedDate');
+        var blockDate = dateConverter(block.time);
+
+        if (blockDate != selectedDate) {
+            $('#datepicker').datepicker('setDate', new Date(block.time * 1000));
+        }
+        else {
+            if (MyBlocks.blocks == null) {
+                MyBlocks.blocks = new Array(block);
+            }
+            else {
+                MyBlocks.blocks.unshift(block);
+
+                if (MyBlocks.blocks.length > 10)
+                    MyBlocks.blocks.pop();
+            }
+            MyBlocks.update_blocks();
+
+            var blk_idxs = new Array();
+            for (var n = 0; n < MyBlocks.blocks.length; n++)
+            {
+                blk_idxs.push(MyBlocks.blocks[n].block_height);
+            }
+            var new_txs = new Array();
+
+            if (MyBlocks.txs != null)
+            {
+                for (var n = 0; n < MyBlocks.txs.length; n++) {
+
+                    if (blk_idxs.indexOf(MyBlocks.txs[n].blockheight) >= 0)
+                        new_txs.push(MyBlocks.txs[n]);
+                }
+            }
+            MyBlocks.txs = new_txs;
+
+            MyBlocks.list_block_txs(block.blkHash);
+        }
+    }
+
+</script>
 <!--=== Block Explorer ===-->
-<div class="container content">
+<div class="container">
     <section>
-    <div class="row">
-      <div class="col-md-9">
-        <h2>block explorer</h2>
-        <div style="vertical-align:bottom;">
-          <span>Units : </span>
-          <select onchange="unit = this.options[this.selectedIndex].value; MyBlocks.update_blocks(); MyBlocks.update_txs(txs);" id="units" name="units" class="browser-default">
-            <option value="100000000">ADX</option>
-            <option value="100000">mADX</option>
-            <option value="100">µADX</option>
-          </select>
-          <div style="text-align:center;vertical-align:bottom;padding-bottom:8px;">enter a block or tx hash.<input type="text" id="search_bar" name="search_bar" /><input type="button" id="do_search" name="do_search" value="search" onclick="var hash=$('#search_bar').val(); if(hash.length==64){ MyBlocks.selectBlockTxs(hash); MyBlocks.SelectTx(hash); } "/></div>
+        <h1>block explorer</h1>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="md-form"><input type="text" id="search_bar" name="search_bar" class="form-control" style="font-size:0.8em;" /><label for="search_bar">enter a block or tx hash.</label>                <input type="button" id="do_search" name="do_search" value="search" onclick="var hash=$('#search_bar').val(); if(hash.length==64){ MyBlocks.selectBlockTxs(hash); MyBlocks.SelectTx(hash); } " /></div>
+            </div>
+            <div class="col-md-2">
+                <div class="md-form">
+                    <h3>Units : </h3>
+                    <select id="units" name="units" class="browser-default" onchange="unit = this.options[this.selectedIndex].value; MyBlocks.update_blocks(); MyBlocks.update_txs(txs);">
+                        <option value="100000000">ADX</option>
+                        <option value="100000">mADX</option>
+                        <option value="100">µADX</option>
+                    </select>
+                </div>
+            </div>
         </div>
-     </div>
-    </div>
+    </section>
+</div>
+<div class="container">
+    <section>
+        <div class="card">
+            <div class="card-header text-center"><h2>Blocks date</h2></div>
+            <div class="card-body flex-center"><div id="datepicker"></div></div>
+            <div class="card-footer flex-center"><div id="navday"></div></div>
+        </div>
     </section>
 
+    <hr />
     <section>
-       <div class="card">
-         <div class="card-header text-center">Blocks date</div>
-           <div class="card-body flex-center"><div id="datepicker"></div></div>
-           <div class="card-footer flex-center"><div id="navday"></div></div>
-       </div>
-   </section>
-
-    <hr/>
-    <section >
         <div id="blocks">
         </div>
     </section>
 
-    <section >
-      <div class="modal fade" id="blockmodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-          <div class="modal-dialog">
-              <div class="modal-content">
-                  <div class="modal-header"><h3 style="display: inline;">block&nbsp;<button type="button" class="close" data-dismiss="modal" style="vertical-align:top;" aria-hidden="true">X</button><br /><span id="blockhash"></span></h3> </div>
-                  <div class="modal-body"><div id="lastblock"><section id="blockInfos"></section></div></div>
-              </div>
-          </div>
-      </div>
+    <section>
+        <div class="modal fade" id="blockmodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header"><h3 style="display: inline;">block&nbsp;<button type="button" class="close" data-dismiss="modal" style="vertical-align:top;" aria-hidden="true">X</button><br /><span id="blockhash"></span></h3> </div>
+                    <div class="modal-body"><div id="lastblock"><section id="blockInfos"></section></div></div>
+                </div>
+            </div>
+        </div>
     </section>
 </div>
 <!--=== End Block Explorer ===-->

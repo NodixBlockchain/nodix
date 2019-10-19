@@ -10,12 +10,12 @@
     <ProjectGuid>{1BF22E35-0C64-47D5-8729-98B771920D12}</ProjectGuid>
     <RootNamespace>libcon</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
     <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
@@ -137,14 +137,14 @@
     <ClInclude Include="win32\include\sys_include.h" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="runtime.asm">
+    <CustomBuild Include="x86\runtime.asm">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"nasm" -f win32  -DPREFIX= -DASM_EXPORT  "%(FullPath)" -o "$(SolutionDir)\release\%(Filename).obj"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">nasm -f win32  -DPREFIX= -DASM_EXPORT  "%(FullPath)" -o "$(SolutionDir)\release\%(Filename).obj"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\release\%(Filename).obj;</Outputs>
     </CustomBuild>
-    <CustomBuild Include="tpo.asm">
+    <CustomBuild Include="x86\tpo.asm">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"nasm" -f win32  -DPREFIX -DASM_EXPORT "%(FullPath)" -o "$(SolutionDir)\release\%(Filename).obj"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">nasm -f win32  -DPREFIX -DASM_EXPORT "%(FullPath)" -o "$(SolutionDir)\release\%(Filename).obj"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\release\%(Filename).obj;</Outputs>
     </CustomBuild>
   </ItemGroup>

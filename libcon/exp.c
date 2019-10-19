@@ -24,7 +24,7 @@ void init_funcs()
 	memset_c(modz,0,sizeof(modz));
 	n_modz=0;
 
-	#ifndef _DEBUG
+	#ifndef _NATIVE_LINK_
 	sys_add_tpo_mod_func_name("libcon", "utf8_encode", (void_func_ptr)utf8_encode, 0);
 	sys_add_tpo_mod_func_name("libcon", "utf8_check_first", (void_func_ptr)utf8_check_first, 0);
 	sys_add_tpo_mod_func_name("libcon", "utf8_check_full", (void_func_ptr)utf8_check_full, 0);

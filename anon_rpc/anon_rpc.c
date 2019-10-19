@@ -53,8 +53,11 @@ int sign_tx_inputs(mem_zone_ref_ptr new_tx)
 		ret = get_tx_output_script				(h, oIdx, &script, &inAmount);
 		if(ret)ret= get_out_script_address		(&script, &pubk, src_addr);
 
-		if(ret)
+		if (ret) {
+
 			compute_tx_sign_hash	(new_tx, nin, &script, 1, txh);
+		}
+			
 
 		free_string					(&script);
 
@@ -93,42 +96,6 @@ int sign_tx_inputs(mem_zone_ref_ptr new_tx)
 			}
 			else
 				ret = create_signature_script(&signature, PTR_NULL, &sscript);
-
-			
-
-			/*
-			struct string sscript = { PTR_NULL }, sign_seq = { PTR_NULL };
-			mem_zone_ref script_node = { PTR_NULL };
-
-			encode_DER_sig						(&signature, &sign_seq, 1, 1);
-			tree_manager_create_node			("script", NODE_BITCORE_SCRIPT, &script_node);
-			tree_manager_set_child_value_vstr	(&script_node, "var1", &sign_seq);
-
-			if ((pubk.len == 0)||(pubk.str == PTR_NULL))
-			{
-				dh_key_t				mypub,mycpub, rpkey;
-				mem_zone_ref			pkvar = { PTR_NULL };
-
-				extract_pub		(privkey, mypub);
-				compress_key	(mypub, mycpub);
-
-				rpkey[0] = mycpub[0];
-				for (cnt = 1; cnt < 33; cnt++)
-				{
-					rpkey[(32 - cnt) + 1] = mycpub[cnt];
-				}
-
-				if (tree_manager_add_child_node(&script_node, "pk", NODE_BITCORE_PUBKEY, &pkvar))
-				{
-					tree_manager_write_node_data(&pkvar, rpkey, 0, 33);
-					release_zone_ref			(&pkvar);
-				}
-			}
-
-			serialize_script					(&script_node, &sscript);
-			release_zone_ref(&script_node);
-			free_string			(&sign_seq);
-			*/
 
 			tree_manager_set_child_value_vstr	(input, "script", &sscript);
 			free_string							(&sscript);
@@ -198,7 +165,7 @@ OS_API_C_FUNC(int) sendfrom(mem_zone_ref_const_ptr params, unsigned int rpc_mode
 
 	tree_manager_create_node		("addrs", NODE_BITCORE_WALLET_ADDR_LIST, &addrs);
 
-	wallet_list_addrs				(&account_name,&addrs,0);
+	wallet_list_addrs				(&account_name,&addrs,0,0,PTR_NULL);
 	release_zone_ref				(&account_name);
 
 	node_aquire_mempool_lock		(&mempool);
@@ -221,6 +188,8 @@ OS_API_C_FUNC(int) sendfrom(mem_zone_ref_const_ptr params, unsigned int rpc_mode
 			release_zone_ref(&my_list);
 			break;
 		}
+
+		
 	}
 	
 	release_zone_ref			(&mempool);
@@ -256,7 +225,17 @@ OS_API_C_FUNC(int) sendfrom(mem_zone_ref_const_ptr params, unsigned int rpc_mode
 		free_string		(&oScript);
 	}
 
+
 	ret = sign_tx_inputs	(&new_tx);
+
+
+
+
+
+
+
+
+	
 
 	if (ret)
 	{
@@ -337,8 +316,22 @@ OS_API_C_FUNC(int) generatekeys(mem_zone_ref_const_ptr params, unsigned int rpc_
 
 OS_API_C_FUNC(int) accesstest(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
 {
-	tree_manager_create_node		("result", NODE_GFX_BOOL, result);
-	tree_manager_write_node_dword	(result, 0, 1);
+	unsigned int staking, timeout;
+	int ret;
+
+	ret = wallet_infos(&staking, &timeout);
+
+	tree_manager_set_child_value_bool(result, "unlocked", ret);
+	if (!ret)
+	{
+		staking = 0;
+		timeout = 0;
+	}
+
+	tree_manager_set_child_value_bool(result, "staking", staking);
+	tree_manager_set_child_value_i32 (result, "time", timeout);
+		
+
 	return 1;
 }
 
@@ -347,7 +340,7 @@ OS_API_C_FUNC(int) walletpassphrase(mem_zone_ref_const_ptr params, unsigned int 
 {
 	struct string	password = { 0 };
 	mem_zone_ref	pn = { PTR_NULL };
-	unsigned int	timeout;
+	unsigned int	timeout, staking;
 	int				ret;
 
 
@@ -361,10 +354,33 @@ OS_API_C_FUNC(int) walletpassphrase(mem_zone_ref_const_ptr params, unsigned int 
 	tree_mamanger_get_node_dword(&pn, 0, &timeout);
 	release_zone_ref			(&pn);
 
-	ret=set_anon_pw				(password.str, timeout);
+	staking = 0;
+	if (tree_manager_get_child_at(params, 2, &pn))
+	{
+		tree_mamanger_get_node_dword(&pn, 0, &staking);
+		release_zone_ref(&pn);
+	}
+
+	ret=set_anon_pw				(password.str, staking, timeout);
 
 	free_string					(&password);
 
+	if(ret)
+		tree_manager_set_child_value_bool(result, "pw", 1);
+	else
+		tree_manager_set_child_value_bool(result, "pw", 0);
+
+
+	if (!wallet_infos(&staking, &timeout))
+	{
+		staking = 0;
+		timeout = 0;
+	}
 	
-	return ret;
+	tree_manager_set_child_value_bool(result, "staking", staking);
+	tree_manager_set_child_value_i32 (result, "time", timeout);
+
+
+	
+	return 1;
 }

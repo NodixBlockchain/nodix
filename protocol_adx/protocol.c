@@ -9,6 +9,8 @@
 #include <strs.h>
 #include <tree.h>
 
+#include "../zlib-1.2.8/zlib.h"
+
 C_IMPORT ctime_t C_API_FUNC  get_time_c();
 
 const unsigned int	GETDATA_TX		= 1;
@@ -175,6 +177,9 @@ OS_API_C_FUNC(size_t) init_node(mem_zone_ref_ptr key)
 			init_node					(&vin);
 			release_zone_ref			(&vin);
 			release_zone_ref			(&txin_list);
+
+			vin.zone = PTR_NULL;
+			txin_list.zone = PTR_NULL;
 
 			if (!tree_manager_find_child_node(key, NODE_HASH_txsout, NODE_BITCORE_VOUTLIST, &txin_list))
 				tree_manager_add_child_node(key, "txsout", NODE_BITCORE_VOUTLIST, &txin_list);
@@ -644,7 +649,7 @@ OS_API_C_FUNC(char *) write_node(mem_zone_ref_const_ptr key, unsigned char *payl
 		{
 			*((unsigned char*)(payload++)) = 0xFE;
 			*((unsigned int*)(payload)) = nVerts;
-			payload += 5;
+			payload += 4;
 		}
 
 		data = tree_mamanger_get_node_data_ptr(key, 0);
@@ -1005,6 +1010,7 @@ OS_API_C_FUNC(char *) write_node(mem_zone_ref_const_ptr key, unsigned char *payl
 
 OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payload,size_t len)
 {
+
 	unsigned int		n, nc,type;
 	mem_zone_ref		txin_list = { PTR_NULL }, my_list = { PTR_NULL };
 	mem_zone_ref_ptr	sub = PTR_NULL;
@@ -1014,6 +1020,11 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	unsigned short		port;
 	size_t				sz,read,rd;
 	ipv4_t				ip;
+
+	if (len == 0)
+		return 0;
+
+	
 
 	type = tree_mamanger_get_node_type(key);
 
@@ -1032,18 +1043,30 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	{
 	case NODE_GFX_INT:
 
-		if ((read + sizeof(unsigned int)) > len)return INVALID_SIZE;
+		if ((read + sizeof(unsigned int)) > len)
+			return INVALID_SIZE;
 		tree_manager_write_node_dword(key, 0, *((unsigned int *)(payload + read)));
 		read += 4;
 	break;
 	case NODE_GFX_BINT:
 
-		if ((read + sizeof(uint64_t)) > len)return INVALID_SIZE;
+		if ((read + sizeof(uint64_t)) > len)
+			return INVALID_SIZE;
 		tree_manager_write_node_qword(key, 0, *((uint64_t *)(payload + read)));
 		read += sizeof(uint64_t);
 		break;
+
+	case NODE_GFX_SIGNED_BINT:
+
+		if ((read + sizeof(int64_t)) > len)
+			return INVALID_SIZE;
+		tree_manager_write_node_signed_qword(key, 0, *((int64_t *)(payload + read)));
+		read += sizeof(int64_t);
+	break;
+
 	case NODE_RT_VEC3:
-		if ((read + (sizeof(float) * 3)) > len)return INVALID_SIZE;
+		if ((read + (sizeof(float) * 3)) > len)
+			return INVALID_SIZE;
 		data_f = (float *)(payload+read);
 		tree_manager_write_node_vec3f(key, 0, data_f[0], data_f[1], data_f[2]);
 		read += sizeof(float) * 3;
@@ -1052,7 +1075,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	{
 		unsigned int n,nVerts;
 
-		if ((read + 2) > len)return INVALID_SIZE;
+		if ((read + 2) > len)
+			return INVALID_SIZE;
 
 		if (*(payload + read) < 0xFD)
 		{
@@ -1062,25 +1086,29 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		else if (*(payload + read) == 0xFD)
 		{
 			read++;
-			if ((read + 2) > len)return INVALID_SIZE;
+			if ((read + 2) > len)
+				return INVALID_SIZE;
 			nVerts = *((unsigned short *)(payload + read));
 			read += 2;
 		}
 		else if (*(payload + read) < 0xFE)
 		{
 			read++;
-			if ((read + 4) > len)return INVALID_SIZE;
+			if ((read + 4) > len)
+				return INVALID_SIZE;
 			nVerts = *((unsigned int *)(payload + read));
 			read += 4;
 		}
 		else if (*(payload + read) < 0xFF)
 		{
 			read++;
-			if ((read + 8) > len)return INVALID_SIZE;
+			if ((read + 8) > len)
+				return INVALID_SIZE;
 			nVerts = *((uint64_t *)(payload + read));
 			read += 8;
 		}
-		if ((read + (nVerts * sizeof(float) * 3)) > len)return INVALID_SIZE;
+		if ((read + (nVerts * sizeof(float) * 3)) > len)
+			return INVALID_SIZE;
 		for (n = 0; n < nVerts; n++)
 		{
 			data_f = (float *)(payload + read);
@@ -1095,7 +1123,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	{
 		unsigned int n, nVerts;
 
-		if ((read + 2) > len)return INVALID_SIZE;
+		if ((read + 2) > len)
+			return INVALID_SIZE;
 
 		if (*(payload + read) < 0xFD)
 		{
@@ -1105,25 +1134,29 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		else if (*(payload + read) == 0xFD)
 		{
 			read++;
-			if ((read + 2) > len)return INVALID_SIZE;
+			if ((read + 2) > len)
+				return INVALID_SIZE;
 			nVerts = *((unsigned short *)(payload + read));
 			read += 2;
 		}
 		else if (*(payload + read) < 0xFE)
 		{
 			read++;
-			if ((read + 4) > len)return INVALID_SIZE;
+			if ((read + 4) > len)
+				return INVALID_SIZE;
 			nVerts = *((unsigned int *)(payload + read));
 			read += 4;
 		}
 		else if (*(payload + read) < 0xFF)
 		{
 			read++;
-			if ((read + 8) > len)return INVALID_SIZE;
+			if ((read + 8) > len)
+				return INVALID_SIZE;
 			nVerts = *((uint64_t *)(payload + read));
 			read += 8;
 		}
-		if ((read + (nVerts * sizeof(float) * 2)) > len)return INVALID_SIZE;
+		if ((read + (nVerts * sizeof(float) * 2)) > len)
+			return INVALID_SIZE;
 		for (n = 0; n < nVerts; n++)
 		{
 			data_f = (float *)(payload + read);
@@ -1137,7 +1170,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	{
 		unsigned int n, nVerts;
 
-		if ((read + 2) > len)return INVALID_SIZE;
+		if ((read + 2) > len)
+			return INVALID_SIZE;
 
 		if (*(payload + read) < 0xFD)
 		{
@@ -1147,25 +1181,29 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		else if (*(payload + read) == 0xFD)
 		{
 			read++;
-			if ((read + 2) > len)return INVALID_SIZE;
+			if ((read + 2) > len)
+				return INVALID_SIZE;
 			nVerts = *((unsigned short *)(payload + read));
 			read += 2;
 		}
-		else if (*(payload + read) < 0xFE)
+		else if (*(payload + read) == 0xFE)
 		{
 			read++;
-			if ((read + 4) > len)return INVALID_SIZE;
+			if ((read + 4) > len)
+				return INVALID_SIZE;
 			nVerts = *((unsigned int *)(payload + read));
 			read += 4;
 		}
-		else if (*(payload + read) < 0xFF)
+		else if (*(payload + read) == 0xFF)
 		{
 			read++;
-			if ((read + 8) > len)return INVALID_SIZE;
+			if ((read + 8) > len)
+				return INVALID_SIZE;
 			nVerts = *((uint64_t *)(payload + read));
 			read += 8;
 		}
-		if ((read + (nVerts * sizeof(unsigned int))) > len)return INVALID_SIZE;
+		if ((read + (nVerts * sizeof(unsigned int))) > len)
+			return INVALID_SIZE;
 		for (n = 0; n < nVerts; n++)
 		{
 			tree_manager_write_node_dword(key, n * sizeof(unsigned int), *((unsigned int *)(payload + read)));
@@ -1177,7 +1215,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	break;
 
 	case NODE_GFX_4UC:
-		if ((read + (sizeof(vec_4uc_t))) > len)return INVALID_SIZE;
+		if ((read + (sizeof(vec_4uc_t))) > len)
+			return INVALID_SIZE;
 		data_uc[0] = payload[read + 0];
 		data_uc[1] = payload[read + 1];
 		data_uc[2] = payload[read + 2];
@@ -1186,17 +1225,20 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		read += sizeof(vec_4uc_t);
 	break;
 	case NODE_GFX_FLOAT:
-		if ((read + sizeof(float)) > len)return INVALID_SIZE;
+		if ((read + sizeof(float)) > len)
+			return INVALID_SIZE;
 		tree_manager_write_node_float(key, 0, *((float *)(payload+read)));
 		read += sizeof(float);
 	break;
 	case NODE_BIN_DATA:
-		if ((read + sizeof(hash_t)) > len)return INVALID_SIZE;
+		if ((read + sizeof(hash_t)) > len)
+			return INVALID_SIZE;
 		tree_manager_write_node_hash(key, 0, ((unsigned char *)(payload+read)));
 		read += sizeof(hash_t);
 	break;
 	case NODE_BITCORE_PUBKEY:
-		if ((read + 33) > len)return INVALID_SIZE;
+		if ((read + 33) > len)
+			return INVALID_SIZE;
 		tree_manager_write_node_data(key, ((unsigned char *)(payload + read)), 0, 33);
 		read += 33;
 	break;
@@ -1204,13 +1246,15 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	case NODE_BITCORE_TX_HASH:
 	case NODE_FILE_HASH:
 	case NODE_BITCORE_HASH:
-		if ((read + sizeof(hash_t)) > len)return INVALID_SIZE;
+		if ((read + sizeof(hash_t)) > len)
+			return INVALID_SIZE;
 		tree_manager_write_node_hash(key, 0, ((unsigned char *)(payload+read)));
 		read += sizeof(hash_t);
 	break;
 	case NODE_BITCORE_LOCATOR:
 
-		if ((read + 2) > len)return INVALID_SIZE;
+		if ((read + 2) > len)
+			return INVALID_SIZE;
 
 		if (*(payload + read) < 0xFD)
 		{
@@ -1220,21 +1264,24 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		else if (*(payload + read) == 0xFD)
 		{
 			read++;
-			if ((read + 2) > len)return INVALID_SIZE;
+			if ((read + 2) > len)
+				return INVALID_SIZE;
 			nc = *((unsigned short *)(payload+read));
 			read += 2;
 		}
 		else if (*(payload + read) < 0xFE)
 		{
 			read++;
-			if ((read + 4) > len)return INVALID_SIZE;
+			if ((read + 4) > len)
+				return INVALID_SIZE;
 			nc = *((unsigned int *)(payload+read));
 			read += 4;
 		}
 		else if (*(payload + read) < 0xFF)
 		{
 			read++;
-			if ((read + 8) > len)return INVALID_SIZE;
+			if ((read + 8) > len)
+				return INVALID_SIZE;
 			nc = *((uint64_t *)(payload + read));
 			read += 8;
 		}
@@ -1243,7 +1290,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		{
 			mem_zone_ref ssub = { PTR_NULL };
 
-			if ((read + sizeof(hash_t)) > len)return INVALID_SIZE;
+			if ((read + sizeof(hash_t)) > len)
+				return INVALID_SIZE;
 
 			if (!tree_manager_get_child_at(key, n, &ssub))
 				tree_manager_add_child_node(key, "hash", NODE_BITCORE_HASH, &ssub);
@@ -1255,7 +1303,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	break;
 	case NODE_BITCORE_BLK_HDR_LIST:
 
-		if ((read + 1) > len)return INVALID_SIZE;
+		if ((read + 1) > len)
+			return INVALID_SIZE;
 
 		if (*(payload + read) < 0xFD)
 		{
@@ -1265,21 +1314,24 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		else if (*(payload + read) == 0xFD)
 		{
 			read++;
-			if ((read + 2) > len)return INVALID_SIZE;
+			if ((read + 2) > len)
+				return INVALID_SIZE;
 			nc = *((unsigned short *)(payload + read));
 			read += 2;
 		}
 		else if (*(payload + read) < 0xFE)
 		{
 			read++;
-			if ((read + 4) > len)return INVALID_SIZE;
+			if ((read + 4) > len)
+				return INVALID_SIZE;
 			nc = *((unsigned int *)(payload + read));
 			read += 4;
 		}
 		else if (*(payload + read) < 0xFF)
 		{
 			read++;
-			if ((read + 8) > len)return INVALID_SIZE;
+			if ((read + 8) > len)
+				return INVALID_SIZE;
 			nc = *((uint64_t *)(payload + read));
 			read += 8;
 		}
@@ -1299,8 +1351,10 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 
 				read += rd;
 
-				if ((read + 1) > len)return INVALID_SIZE;
-				if ((*(payload + read) == 0xFD) && ((read + 3) > len))return INVALID_SIZE;
+				if ((read + 1) > len)
+					return INVALID_SIZE;
+				if ((*(payload + read) == 0xFD) && ((read + 3) > len))
+					return INVALID_SIZE;
 				
 				tree_manager_set_child_value_vint(&ssub, "ntx", payload+read);
 
@@ -1316,7 +1370,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	break;
 	case NODE_BITCORE_HASH_LIST:
 
-		if ((read + 1) > len)return INVALID_SIZE;
+		if ((read + 1) > len)
+			return INVALID_SIZE;
 
 		if (*(payload + read) < 0xFD)
 		{
@@ -1326,21 +1381,24 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		else if (*(payload + read) == 0xFD)
 		{
 			read++;
-			if ((read + 2) > len)return INVALID_SIZE;
+			if ((read + 2) > len)
+				return INVALID_SIZE;
 			nc = *((unsigned short *)(payload + read));
 			read += 2;
 		}
 		else if (*(payload + read) < 0xFE)
 		{
 			read++;
-			if ((read + 4) > len)return INVALID_SIZE;
+			if ((read + 4) > len)
+				return INVALID_SIZE;
 			nc = *((unsigned int *)(payload + read));
 			read += 4;
 		}
 		else if (*(payload + read) < 0xFF)
 		{
 			read++;
-			if ((read + 8) > len)return INVALID_SIZE;
+			if ((read + 8) > len)
+				return INVALID_SIZE;
 			nc = *((uint64_t *)(payload + read));
 			read += 8;
 		}
@@ -1351,7 +1409,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 			unsigned int type = NODE_BITCORE_HASH;
 
 
-			if ((read + 36) > len)return INVALID_SIZE;
+			if ((read + 36) > len)
+				return INVALID_SIZE;
 
 			if (*((unsigned int *)(payload+read)) == GETDATA_BLOCK)
 			{
@@ -1380,7 +1439,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		case NODE_GFX_STR:
 		case NODE_BITCORE_VSTR:
 
-		if ((read + 1) > len)return INVALID_SIZE;
+		if ((read + 1) > len)
+			return INVALID_SIZE;
 
 		if (*((unsigned char *)(payload + read)) < 0xFD)
 		{
@@ -1388,26 +1448,31 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		}
 		else if (*((unsigned char *)(payload + read)) == 0xFD)
 		{
-			if ((read + 3) > len)return INVALID_SIZE;
+			if ((read + 3) > len)
+				return INVALID_SIZE;
 			sz = (*((unsigned short *)(payload+read+1))) + 3;
 		}
 		else if (*((unsigned char *)(payload + read)) == 0xFE)
 		{
-			if ((read + 5) > len)return INVALID_SIZE;
+			if ((read + 5) > len)
+				return INVALID_SIZE;
 			sz = (*((unsigned int *)(payload + read + 1))) + 5;
 		}
 		else if (*((unsigned char *)(payload + read)) == 0xFF)
 		{
-			if ((read + 9) > len)return INVALID_SIZE;
+			if ((read + 9) > len)
+				return INVALID_SIZE;
 			sz = (*((uint64_t *)(payload + read + 1))) + 9;
 		}
-		if ((read + sz) > len)return INVALID_SIZE;
+		if ((read + sz) > len)
+			return INVALID_SIZE;
 		tree_manager_write_node_data(key, payload+read, 0, sz);
 		read += sz;
 		break;
 	case NODE_BITCORE_VINT:
 
-		if ((read + 1) > len)return INVALID_SIZE;
+		if ((read + 1) > len)
+			return INVALID_SIZE;
 
 		if (*((unsigned char *)(payload+read)) < 0xFD)
 			sz = 1;
@@ -1418,7 +1483,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		else if (*((unsigned char *)(payload + read)) == 0xFF)
 			sz =  9;
 
-		if ((read + sz) > len)return INVALID_SIZE;
+		if ((read + sz) > len)
+			return INVALID_SIZE;
 		tree_manager_write_node_data(key, payload+read, 0, sz);
 		read += sz;
 		break;
@@ -1433,7 +1499,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 			return read;
 		}
 
-		if ((read + 5) > len)return INVALID_SIZE;
+		if ((read + 5) > len)
+			return INVALID_SIZE;
 
 		if (*((unsigned char *)(payload + read + 1)) == 0x30)
 		{
@@ -1445,11 +1512,13 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 			rlen = *((unsigned char *)(payload + read));
 			tree_manager_write_node_byte(key, 3, rlen); read++;
 
-			if ((read + rlen) > len)return INVALID_SIZE;
+			if ((read + rlen) > len)
+				return INVALID_SIZE;
 			tree_manager_write_node_data(key, payload + read, 4, rlen); read += rlen;
 			tree_manager_write_node_byte(key, rlen + 4, *((unsigned char *)(payload + read))); read++;
 			slen = *((unsigned char *)(payload + read));
-			if ((read + slen) > len)return INVALID_SIZE;
+			if ((read + slen) > len)
+				return INVALID_SIZE;
 			tree_manager_write_node_byte(key, rlen + 5, slen); read++;
 			tree_manager_write_node_data(key, payload + read, rlen + 6, slen); read += slen;
 		}
@@ -1473,7 +1542,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	break;
 	case NODE_BITCORE_BLK_HDR:
 
-		if ((read + 76) > len)return INVALID_SIZE;
+		if ((read + 76) > len)
+			return INVALID_SIZE;
 
 		tree_manager_set_child_value_i32(key, "version"		, *((unsigned int *)(payload+read)));
 		read += 4;
@@ -1498,7 +1568,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	case NODE_BITCORE_ADDR:
 
 
-		if ((read + 26) > len)return INVALID_SIZE;
+		if ((read + 26) > len)
+			return INVALID_SIZE;
 
 		tree_manager_set_child_value_i64(key, "services", *((uint64_t *)(payload+read)));
 		read += 8;
@@ -1517,7 +1588,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	break;
 	case NODE_BITCORE_ADDRT:
 
-		if ((read + 30) > len)return INVALID_SIZE;
+		if ((read + 30) > len)
+			return INVALID_SIZE;
 
 		tree_manager_set_child_value_i32(key, "time"	, *((unsigned int *)(payload+read)));
 		read += 4;
@@ -1537,7 +1609,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	break;
 	case NODE_BITCORE_ADDR_LIST:
 
-		if ((read + 1) > len)return INVALID_SIZE;
+		if ((read + 1) > len)
+			return INVALID_SIZE;
 
 		if (*(payload + read) < 0xFD)
 		{
@@ -1547,21 +1620,24 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		else if (*(payload + read) == 0xFD)
 		{
 			read++;
-			if ((read + 2) > len)return INVALID_SIZE;
+			if ((read + 2) > len)
+				return INVALID_SIZE;
 			nc = *((unsigned short *)(payload + read));
 			read += 2;
 		}
 		else if (*(payload + read) < 0xFE)
 		{
 			read++;
-			if ((read + 4) > len)return INVALID_SIZE;
+			if ((read + 4) > len)
+				return INVALID_SIZE;
 			nc = *((unsigned int *)(payload + read));
 			read += 4;
 		}
 		else if (*(payload + read) < 0xFF)
 		{
 			read++;
-			if ((read + 8) > len)return INVALID_SIZE;
+			if ((read + 8) > len)
+				return INVALID_SIZE;
 			nc		= *((uint64_t *)(payload + read));
 			read   += 8;
 		}
@@ -1576,14 +1652,16 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 
 	case NODE_BITCORE_TXIN:
 		
-		if ((read + 36) > len)return INVALID_SIZE;
+		if ((read + 36) > len)
+			return INVALID_SIZE;
 
 		tree_manager_set_child_value_hash(key, "txid", payload+read);
 		read += 32;
 		tree_manager_set_child_value_i32(key, "idx", *((unsigned int *)(payload + read)));
 		read += 4;
 
-		if ((read + 1) > len)return INVALID_SIZE;
+		if ((read + 1) > len)
+			return INVALID_SIZE;
 
 		if (*((unsigned char *)(payload+read)) < 0xFD)
 		{
@@ -1592,21 +1670,24 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		}
 		else if (*((unsigned char *)(payload + read)) == 0xFD)
 		{
-			if ((read + 3) > len)return INVALID_SIZE;
+			if ((read + 3) > len)
+				return INVALID_SIZE;
 
 			str.len = (*((unsigned short *)(payload +read + 1)));
 			sz = 3;
 		}
 		else if (*((unsigned char *)(payload + read)) == 0xFE)
 		{
-			if ((read + 5) > len)return INVALID_SIZE;
+			if ((read + 5) > len)
+				return INVALID_SIZE;
 
 			str.len = (*((unsigned int *)(payload + read + 1)));
 			sz = 5;
 		}
 		else if (*((unsigned char *)(payload + read)) == 0xFF)
 		{
-			if ((read + 9) > len)return INVALID_SIZE;
+			if ((read + 9) > len)
+				return INVALID_SIZE;
 
 			str.len = (*((uint64_t *)(payload + read + 1)));
 			sz = 9;
@@ -1619,7 +1700,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		else
 			str.str = PTR_NULL;
 
-		if ((read + sz + str.len) > len)return INVALID_SIZE;
+		if ((read + sz + str.len) > len)
+			return INVALID_SIZE;
 
 		tree_manager_set_child_value_vstr(key, "script", &str);
 		read+= (str.len + sz);
@@ -1629,7 +1711,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	break;
 	case NODE_BITCORE_TXOUT:
 
-		if ((read + 9) > len)return INVALID_SIZE;
+		if ((read + 9) > len)
+			return INVALID_SIZE;
 
 		tree_manager_set_child_value_i64(key, "value", *((uint64_t *)(payload+read)));
 		read += 8;
@@ -1654,7 +1737,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 			sz = 9;
 		}
 
-		if ((read + sz + str.len) > len)return INVALID_SIZE;
+		if ((read + sz + str.len) > len)
+			return INVALID_SIZE;
 
 		if (str.len > 0)
 		{
@@ -1676,7 +1760,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	break;
 	case NODE_BITCORE_VINLIST:
 
-		if ((read + 1) > len)return INVALID_SIZE;
+		if ((read + 1) > len)
+			return INVALID_SIZE;
 
 		if (*(payload + read) < 0xFD)
 		{
@@ -1686,21 +1771,24 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		else if (*(payload + read) == 0xFD)
 		{
 			read++;
-			if ((read + 2) > len)return INVALID_SIZE;
+			if ((read + 2) > len)
+				return INVALID_SIZE;
 			nc = *((unsigned short *)(payload+read));
 			read += 2;
 		}
 		else if (*(payload + read) < 0xFE)
 		{
 			read++;
-			if ((read + 4) > len)return INVALID_SIZE;
+			if ((read + 4) > len)
+				return INVALID_SIZE;
 			nc = *((unsigned int *)(payload+read));
 			read += 4;
 		}
 		else if (*(payload + read) < 0xFF)
 		{
 			read++;
-			if ((read + 8) > len)return INVALID_SIZE;
+			if ((read + 8) > len)
+				return INVALID_SIZE;
 			nc = *((uint64_t *)(payload+read));
 			read  += 8;
 		}
@@ -1725,7 +1813,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		}
 	break;
 	case NODE_BITCORE_VOUTLIST:
-		if ((read + 1) > len)return INVALID_SIZE;
+		if ((read + 1) > len)
+			return INVALID_SIZE;
 
 		if (*(payload + read) < 0xFD)
 		{
@@ -1735,21 +1824,24 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		else if (*(payload + read) == 0xFD)
 		{
 			read++;
-			if ((read + 2) > len)return INVALID_SIZE;
+			if ((read + 2) > len)
+				return INVALID_SIZE;
 			nc = *((unsigned short *)(payload + read));
 			read += 2;
 		}
 		else if (*(payload + read) < 0xFE)
 		{
 			read++;
-			if ((read + 4) > len)return INVALID_SIZE;
+			if ((read + 4) > len)
+				return INVALID_SIZE;
 			nc = *((unsigned int *)(payload + read));
 			read += 4;
 		}
 		else if (*(payload + read) < 0xFF)
 		{
 			read++;
-			if ((read + 8) > len)return INVALID_SIZE;
+			if ((read + 8) > len)
+				return INVALID_SIZE;
 			nc = *((uint64_t *)(payload + read));
 			read += 8;
 		}
@@ -1775,7 +1867,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		break;
 	case NODE_BITCORE_TX:
 
-		if ((read + 8) > len)return INVALID_SIZE;
+		if ((read + 8) > len)
+			return INVALID_SIZE;
 
 		tree_manager_set_child_value_i32(key, "version", *((unsigned int *)(payload+read)));
 		read += 4;
@@ -1795,7 +1888,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		if ((rd = read_node(&txin_list, payload + read, len - read)) == INVALID_SIZE){ release_zone_ref(&txin_list); return rd; }
 		read += rd;
 		release_zone_ref(&txin_list);
-		if ((read + 4) > len)return INVALID_SIZE;
+		if ((read + 4) > len)
+			return INVALID_SIZE;
 		tree_manager_set_child_value_i32(key, "locktime", *((unsigned int *)(payload+read)));
 		read += 4;
 
@@ -1805,7 +1899,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 	{
 		unsigned int ntx;
 
-		if ((read + 1) > len)return INVALID_SIZE;
+		if ((read + 1) > len)
+			return INVALID_SIZE;
 
 		if (*((unsigned char *)(payload + read)) < 0xFD)
 		{
@@ -1822,7 +1917,8 @@ OS_API_C_FUNC(size_t)read_node(mem_zone_ref_ptr key, const unsigned char *payloa
 		else if (*((unsigned char *)(payload + read)) == 0xFF)
 			sz = 9;
 
-		if ((read + sz) > len)return INVALID_SIZE;
+		if ((read + sz) > len)
+			return INVALID_SIZE;
 
 		read += sz;
 
@@ -1870,19 +1966,55 @@ OS_API_C_FUNC(int) unserialize_children(mem_zone_ref_ptr obj, const_mem_ptr payl
 	mem_zone_ref_ptr	key;
 	size_t				read, rd;
 
-	read = 0;
 
-	for (tree_manager_get_first_child(obj, &my_list, &key); ((key != NULL) && (key->zone != NULL)); tree_manager_get_next_child(&my_list, &key))
+	if (!memcmp_c(payload, "zCmP", 4))
 	{
-		if ((rd = read_node(key, mem_add(payload,read),len-read)) == INVALID_SIZE){
+		unsigned char	*dbuff = PTR_NULL;
+		size_t			dlen;
 
-			log_output("read_node error \n");
-			dec_zone_ref(key);
-			release_zone_ref(&my_list);
-			return 0;
+		dlen = *((unsigned int *)(mem_add(payload, 4)));
+		dbuff = malloc_c(dlen);
+
+		if (uncompress(dbuff, &dlen, mem_add(payload, 8), len - 8) == 0)
+		{
+			read = 0;
+			for (tree_manager_get_first_child(obj, &my_list, &key); ((key != NULL) && (key->zone != NULL)); tree_manager_get_next_child(&my_list, &key))
+			{
+				if ((rd = read_node(key, mem_add(dbuff, read), dlen - read)) == INVALID_SIZE) {
+					log_output("read_node error \n");
+					dec_zone_ref(key);
+					release_zone_ref(&my_list);
+					break;
+				}
+				read += rd;
+			}
 		}
-		read += rd;
+		else
+			rd = INVALID_SIZE;
+
+		free_c(dbuff);
+
+		if (rd != INVALID_SIZE)
+			return 1;
+		else
+			return 0;
 	}
+	else
+	{
+		read = 0;
+		for (tree_manager_get_first_child(obj, &my_list, &key); ((key != NULL) && (key->zone != NULL)); tree_manager_get_next_child(&my_list, &key))
+		{
+			if ((rd = read_node(key, mem_add(payload, read), len - read)) == INVALID_SIZE) {
+
+				log_output("read_node error \n");
+				dec_zone_ref(key);
+				release_zone_ref(&my_list);
+				return 0;
+			}
+			read += rd;
+		}
+	}
+
 
 	return 1;
 }

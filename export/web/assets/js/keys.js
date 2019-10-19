@@ -1,4 +1,5 @@
 var private_prefix = '55';
+var public_prefix = '19';
 var key = null;
 var my_tx = null;
 var paytxfee = 10000;
@@ -12,11 +13,34 @@ var MyAccount = null;
 if (!Uint8Array.prototype.slice && 'subarray' in Uint8Array.prototype)
     Uint8Array.prototype.slice = Uint8Array.prototype.subarray;
 
+function pk2addr(pubkey)
+{
+    var faddr, paddr, eaddr;
+    var h, h2;
+    addr = public_prefix + RMDstring(hex2a(sha256(pubkey)));
+
+    h = sha256(addr);
+    h2 = sha256(h);
+    crc = h2.slice(0, 8);
+    faddr = addr + crc;
+    paddr = hex2b(faddr);
+    return to_b58(paddr);
+
+}
+
 
 function pubkey_to_addr(pubkey) {
+
+    $('#pubaddr').val(pk2addr(pubkey));
+
+    /*
+    console.log("faddr : " + faddr + " paddr " + paddr + " eaddr " + eaddr);
+
     rpc_call('pubkeytoaddr', [pubkey], function (data) {
+        console.log("addr : " + eaddr + " result " + data.result.addr);
         $('#pubaddr').val(data.result.addr);
     });
+    */
 }
 
 
@@ -82,25 +106,28 @@ function newkey() {
     }
     pubkey = key.getPublic().encodeCompressed('hex');
     privkey = hexk;
-    pubkey_to_addr(pubkey);
+    $('#pubaddr').val(pk2addr(pubkey));
 
-    console.log('pub key ' + pubkey);
+    
 }
 
 
 function check_key(privKey, pubAddr) {
     var test_key = ec.keyPair({ priv: privKey, privEnc: 'hex' });
     pubkey = test_key.getPublic().encodeCompressed('hex');
-    rpc_call('pubkeytoaddr', [pubkey], function (data) {
-        if (data.result.addr != pubAddr) {
-            $('#selected_' + pubAddr).prop('checked', false);
-            $('#secret_' + pubAddr).css('color', 'red');
-        }
-        else {
-            $('#selected_' + pubAddr).prop('checked', true);
-            $('#secret_' + pubAddr).css('color', 'green');
-        }
-    });
+
+    var addr = pk2addr(pubkey);
+
+    //rpc_call('pubkeytoaddr', [pubkey], function (data) {
+    if (addr != pubAddr) {
+        $('#selected_' + pubAddr).prop('checked', false);
+        $('#secret_' + pubAddr).css('color', 'red');
+    }
+    else {
+        $('#selected_' + pubAddr).prop('checked', true);
+        $('#secret_' + pubAddr).css('color', 'green');
+    }
+    //});
 }
 
 function rc4_cypher(key, str) {
@@ -232,13 +259,13 @@ function generateKeys() {
 
     pubkey = key.getPublic().encodeCompressed('hex');
     privkey = key.getPrivate('hex');
-    pubkey_to_addr(pubkey);
+    $('#pubaddr').val(pk2addr(pubkey));
 }
 
 function AccountList(divName,listName,opts) {
 
     var n;
-    var input, span, div, inner, p,a,container, row, col1, col2, label, table, h2;
+    var panel,input, span, div, inner, p,a,container, row, col1, col2, label, table, h2;
     var self = this;
 
     this.opts = opts;
@@ -250,14 +277,34 @@ function AccountList(divName,listName,opts) {
     this.selectedMenu = '';
     this.SelectedAddrs = new Array();
     this.staketimer = null;
+    this.stakeUpdateTimer = null;
     this.nHashes = 0;
     this.TxTable = null;
     this.AddrTable = null;
-        
+    this.AnonTimeout = null;
+    this.n_parsed_tx = 0;
     div = document.getElementById(divName);
     container = document.createElement('div');
 
     container.className = "card";
+
+    $('#anon_timeout').focusin(function () {
+    
+        /* console.log(' focus :' + self.AnonTimeout); */
+        
+        if (self.AnonTimeout != null)
+        {
+            clearTimeout(self.AnonTimeout);
+            self.AnonTimeout = null;
+        }
+    });
+
+    $('#anon_timeout').focusout(function () {
+
+        /* console.log(' unfocus :' + self.AnonTimeout); */
+        self.AnonTimeout = setTimeout(function () { self.update_timeout(); }, 1000);
+    });
+    
         
     /* header */        
     row = document.createElement('div');
@@ -288,6 +335,14 @@ function AccountList(divName,listName,opts) {
     col1.appendChild(this.select);
     row.appendChild(col1);
 
+    panel = document.createElement('div');
+    panel.id = "account_addresses_loading";
+    row.appendChild(panel);
+
+
+    panel = document.createElement('div');
+    panel.id = "account_addresses";
+
     /* account name */
     col1 = document.createElement('div');
     col1.className = 'md-form';
@@ -304,7 +359,7 @@ function AccountList(divName,listName,opts) {
         
     col1.appendChild(this.input);
     col1.appendChild(label);
-    row.appendChild(col1);
+    panel.appendChild(col1);
 
     col1 = document.createElement('div');
     col1.className = 'md-form';
@@ -324,7 +379,7 @@ function AccountList(divName,listName,opts) {
 
     a.innerHTML = 'add new address';
     col1.appendChild(a);
-    row.appendChild(col1);
+    panel.appendChild(col1);
 
     /* rescan all */
     col1 = document.createElement('div');
@@ -374,11 +429,11 @@ function AccountList(divName,listName,opts) {
     inner = document.createElement('div');
     inner.className = 'row';
     col2 = document.createElement('div');
-    col2.className = 'col-sm-1';
+    col2.className = 'col-md-2';
     col2.innerHTML = 'total:';
     inner.appendChild(col2);
     col2 = document.createElement('div');
-    col2.className = 'col-md-2 justify-content-end';
+    col2.className = 'col-md-4 justify-content-end';
     col2.id = 'addr-total';
     inner.appendChild(col2);
     col1.appendChild(inner);
@@ -386,17 +441,17 @@ function AccountList(divName,listName,opts) {
     inner = document.createElement('div');
     inner.className = 'row';
     col2 = document.createElement('div');
-    col2.className = 'col-sm-1';
+    col2.className = 'col-md-2';
     col2.innerHTML = 'selected:';
     inner.appendChild(col2);
 
     col2 = document.createElement('div');
-    col2.className = 'col-md-2 justify-content-end';
+    col2.className = 'col-md-4 justify-content-end';
     col2.id = 'addr-selected';
     inner.appendChild(col2);
     col1.appendChild(inner);
 
-    row.appendChild(col1);
+    panel.appendChild(col1);
 
     /* address list */
     col1 = document.createElement('div');
@@ -413,7 +468,9 @@ function AccountList(divName,listName,opts) {
     col1.appendChild(this.AddrTable);
 
      
-    row.appendChild(col1);
+    panel.appendChild(col1);
+    row.appendChild(panel);
+
     container.appendChild(row);
     div.appendChild(container);
 
@@ -580,6 +637,19 @@ function AccountList(divName,listName,opts) {
         container.appendChild(cbody);
         div.appendChild(container);
     }
+}
+
+AccountList.prototype.seteventsrc = function (in_url, handler, handler2) {
+    var self = this;
+
+    this.evtSource = new EventSource(site_base_url + in_url);
+
+    this.evtSource.addEventListener("newspent", handler, false);
+
+    if(handler2)
+        this.evtSource.addEventListener("newunspent", handler2, false);
+
+    
 
 }
 
@@ -720,67 +790,83 @@ AccountList.prototype.check_all_staking = function () {
     this.nHashes = 0;
 
     for (n = 0; n < num_stake_unspents; n++) {
-        var txtime, staking;
+        var txtime;
 
-        staking = this.staking_unspents[n];
+        if (this.staking_unspents[n].inactive)
+            continue;
+
+        if (!this.staking_unspents[n].hash_data)
+            continue;
+
+        var staking = this.staking_unspents[n];
+
+
+
         txtime = this.staking_loop(staking.hash_data, time_start, time_end, staking.difficulty);
 
         var timeEnd = Math.ceil(new Date().getTime() / 1000);
         var timespan = (timeEnd - timeStart);
         var hashrate = this.nHashes / timespan;
 
-        $('#hashrate').html(this.nHashes + ' has    hes in ' + timespan + ' secs (' + hashrate + ' hashes/sec) last scan : ' + timeStart);
+        $('#hashrate').html(this.nHashes + ' hashes in ' + timespan + ' secs (' + hashrate + ' hashes/sec) last scan : ' + timeStart);
 
         if (txtime > 0) {
             var pubkey = $('#selected_' + staking.dstaddr).attr('pubkey');
             rpc_call('getstaketx', [staking.txid, staking.vout, txtime, pubkey], function (staketx) {
                 var txh, txa, secret;
 
-                if (!staketx.error) {
-                    var bh = staketx.result.newblockhash;
-                    txh = staketx.result.txhash;
-                    txa = staketx.result.addr;
-
-                    rpc_call('getprivaddr', [self.accountName, txa], function (keyData) {
-
-                        if (!keyData.error) {
-                            secret = $('#secret_' + txa).val();
-                            var DecHexkey = strtoHexString(un_enc(secret, keyData.result.privkey.slice(0, 64)));
-                            var keys = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
-
-                            // Sign message (must be an array, or it'll be treated as a hex sequence)
-                            var pubk = keys.getPublic().encodeCompressed('hex');
-                            var signature = keys.sign(txh, 'hex');
-
-                            // Export DER encoded signature in Array
-                            //var derSign = signature.toDER('hex');
-                            var derSign = signature.toLowS();
-
-                            rpc_call('signstaketx', [bh, derSign, pubk], function (txsign) {
-                                var hash = txsign.result.newblockhash;
-                                var blocksignature = keys.sign(hash, 'hex');
-                                var derSign = blocksignature.toLowS();
-
-                                rpc_call('signstakeblock', [hash, derSign, pubk], function (blksign) {
-                                    self.fetch_unspents();
-                                });
-                            });
-                        }
-                    });
-                   
+                if (staketx.error) {
+                    self.fetch_unspents();
+                    console.log('stake tx rejected');
+                    return;
                 }
-                else
-                    alert('stake tx rejected');
-            });
 
-            return 0;
+                var bh = staketx.result.newblockhash;
+                txh = staketx.result.txhash;
+                txa = staketx.result.addr;
+
+                rpc_call('getprivaddr', [self.accountName, txa], function (keyData) {
+
+                    if (keyData.error) {
+                        console.log('stake tx rejected');
+                        return;
+                    }
+                    secret = $('#secret_' + txa).val();
+                    var DecHexkey = strtoHexString(un_enc(secret, keyData.result.privkey.slice(0, 64)));
+                    var keys = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
+
+                    // Sign message (must be an array, or it'll be treated as a hex sequence)
+                    var pubk = keys.getPublic().encodeCompressed('hex');
+                    var signature = keys.sign(txh, 'hex');
+
+                    // Export DER encoded signature in Array
+                    //var derSign = signature.toDER('hex');
+                    var derSign = signature.toLowS();
+
+                    rpc_call('signstaketx', [bh, derSign, pubk], function (txsign) {
+                        var hash = txsign.result.newblockhash;
+                        var blocksignature = keys.sign(hash, 'hex');
+                        var derSign = blocksignature.toLowS();
+
+                        rpc_call('signstakeblock', [hash, derSign, pubk], function (blksign) {
+                            self.fetch_unspents();
+                        });
+                    });
+                });
+            });
+            return;
         }
     }
 
+  
+
+    /* self.fetch_unspents(); */
+    /*
     if (this.staketimer != null)
         clearTimeout(this.staketimer);
 
     this.staketimer = setTimeout(function () { self.check_all_staking(); }, 10000);
+    */
 }
 
 AccountList.prototype.update_objects = function () {
@@ -962,15 +1048,23 @@ AccountList.prototype.update_unspent = function () {
 
 
         cell            = row.insertCell(2);
-        cell.className  = "addr-cell";
-        naddr           = this.unspents[n].addresses.length;
-        addresses       = '';
+        cell.className = "addr-cell";
 
-        while (naddr--) {
-            addresses += this.unspents[n].addresses[naddr] + '<br/>';
+        addresses = '';
+
+        if (typeof this.unspents[n].addresses != 'undefined') {
+
+            naddr = this.unspents[n].addresses.length;
+
+
+            while (naddr--) {
+                addresses += this.unspents[n].addresses[naddr] + '<br/>';
+            }
         }
+        else
+            addresses = this.unspents[n].dstaddr;
 
-        cell.innerHTML = addresses;
+          cell.innerHTML = addresses;
 
         cell = row.insertCell(3);
         cell.className = "addr_amount";
@@ -1002,13 +1096,21 @@ AccountList.prototype.update_unspent = function () {
         cell.innerHTML  = this.unspents[n].txid;
 
         cell            = row.insertCell(2);
-        cell.className  = "addr-cell";
-        naddr           = this.unspents[n].addresses.length;
-        addresses       = '';
+        cell.className = "addr-cell";
 
-        while (naddr--) {
-            addresses += this.unspents[n].addresses[naddr] + '<br/>';
+        addresses = '';
+
+        if (typeof this.unspents[n].addresses != 'undefined') {
+
+            naddr = this.unspents[n].addresses.length;
+          
+
+            while (naddr--) {
+                addresses += this.unspents[n].addresses[naddr] + '<br/>';
+            }
         }
+        else
+            addresses = this.unspents[n].dstaddr;
 
         cell.innerHTML  = addresses;
 
@@ -1036,11 +1138,18 @@ AccountList.prototype.update_staking_infos = function ()
         $('#do_staking').prop('disabled', false);
 
         this.totalweight = 0;
+        this.nActive = 0;
         for (var n = 0; n < this.staking_unspents.length; n++) {
-            this.totalweight += this.staking_unspents[n].weight;
+
+            if (!this.staking_unspents[n].inactive)
+            {
+                this.totalweight += this.staking_unspents[n].weight;
+                this.nActive++;
+            }
+                
         }
         $('#stakeweight').html(this.totalweight / unit);
-        $('#nstaketxs').html(this.staking_unspents.length);
+        $('#nstaketxs').html(this.nActive);
         $('#stake_msg').empty();
     }
     else {
@@ -1064,6 +1173,9 @@ AccountList.prototype.fetch_staking_unspents = function  () {
         return;
     }
 
+    if (this.staketimer != null)
+        clearTimeout(this.staketimer);
+
     rpc_call('liststaking', [0, 9999999, this.SelectedAddrs], function (data) {
         var     n;
 
@@ -1072,15 +1184,20 @@ AccountList.prototype.fetch_staking_unspents = function  () {
         stake_infos.now                     = data.result.now;
         stake_infos.last_block_time         = data.result.last_block_time;
 
-        self.update_staking_infos   ();
+        self.update_staking_infos();
 
         if (self.staketimer != null)
             clearTimeout(self.staketimer);
 
-        self.staketimer = setTimeout(function () { self.check_all_staking();}, 10000);
-    });
-}
+        self.staketimer = setTimeout(function () { self.check_all_staking(); }, 10000);
 
+        if (self.stakeUpdateTimer != null)
+            clearTimeout(self.stakeUpdateTimer);
+
+        self.stakeUpdateTimer = setTimeout(function () { self.fetch_unspents(); }, 60000);
+
+    }, function () { self.staketimer = setTimeout(function () { self.check_all_staking(); }, 1000); });
+}
 
 AccountList.prototype.fetch_unspents = function () {
     if (this.TxTable == null)return;
@@ -1483,8 +1600,11 @@ AccountList.prototype.fetch_recvs = function () {
     });
 }
 
+
+
 AccountList.prototype.maketx = function (amount, fee, dstAddr) {
 
+    var self = this;
     $('#div_newtxid').css('display', 'none');
 
     if (this.accountName == 'anonymous') {
@@ -1506,14 +1626,35 @@ AccountList.prototype.maketx = function (amount, fee, dstAddr) {
         });
     }
     else {
-        rpc_call('maketxfrom', [this.SelectedAddrs, amount, dstAddr, fee], function (data) {
 
-            my_tx = data.result.transaction;
+        if (my_tx != null)
+        {
+            rpc_call('canceltx', [my_tx.txid], function (data) {
 
-            $('#sendtx_but').prop("disabled", false);
-            $('#total_tx').html(data.result.total);
-            $('#newtx').html(get_tmp_tx_html(my_tx));
-        });
+                rpc_call('maketxfrom', [self.SelectedAddrs, amount, dstAddr, fee], function (data) {
+
+                    my_tx = data.result.transaction;
+
+                    $('#sendtx_but').prop("disabled", false);
+                    $('#total_tx').html(data.result.total);
+                    $('#newtx').html(get_tmp_tx_html(my_tx));
+                });
+
+            });
+        }
+        else
+        {
+            rpc_call('maketxfrom', [this.SelectedAddrs, amount, dstAddr, fee], function (data) {
+
+                my_tx = data.result.transaction;
+
+                $('#sendtx_but').prop("disabled", false);
+                $('#total_tx').html(data.result.total);
+                $('#newtx').html(get_tmp_tx_html(my_tx));
+            });
+        }
+        
+        
     }
 }
 
@@ -1579,35 +1720,37 @@ AccountList.prototype.check_address = function (addr)
             var test_key = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
             var tpubkey = test_key.getPublic().encodeCompressed('hex');
 
-            rpc_call('pubkeytoaddr', [tpubkey], function (data) {
+            var maddr = pk2addr(tpubkey);
 
-                if (data.result.addr != addr) {
-                    $('#selected_' + addr).prop('checked', false);
-                    $('#selected_' + addr).attr('pubkey', '');
-                    $('#selected_' + addr).attr('privkey', '');
-                    $('#secret_' + addr).css('color', 'red');
-                }
-                else {
-                    $('#selected_' + addr).attr('pubkey', tpubkey);
-                    $('#selected_' + addr).attr('privkey', DecHexkey);
-                    $('#secret_' + addr).css('color', 'green');
-                }
+            //rpc_call('pubkeytoaddr', [tpubkey], function (data) {
 
-                self.SelectedAddrs = new Array();
+            if (maddr != addr) {
+                $('#selected_' + addr).prop('checked', false);
+                $('#selected_' + addr).attr('pubkey', '');
+                $('#selected_' + addr).attr('privkey', '');
+                $('#secret_' + addr).css('color', 'red');
+            }
+            else {
+                $('#selected_' + addr).attr('pubkey', tpubkey);
+                $('#selected_' + addr).attr('privkey', DecHexkey);
+                $('#secret_' + addr).css('color', 'green');
+            }
 
-                for (n = 0; n < self.addrs.length; n++) {
-                    if ($('#selected_' + self.addrs[n].address).is(':checked'))
-                        self.SelectedAddrs.push(self.addrs[n].address);
-                }
+            self.SelectedAddrs = new Array();
 
-                if (self.addr_selected)
-                    self.addr_selected(addr);
+            for (n = 0; n < self.addrs.length; n++) {
+                if ($('#selected_' + self.addrs[n].address).is(':checked'))
+                    self.SelectedAddrs.push(self.addrs[n].address);
+            }
 
-                self.update_txs();
+            if (self.addr_selected)
+                self.addr_selected(addr);
 
-                self.update_selected_amount();
-            });
-        });
+            self.update_txs();
+
+            self.update_selected_amount();
+          });
+        //});
     }
 }
 
@@ -1684,6 +1827,7 @@ AccountList.prototype.update_addrs = function ()
 
             cell = row.insertCell(2);
             cell.className = "balance_unconfirmed";
+            span.id = 'balance_unconf_' + this.addrs[n].address;
             cell.appendChild(span);
 
             total_amount += this.addrs[n].amount;
@@ -1758,7 +1902,7 @@ AccountList.prototype.update_addrs = function ()
             }
 
             cell.className = "scan";
-            cell.innerHTML = '<input type="button" addr="' + this.addrs[n].address + '" value="rescan" onclick="MyAccount.scan_addr($(this).attr(\'addr\'))";  />';
+            cell.innerHTML = '<input type="button" addr="' + this.addrs[n].address + '" value="rescan" onclick="MyAccount.scan_addr($(this).attr(\'addr\')); var img=document.createElement(\'img\'); img.style.width = \'64px\'; img.src=\'/assets/img/loading.gif\'; $(this).parent().html(img);   "  />';
         }
         this.AddrTable.style.display = 'block';
     }
@@ -1774,10 +1918,19 @@ AccountList.prototype.scan_account = function () {
     for (var n = 0; n < this.addrs.length; n++) {
         AddrAr.push(this.addrs[n].address);
     }
-    
+
+    var shownull = $('#show_null').is(':checked') ? true : false;
+
+    $('#account_addresses').css('display', 'none');
+    $('#account_addresses_loading').html('<img src="/assets/img/loading.gif" width="64" />');
+
     rpc_call('rescanaddrs', [AddrAr], function (data) {
     
-        rpc_call('getpubaddrs', [this.accountName], function (data) {
+        rpc_call('getpubaddrs', [self.accountName, shownull], function (data) {
+
+            $('#account_addresses').css('display', 'block');
+            $('#account_addresses_loading').html('');
+
             self.update_addrs();
             for (var n = 0; n < self.accountSelects.length; n++) {
                 self.update_addrs_select(self.accountSelects[n]);
@@ -1789,11 +1942,13 @@ AccountList.prototype.scan_account = function () {
 
 AccountList.prototype.scan_addr = function (address) {
     var self = this;
+    var shownull = $('#show_null').is(':checked') ? true : false;
 
     rpc_call('rescanaddrs', [[address]], function (data) {
 
 
-        rpc_call('getpubaddrs', [this.accountName], function (data) {
+        rpc_call('getpubaddrs', [self.accountName, shownull], function (data) {
+
 
             if ((typeof data.result.addrs === 'undefined') || (data.result.addrs.length == 0)) {
                 self.addrs = null;
@@ -1806,6 +1961,7 @@ AccountList.prototype.scan_addr = function (address) {
             for (var n = 0; n < self.accountSelects.length; n++) {
                 self.update_addrs_select(self.accountSelects[n]);
             }
+
         });
 
     });
@@ -1825,6 +1981,9 @@ AccountList.prototype.find_account = function (accnt_name)
 
 AccountList.prototype.accountselected = function (accnt_name)
 {
+
+    
+
     if (this.unspents != null) {
         this.unspents = null;
         this.update_unspent();
@@ -1890,7 +2049,16 @@ AccountList.prototype.accountselected = function (accnt_name)
 
         $('#account-label').css('display','none');
         
+
+        $('#account_addresses').css('display', 'none');
+        $('#account_addresses_loading').html('<img src="/assets/img/loading.gif" width="64" />');
+
+
         rpc_call('getpubaddrs', [this.accountName, shownull], function (data) {
+
+
+            $('#account_addresses').css('display', 'block');
+            $('#account_addresses_loading').html('');
 
             $('#newaddr').css('display', 'block');
             $('#rescan-all').css('display', 'block');
@@ -1929,7 +2097,7 @@ AccountList.prototype.accountselected = function (accnt_name)
                 $('#viewPrivSecret').removeProp('disabled');
                 $('#maketx').html('view tx');
             }
-        });
+        }, function () { $('#account_addresses_loading').html('error');  });
     }
 }
 
@@ -2249,6 +2417,105 @@ AccountList.prototype.addr_selected = function(addr)
     $('#unspentaddr').html(addr);
 }
 
+AccountList.prototype.update_timeout = function () {
+    var time = parseInt($('#anon_timeout').val());
+    var self = this;
+    if (time >= 1) {
+        time--;
+        $('#anon_timeout').val(time);
+        this.AnonTimeout = setTimeout(function () { self.update_timeout(); }, 1000);
+    }
+    else
+        $('#anon_locked').html('<span  class="mdi mdi-lock" style="color:red">locked</span >');
+}
+
+AccountList.prototype.check_anon_access = function () {
+    var self = this;
+
+    anon_rpc_call('accesstest', [], function (data) {
+
+        if (data.error)
+            anon_access = false;
+        else
+            anon_access = true;
+
+        if (anon_access) {
+            $('#anon_wallet').css('display', 'block');
+            $('#enable_staking').prop("disabled", false);
+
+            if (data.result.unlocked) {
+
+                $('#anon_timeout').val(data.result.time);
+                $('#anon_locked').html('<span class="mdi mdi-lock-open" style="color:green">unlocked</span >');
+
+                if (data.result.staking)
+                    $('#enable_staking').prop("checked", true);
+                else
+                    $('#enable_staking').prop("checked", false);
+
+                if (self.AnonTimeout != null) clearTimeout(self.AnonTimeout);
+
+                self.AnonTimeout = setTimeout(function (){ self.update_timeout(); }, 1000);
+
+            }
+            else {
+                $('#anon_timeout').val(1800);
+                $('#anon_locked').html('<span  class="mdi mdi-lock" style="color:red">locked</span >');
+         0.   }
+        }
+        else {
+            $('#anon_wallet').css('display', 'none');
+            $('#enable_staking').prop("disabled", "disabled");
+        }
+    }, function () { anon_access = false; });
+}
+
+
+AccountList.prototype.set_anon_pw = function (pw, timeout, staking) {
+    var self = this;
+
+    $('#anon_pw_error').empty();
+    $('#anon_pw_ok').html('<img src="/assets/img/loading.gif" width="64" />');
+    
+
+    anon_rpc_call('walletpassphrase', [pw, timeout, staking], function (data) {
+
+        $('#anon_pw_ok').empty();
+
+        if (data.error) {
+            $('#enable_staking').prop('checked', false);
+            $('#anon_pw_error').html('request error');
+        }
+        else {
+            if (data.result.pw) {
+                if (self.AnonTimeout != null)
+                    clearTimeout(self.AnonTimeout);
+
+                if (timeout>0){
+                    self.AnonTimeout = setTimeout(function () { self.update_timeout(); }, 1000);
+                    $('#anon_locked').html('<i class="mdi mdi-lock-open" style="color:green">unlocked</i>');
+                }
+                else
+                    $('#anon_locked').html('<i  class="mdi mdi-lock" style="color:red">locked</i >');
+
+                $('#anon_pw_error').empty();
+               
+            }
+            else {
+                $('#anon_pw_error').html('wrong password');
+            }
+
+            if (data.result.staking === true)
+                $('#enable_staking').prop('checked', 'checked');
+            else
+                $('#enable_staking').prop('checked', false);
+        }
+    }, function () {
+        $('#anon_pw_ok').empty();
+        $('#enable_staking').prop('checked', false);
+        $('#anon_pw_error').html('request error');
+    });
+}
 
 function sign_hash(username,addr,secret,sign_data) {
 
@@ -2272,9 +2539,12 @@ function sign_hash(username,addr,secret,sign_data) {
 
         key     = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
         pubkey  = key.getPublic().encodeCompressed('hex');
-        rpc_call('pubkeytoaddr', [pubkey], function (data) {
+        
+        var maddr = pk2addr(tpubkey);
 
-            if (data.result.addr == $('#bounty_addr').val()) {
+        //rpc_call('pubkeytoaddr', [pubkey], function (data) {
+
+        if (maddr == $('#bounty_addr').val()) {
                 var signature = key.sign(sign_data);
                 // Export DER encoded signature in Array
                 var derSign = signature.toDER('hex');
@@ -2297,41 +2567,13 @@ function sign_hash(username,addr,secret,sign_data) {
             }
 
         });
-    });
+    //});
 }
 
 
-function check_anon_access() {
-    anon_rpc_call('accesstest', [], function (data) {
-
-        if (data.error)
-            anon_access = false;
-        else {
-            anon_access = data.result;
-
-            if (anon_access)
-                $('#anon_wallet').css('display', 'block');
-        }
-
-    });
-}
 
 
-function set_anon_pw(pw,timeout)
-{
 
-    $('#anon_pw_error').empty();
-    $('#anon_pw_ok').empty();
-
-    anon_rpc_call('walletpassphrase', [pw,timeout], function (data) {
-        
-        if (data.error)
-            $('#anon_pw_error').html('wrong password');
-        else
-            $('#anon_pw_ok').html('OK');
-
-    });
-}
 
 
 function txinputsigned(txsign) {
@@ -2385,6 +2627,7 @@ function signtxinputs(txh, inputs) {
 var inputsToSign = [];
 var txSignPromise = null;
 var signTxHash;
+var curInput = null;
 
 function signtxinput_cb(data) {
 
@@ -2392,6 +2635,17 @@ function signtxinput_cb(data) {
 
     if(data != null)
         signTxHash = data.result.txid;
+
+
+    if (curInput != null)
+    {
+        console.log('tx_input_' + curInput.index);
+
+        $('#tx_input_' + curInput.index).attr('class', 'mdi mdi-lock');
+        $('#tx_input_' + curInput.index).css('color', 'green');
+    }
+
+    curInput = input;
 
     if (input == null) {
         $('#newtx').empty();
@@ -2419,6 +2673,8 @@ function signtxinput_cb(data) {
     // Export DER encoded signature in Array
     //var derSign = signature.toDER('hex');
     var derSign = signature.toLowS();
+
+   
 
     rpc_call_promise('signtxinput', [signTxHash, input.index, derSign, pubKey]).done(signtxinput_cb);
 }
@@ -2449,6 +2705,8 @@ function signtxinputs_promise(txh, inputs, done, error) {
     }
 
     if (inputsToSign.length > 0) {
+
+        curInput = null;
         signtxinput_cb();
     }
     else {

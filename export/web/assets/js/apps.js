@@ -19,7 +19,9 @@ function Applications() {
         $('#totalfee').html((paytxfee + root_app_fees) / unit);
     }
     else {
-        MyAccount.addr_selected = select_addr;
+
+        if (typeof select_addr != 'undefined')
+            MyAccount.addr_selected = select_addr;
 
         $('#app_root_error').css('display', 'block');
         $('#app_root_infos').css('display', 'none');
@@ -491,11 +493,9 @@ Applications.prototype.get_app_header = function (app) {
     div.className = 'card';
 
     inner = document.createElement('div');
-    inner.className = 'card-header pt-3 indigo';
+    inner.className = 'card-header  pt-3 aqua-gradient';
 
-    h1.innerHTML = '<a href="/nodix.site/application/' + app.appName + '" >' + app.appName + '</a>';
-    
-    if (app.locked)
+     if (app.locked)
         h1.innerHTML = '<i class="fa fa-lock"></i><a href="/nodix.site/application/' + app.appName + '" >' + app.appName + '</a>';
     else
         h1.innerHTML = '<a href="/nodix.site/application/' + app.appName + '" >' + app.appName + '</a>';
@@ -505,18 +505,18 @@ Applications.prototype.get_app_header = function (app) {
     div.appendChild(inner);
 
     inner = document.createElement('div');
-    inner.className = 'card-body';
+    inner.className = 'card-body px-lg-5 pt-0';
 
     cont = document.createElement('div');
     cont.className = 'container';
     row = document.createElement('div');
     row.className = 'row';
     col = document.createElement('div');
-    col.className = 'col';
-    col.innerHTML = 'Master addr :';
+    col.className = 'col-md-2';
+    col.innerHTML = 'Master addr';
     row.appendChild(col);
     col = document.createElement('div');
-    col.className = 'col';
+    col.className = 'col hash-lnk';
     col.id = 'appAddr';
     col.innerHTML = app.appAddr;
     row.appendChild(col);
@@ -525,11 +525,11 @@ Applications.prototype.get_app_header = function (app) {
     row = document.createElement('div');
     row.className = 'row';
     col = document.createElement('div');
-    col.className = 'col';
-    col.innerHTML = 'txid :';
+    col.className = 'col-md-2';
+    col.innerHTML = 'txid';
     row.appendChild(col);
     col = document.createElement('div');
-    col.className = 'col';
+    col.className = 'col hash-lnk';
     col.innerHTML = app.txid;
     row.appendChild(col);
     cont.appendChild(row);
@@ -566,12 +566,23 @@ Applications.prototype.get_app_section = function () {
    html += '<div class="container" id="new_type">';
    html += '<fieldset><legend>new type</legend>';
    html += '<div class="row"><div class="col-md-2">name : <input type="text" size="12" name="new_type_name" id="new_type_name" /></div><div class="col-md-2">id : <input type="text" size="6" name="new_type_id" id="new_type_id" /></div></div>';
+   html += '<hr/>';
    html += '<h3>keys</h3>';
    html += '<div id="new_type_keys"></div>';
    html += '<hr/>';
+   html += '<div class="row"><div class="col"><input type="button" onclick="MyApps.create_type();" value="new type" /></div></div>';
+   html += '<hr/>';
+   html += '<div class="container">';
    html += '<h5>new key</h5>';
-   html += '<div class="row"><div class="col-md-2">name<input type="text" size="12" name="new_type_key_name" id="new_type_key_name" /></div><div class="col-md-2">type: <select name="new_type_key" id="new_type_key" class="browser-default"></select></div><div class="col-md-2"><input type="radio" name="new_type_key_flags" value="0" >none</input><input type="radio" name="new_type_key_flags" value="1" >unique</input><input type="radio" name="new_type_key_flags" value="2" >index</input></div><div class="col-md-2"><input type="button" onclick="if ( MyApps.add_type_key( $(\'#new_type_key_name\').val(), $(\'#new_type_key\').val(), $(\'input[name = new_type_key_flags]:checked\').val() )) { $(\'#new_type_key_name\').val(\'\'); } "value="+" /></div></div>';
-   html += '<div class="row"><div class="col-md-2"><input type="button" onclick="MyApps.create_type();" value="new type" /></div></div>';
+   html += '<div class="row">';
+   html += '<div class="col-md-2"><label for="new_type_key_name">name</label><input type="text" size="12" name="new_type_key_name" id="new_type_key_name" /></div>';
+   html += '<div class="col-md-3"><div class="row"><div class="col-md-2" ><label for="new_type_key">type</label></div><div class="col-md-2" ><select  name="new_type_key" id="new_type_key" class="browser-default"></select></div></div></div>';
+   html += '<div class="col-sm-1"><div class="custom-control custom-radio-inline"><input type="radio" class="custom-control-input" id="new_type_key_flags_1" checked="checked" name="new_type_key_flags" value="0" /><label class="custom-control-label" for="new_type_key_flags_1">none</label></div></div>';
+   html += '<div class="col-sm-1"><div class="custom-control custom-radio-inline"><input type="radio" class="custom-control-input" id="new_type_key_flags_2" name="new_type_key_flags" value="1" /><label class="custom-control-label" for="new_type_key_flags_2">unique</label></div></div>';
+   html += '<div class="col-sm-1"><div class="custom-control custom-radio-inline"><input type="radio" class="custom-control-input" id="new_type_key_flags_3" name="new_type_key_flags" value="2" /><label class="custom-control-label" for="new_type_key_flags_3">index</label></div></div>';
+   html += '<div class="col-sm-1"><input type="button" onclick="if ( MyApps.add_type_key( $(\'#new_type_key_name\').val(), $(\'#new_type_key\').val(), $(\'input[name = new_type_key_flags]:checked\').val() )) { $(\'#new_type_key_name\').val(\'\'); } "value="+" /></div>';
+   html += '</div>';
+   html += '</div>';
    html += '</fieldset>';
    html += '<hr/>';
    html += '</div>';
@@ -791,8 +802,12 @@ Applications.prototype.create_app = function (app_addr, app_name,locked, tx_fee)
     
     $('#app_error').empty();
     for (var n = 0; n < MyAccount.addrs.length; n++) {
-        arAddr[n] = MyAccount.addrs[n].address;
+
+        if (MyAccount.SelectedAddrs.indexOf(MyAccount.addrs[n].address) >= 0)
+            arAddr.push(MyAccount.addrs[n].address);
     }
+
+
     rpc_call('makeapptx', [app_addr, app_name,locked, arAddr, tx_fee], function (data) {
         var html;
     
@@ -890,6 +905,13 @@ Applications.prototype.create_app_module = function (fileHash, tx_fee) {
     var arAddr = [];
     
     $('#app_error').css('display', 'none');
+
+    if (MyAccount.addrs == null)
+    {
+        $('#app_error').css('display', 'block');
+        $('#app_error').html('select an account');
+        return;
+    }
 
     for (var n = 0; n < MyAccount.addrs.length; n++) {
         arAddr[n] = MyAccount.addrs[n].address;

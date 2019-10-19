@@ -37,11 +37,10 @@ struct read_group
 	struct read_con		cons[64];
 };
 
-
 fd_set			  listenset={0};
+
 struct read_group my_read_group={0};
 struct string	  read_done[64]={0};
-
 
 
 OS_API_C_FUNC(int) network_free()
@@ -84,7 +83,7 @@ OS_API_C_FUNC(int) get_if(const char *gw_ip, struct string *name, struct string 
 			*/
 			if (pAdapter->IpAddressList.IpAddress.String[0] != '0')
 			{
-				if (!strcmp_c(pAdapter->GatewayList.IpAddress.String, gw_ip))
+				if ((gw_ip==PTR_NULL)||(!strcmp_c(pAdapter->GatewayList.IpAddress.String, gw_ip)))
 				{
 					make_string(name, pAdapter->Description);
 					make_string(ip, pAdapter->IpAddressList.IpAddress.String);
@@ -118,6 +117,13 @@ OS_API_C_FUNC(struct con	*)init_con()
 
 	return newCon;
 }
+
+OS_API_C_FUNC(void)clear_con_error(struct con *Con)
+{
+	free_string(&Con->error);
+}
+
+
 OS_API_C_FUNC(const struct string *)get_con_error(struct con *Con)
 {
 	return &Con->error;
@@ -266,50 +272,50 @@ OS_API_C_FUNC(int) pop_read_done(struct string *out)
 
 OS_API_C_FUNC(int) send_data_av(struct con *Con, unsigned char *data, size_t len)
 {
-	fd_set				fd_write, fd_err;
-	struct timeval		timeout;
-	int					ret;
 	int					s;
 
 	free_string(&Con->error);
-
-	timeout.tv_sec = 0;
-	timeout.tv_usec = 1000;
-
-
-
-	/* Block until input arrives on one or more active sockets. */
-	fd_write = Con->con_set;
-	fd_err = Con->con_set;
-	ret = select(Con->sock + 1, NULL, &fd_write, &fd_err, &timeout);
-	if (ret < 0)
-		return 0;
-
-	if (FD_ISSET(Con->sock, &fd_err)){ Con->last_rd = 0; return 0; }
-	if (FD_ISSET(Con->sock, &fd_write))
-		s = send(Con->sock, data, (int)(len), 0);
-	else
-		return 0;
+	s = send(Con->sock, data, (int)(len), 0);
+	if (s < 0)
+	{
+		int iError = WSAGetLastError();
+		//check if error was WSAEWOULDBLOCK, where we'll wait
+		if (iError == WSAEWOULDBLOCK)
+			s = 0;
+		else
+			make_string(&Con->error, "negative send");
+	}
 
 	return s;
 }
 
 
-OS_API_C_FUNC(int) send_data(struct con *Con, unsigned char *data, size_t len)
+OS_API_C_FUNC(int) send_data(struct con *Con, const unsigned char *data, size_t len)
 {
 	size_t b_sent;
 	int		s;
 	if (Con == PTR_NULL)return -1;
+
 	free_string	(&Con->error);
 	b_sent		=0;
+	
 	while(b_sent<len)
 	{
 		s=send(Con->sock,&data[b_sent],(int)(len-b_sent),0);
-		if(s<=0)return -1;
+		if (s < 0)
+		{
+			int iError = WSAGetLastError();
+			//check if error was WSAEWOULDBLOCK, where we'll wait
+			if (iError == WSAEWOULDBLOCK)
+				s = 0;
+			else
+				return -1;	
+		}
 		b_sent+=s;
 	}
 	return (int)b_sent;
 }
+
 OS_API_C_FUNC(long long) milliseconds_now() {
     static LARGE_INTEGER s_frequency;
     static BOOL s_use_qpc;
@@ -325,27 +331,172 @@ OS_API_C_FUNC(long long) milliseconds_now() {
 }
 
 
+OS_API_C_FUNC(int) read_av_data(struct con *Con, size_t max)
+{
+	int				ret;
 
-	/*
-	memset((void *)&ssdpMcastAddr, 0, sizeof(struct ip_mreq));
-	ssdpMcastAddr.imr_interface.s_addr = inet_addr(gIF_IPV4);
-	ssdpMcastAddr.imr_multiaddr.s_addr = inet_addr(SSDP_IP);
-	ret = setsockopt(*ssdpSock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-			 (char *)&ssdpMcastAddr, sizeof(struct ip_mreq));
+	free_string(&Con->error);
+	if (Con->lastLine.str == NULL)
+	{
+		Con->lastLine.size = max + 1;
+		Con->lastLine.str = malloc_c(Con->lastLine.size);
+		Con->lastLine.len = 0;
+	}
+	else if (Con->lastLine.size<(Con->lastLine.len + max + 1))
+	{
+		Con->lastLine.size = Con->lastLine.len + max + 1;
+		Con->lastLine.str = realloc_c(Con->lastLine.str, Con->lastLine.size);
+	}
 
-	// Set multicast interface. 
-	memset((void *)&addr, 0, sizeof(struct in_addr));
-	addr.s_addr = inet_addr(gIF_IPV4);
-	ret = setsockopt(*ssdpSock, IPPROTO_IP, IP_MULTICAST_IF,
-			 (char *)&addr, sizeof addr);
-    upnpControl.sin_family = AF_INET;
-    upnpControl.sin_port = htons(0);
-    upnpControl.sin_addr.s_addr = INADDR_ANY;
-    if (bind(sock, (SOCKADDR*)&upnpControl, sizeof(upnpControl)) == SOCKET_ERROR)
-        return WSAGetLastError();
-	if(setsockopt(sock, SOL_SOCKET, SO_BROADCAST, searchIGDevice, sizeof(searchIGDevice)) == SOCKET_ERROR)
-        return WSAGetLastError();
-	*/
+	ret = recv(Con->sock, &Con->lastLine.str[Con->lastLine.len], max, 0);
+	if (ret > 0)
+	{
+		Con->last_rd = ret;
+		Con->lastLine.len += Con->last_rd;
+	}
+	else
+	{
+		if (ret < 0)
+		{
+			int iError = WSAGetLastError();
+			//check if error was WSAEWOULDBLOCK, where we'll wait
+			if (iError == WSAEWOULDBLOCK)
+				ret = 0;
+		}
+		Con->last_rd = 0;
+	}
+		
+
+	return ret;
+
+}
+
+OS_API_C_FUNC(int) read_data(struct con *Con, size_t max)
+{
+	size_t			read;
+	ctime_t			last;
+
+	if (Con->lastLine.str == NULL)
+	{
+		Con->lastLine.size = max + 1;
+		Con->lastLine.str = malloc_c(Con->lastLine.size);
+		Con->lastLine.len = 0;
+	}
+	else if (Con->lastLine.size<(Con->lastLine.len + max + 1))
+	{
+		Con->lastLine.size = Con->lastLine.len + max + 1;
+		Con->lastLine.str = realloc_c(Con->lastLine.str, Con->lastLine.size);
+	}
+
+	get_system_time_c(&last);
+
+	read = 0;
+	while (read<max)
+	{
+		ctime_t			now;
+	
+		Con->last_rd = recv(Con->sock, &Con->lastLine.str[Con->lastLine.len], (int)(max - read), 0);
+		if (Con->last_rd < 0)
+			break;
+
+		read += Con->last_rd;
+		Con->lastLine.len += Con->last_rd;
+
+		get_system_time_c(&last);
+		get_system_time_c(&now);
+
+		if ((now - last) > 3000)
+		{
+			Con->last_rd = -1;
+			break;
+		}
+	}
+	return (int)read;
+}
+
+struct con_set
+{
+	fd_set	cons;
+	fd_set	read;
+	fd_set	write;
+	fd_set	error;
+	unsigned int		max_socks;
+};
+
+
+OS_API_C_FUNC(mem_ptr) create_set()
+{
+	struct con_set *myset;
+	myset = malloc_c(sizeof(struct con_set));
+	myset->max_socks = 0;
+	FD_ZERO(&myset->cons);
+	FD_ZERO(&myset->write);
+	FD_ZERO(&myset->error);
+	FD_ZERO(&myset->read);
+	return myset;
+}
+
+
+OS_API_C_FUNC(void) add_to_set(mem_ptr set,struct con *mycon)
+{
+	struct con_set *myset = (struct con_set *)set;
+
+	if (mycon == PTR_NULL)
+		return;
+
+	if (mycon->sock > myset->max_socks)
+		myset->max_socks = mycon->sock;
+
+	FD_SET(mycon->sock,&myset->cons);
+	
+}
+
+OS_API_C_FUNC(int) get_write_set(mem_ptr set,unsigned int timems)
+{
+	struct timeval		timeout;
+	struct con_set *myset = (struct con_set *)set;
+	
+	timeout.tv_sec = 0;
+	timeout.tv_usec = timems * 1000;
+
+	myset->write = myset->cons;
+	myset->error = myset->cons;
+
+	return select(myset->max_socks + 1, PTR_NULL, &myset->write, &myset->error,&timeout);
+}
+
+OS_API_C_FUNC(int) get_read_set(mem_ptr set, unsigned int timems)
+{
+	struct timeval		timeout;
+	struct con_set *myset = (struct con_set *)set;
+
+	timeout.tv_sec = 0;
+	timeout.tv_usec = timems * 1000;
+
+	myset->read = myset->cons;
+	myset->error = myset->cons;
+
+	return select(myset->max_socks + 1, &myset->read, PTR_NULL,  &myset->error, &timeout);
+}
+
+
+OS_API_C_FUNC(int) is_write_set(mem_ptr set, struct con *mycon)
+{
+	struct con_set *myset = (struct con_set *)set;
+	return FD_ISSET(mycon->sock, &myset->write);
+}
+
+OS_API_C_FUNC(int) is_error_set(mem_ptr set, struct con *mycon)
+{
+	struct con_set *myset = (struct con_set *)set;
+	return FD_ISSET(mycon->sock, &myset->error);
+}
+
+OS_API_C_FUNC(int) is_read_set(mem_ptr set, struct con *mycon)
+{
+	struct con_set *myset = (struct con_set *)set;
+	return FD_ISSET(mycon->sock, &myset->read);
+}
 
 OS_API_C_FUNC(struct con	*)create_upnp_broadcast(struct host_def *host)
 {
@@ -431,11 +582,9 @@ OS_API_C_FUNC(int) send_upnpbroadcast(struct con *Con, struct string *data)
 OS_API_C_FUNC(char *)readline(struct con *Con, time_t timeout)
 {
 	char			 line[1024];
-	fd_set			 fd_read,fd_err;
-	
 	size_t			 n_char;
 	char			 c;
-	ctime_t			s_time, n_time;
+	ctime_t			 s_time, n_time;
 
 	if(Con->lastLine.str!=NULL)
 		free_string(&Con->lastLine);
@@ -446,63 +595,48 @@ OS_API_C_FUNC(char *)readline(struct con *Con, time_t timeout)
 	memset_c			(line,0,1024);
 	get_system_time_c	(&s_time);
 
-	//s_time		=	milliseconds_now();
+	
 	n_char		=	0;
  	while(n_char<1023)
 	{
-		struct timeval	stimeout;
 		int				n;
-	
-		FD_ZERO(&fd_read);
-		FD_SET(Con->sock, &fd_read);
 
-		//fd_read		=	Con->con_set;
-		fd_err				=	Con->con_set;
-		stimeout.tv_sec		=	0;
-		stimeout.tv_usec	=	10;
-
-		if (select (Con->sock+1, &fd_read, NULL, &fd_err, &stimeout) < 0)
+		
+		n	=	recv	(Con->sock,&c,1,0);
+		if(n<=0)
 		{
-			make_string(&Con->error,"select");
-			return NULL;
-		}
-
-		if(FD_ISSET(Con->sock,&fd_err))
-		{
-			make_string(&Con->error,"error set");
-			return NULL;
-		}
-
-		if(FD_ISSET(Con->sock,&fd_read))
-		{
-			n	=	recv	(Con->sock,&c,1,0);
-			if(n<=0)
+			if(n<0)
 			{
-				if(n<0)
-				{
-					make_string(&Con->error,"neg read '");
-					cat_ncstring(&Con->error,line,n_char);
-					cat_cstring	(&Con->error,"' ");
-					strcat_int  (&Con->error,n_char);
-					cat_cstring	(&Con->error," ");
+				make_string(&Con->error,"neg read '");
+				cat_ncstring(&Con->error,line,n_char);
+				cat_cstring	(&Con->error,"' ");
+				strcat_int  (&Con->error,n_char);
+				cat_cstring	(&Con->error," ");
 
-					closesocket	(Con->sock);
-					FD_ZERO	(&Con->con_set);
-					Con->sock=0;
-				}
-				else
-				{
-					make_string (&Con->error,"zero read '");
-					cat_ncstring(&Con->error,line,n_char);
-					cat_cstring	(&Con->error,"' ");
-					strcat_int  (&Con->error,n_char);
-					cat_cstring	(&Con->error," ");
-				}
+				/*
+				closesocket	(Con->sock);
+				FD_ZERO	(&Con->con_set);
+				Con->sock=0;
+
 				return NULL;
+				*/
 			}
-			if(c==10)break;
-			if(c!=13)line[n_char++]=c;
+			else
+			{
+				make_string (&Con->error,"zero read '");
+				cat_ncstring(&Con->error,line,n_char);
+				cat_cstring	(&Con->error,"' ");
+				strcat_int  (&Con->error,n_char);
+				cat_cstring	(&Con->error," ");
+				snooze_c	(1000);
+			}
 		}
+		else
+		{
+			if (c == 10)break;
+			if (c != 13)line[n_char++] = c;
+		}
+		
 
 		get_system_time_c(&n_time);
 
@@ -521,112 +655,6 @@ OS_API_C_FUNC(char *)readline(struct con *Con, time_t timeout)
 	make_string(&Con->lastLine,line);
 	return Con->lastLine.str;
 }
-
-OS_API_C_FUNC(int) read_av_data(struct con *Con, size_t max)
-{
-	fd_set			read_fd_set, err_fd_set;
-	struct timeval	timeout;
-	int				ret;
-
-	free_string(&Con->error);
-	if (Con->lastLine.str == NULL)
-	{
-		Con->lastLine.size = max + 1;
-		Con->lastLine.str  = malloc_c(Con->lastLine.size);
-		Con->lastLine.len  = 0;
-	}
-	else if (Con->lastLine.size<(Con->lastLine.len + max + 1))
-	{
-		Con->lastLine.size = Con->lastLine.len + max + 1;
-		Con->lastLine.str  = realloc_c(Con->lastLine.str, Con->lastLine.size);
-	}
-
-	timeout.tv_sec  = 0;
-	timeout.tv_usec = 1000;
-	Con->last_rd = 0;
-
-	read_fd_set = Con->con_set;
-	err_fd_set  = Con->con_set;
-	ret = select(Con->sock + 1, &read_fd_set, NULL, &err_fd_set, &timeout);
-	if (ret < 0)
-		return 0;
-
-	if (FD_ISSET(Con->sock, &err_fd_set)){ make_string(&Con->error, "select error");  Con->last_rd = 0; return 0; }
-	if (!FD_ISSET(Con->sock, &read_fd_set))return 0;
-	
-	ret	= recv(Con->sock, &Con->lastLine.str[Con->lastLine.len], max, 0);
-	if (ret > 0)
-	{
-		Con->last_rd = ret;
-		Con->lastLine.len += Con->last_rd;
-	}
-	else
-		Con->last_rd = 0;
-
-	return ret;
-	
-}
-
-OS_API_C_FUNC(int) read_data(struct con *Con, size_t max)
-{
-	fd_set			read_fd_set,err_fd_set;
-	size_t			read;
-	struct timeval	timeout;
-	ctime_t			last;
-	
-	if(Con->lastLine.str == NULL)
-	{
-		Con->lastLine.size	=	max+1;
-		Con->lastLine.str	=	malloc_c(Con->lastLine.size);
-		Con->lastLine.len	=	0;
-	}
-	else if(Con->lastLine.size<(Con->lastLine.len+max+1))
-	{
-		Con->lastLine.size	=	Con->lastLine.len+max+1;
-		Con->lastLine.str	=	realloc_c(Con->lastLine.str,Con->lastLine.size);
-	}
-
-	get_system_time_c(&last);
-	
-	read=0;
- 	while(read<max)
-	{
-		int				ret;
-		ctime_t			now;
-		timeout.tv_sec	=	0;
-		timeout.tv_usec =	1000;
-
-      	/* Block until input arrives on one or more active sockets. */
-		read_fd_set = Con->con_set;
-		err_fd_set	= Con->con_set;
-		ret	=	select (Con->sock+1, &read_fd_set, NULL, &err_fd_set, &timeout);
-      	if (ret < 0)
-      	    return 0;
-
-		if (FD_ISSET (Con->sock, &err_fd_set)){Con->last_rd=0;break;}
-		if (FD_ISSET (Con->sock, &read_fd_set))
-		{
-			Con->last_rd=	recv(Con->sock,&Con->lastLine.str[Con->lastLine.len],(int)(max-read),0);
-			if(Con->last_rd<=0)
-				break;
-
-			read					+=	Con->last_rd;
-			Con->lastLine.len		+=	Con->last_rd;
-
-			get_system_time_c(&last);
-		}
-
-		get_system_time_c(&now);
-
-		if ((now - last) > 3000)
-		{
-			Con->last_rd = -1;
-			break;
-		}
-	}
-	return (int)read;
-}
-
 
 OS_API_C_FUNC(void) do_read_group()
 {
@@ -679,6 +707,16 @@ OS_API_C_FUNC(void) do_read_group()
 	}
 	*/
 }
+
+OS_API_C_FUNC(int) get_con_saddr(struct con *mycon, ipv4_t addr)
+{
+	addr[0] = mycon->peer.sin_addr.S_un.S_un_b.s_b1;
+	addr[1] = mycon->peer.sin_addr.S_un.S_un_b.s_b2;
+	addr[2] = mycon->peer.sin_addr.S_un.S_un_b.s_b3;
+	addr[3] = mycon->peer.sin_addr.S_un.S_un_b.s_b4;
+	return 1;
+}
+
 OS_API_C_FUNC(int)get_con_ip(struct con *Con, ipv4_t ip)
 {
 	if (Con == PTR_NULL)return 0;
@@ -691,7 +729,13 @@ OS_API_C_FUNC(int)get_con_ip(struct con *Con, ipv4_t ip)
 	return 1;
 }
 
+OS_API_C_FUNC(int )set_non_blocking(struct con *mycon, unsigned int nb)
+{
+	ioctlsocket(mycon->sock, FIONBIO, &nb);
+	setsockopt(mycon->sock, IPPROTO_TCP, TCP_NODELAY, (char *)&nb, sizeof(int));
 
+	return 1;
+}
 OS_API_C_FUNC(struct con *)do_get_incoming(struct con *listen_con, unsigned int time_out)
 {
 	fd_set		    my_listen;
@@ -738,6 +782,7 @@ OS_API_C_FUNC(struct con *)do_get_incoming(struct con *listen_con, unsigned int 
 		}
 
 		FD_SET(newCon->sock,&newCon->con_set);
+		set_non_blocking(newCon, 1);
 		return newCon;
 	}
 	return NULL;
@@ -764,6 +809,8 @@ OS_API_C_FUNC(struct con	*)open_port(const char *my_addr, unsigned short port)
     newCon->peer.sin_family				=	AF_INET;
     newCon->peer.sin_port				=	htons		(port);
 	newCon->peer.sin_addr.S_un.S_addr 	=	INADDR_ANY;//inet_addr	(newCon->host.host.str);
+	set_non_blocking					(newCon, 1);
+
 	if(bind	(newCon->sock, (SOCKADDR *)&newCon->peer,sizeof(struct sockaddr_in))==SOCKET_ERROR)
 	{
 		make_string(&newCon->error,"bind error");
@@ -829,14 +876,6 @@ OS_API_C_FUNC(int) get_con_addr(struct con *mycon, char *addr, size_t len)
 	return 1;
 }
 
-OS_API_C_FUNC(int) get_con_saddr(struct con *mycon, ipv4_t addr)
-{
-	addr[0] = mycon->peer.sin_addr.S_un.S_un_b.s_b1;
-	addr[1] = mycon->peer.sin_addr.S_un.S_un_b.s_b2;
-	addr[2] = mycon->peer.sin_addr.S_un.S_un_b.s_b3;
-	addr[3] = mycon->peer.sin_addr.S_un.S_un_b.s_b4;
-	return 1;
-}
 
 
 OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
@@ -880,15 +919,14 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 		{
 			fd_set			Write, Err;
 			TIMEVAL			Timeout;
-			int				TimeoutSec = 2; // timeout after 10 seconds
 
 			FD_ZERO			(&Write);
 			FD_ZERO			(&Err);
 			FD_SET			(newCon->sock, &Write);
 			FD_SET			(newCon->sock, &Err);
 
-			Timeout.tv_sec	= TimeoutSec;
-			Timeout.tv_usec = 0;
+			Timeout.tv_sec	= 0;
+			Timeout.tv_usec = 100000;
 			iResult			= select(0,NULL,&Write,&Err,&Timeout);
 			if (iResult == 0)
 			{
@@ -928,9 +966,11 @@ OS_API_C_FUNC(int) network_init()
 {
 
 
-#ifndef _DEBUG
+#ifndef _NATIVE_LINK_
 	sys_add_tpo_mod_func_name("libcon", "network_init", (void_func_ptr)network_init, 0);
 	sys_add_tpo_mod_func_name("libcon", "network_free", (void_func_ptr)network_free, 0);
+	sys_add_tpo_mod_func_name("libcon", "time_to_date", (void_func_ptr)time_to_date, 0);
+
 	sys_add_tpo_mod_func_name("libcon", "get_if", (void_func_ptr)get_if, 0);
 	sys_add_tpo_mod_func_name("libcon", "init_read_group", (void_func_ptr)init_read_group, 0);
 	sys_add_tpo_mod_func_name("libcon", "read_group_has", (void_func_ptr)read_group_has, 0);
@@ -952,12 +992,20 @@ OS_API_C_FUNC(int) network_init()
 	sys_add_tpo_mod_func_name("libcon", "do_read_group", (void_func_ptr)do_read_group, 0);
 	sys_add_tpo_mod_func_name("libcon", "pop_read_done", (void_func_ptr)pop_read_done, 0);
 	sys_add_tpo_mod_func_name("libcon", "con_close", (void_func_ptr)con_close, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_con_saddr", (void_func_ptr)get_con_saddr, 0);
 	sys_add_tpo_mod_func_name("libcon", "read_av_data", (void_func_ptr)read_av_data, 0);
 	sys_add_tpo_mod_func_name("libcon", "send_data_av", (void_func_ptr)send_data_av, 0);
 	sys_add_tpo_mod_func_name("libcon", "create_upnp_broadcast", (void_func_ptr)create_upnp_broadcast, 0);
 	sys_add_tpo_mod_func_name("libcon", "send_upnpbroadcast", (void_func_ptr)send_upnpbroadcast, 0);
 	sys_add_tpo_mod_func_name("libcon", "free_con_buffer", (void_func_ptr)free_con_buffer, 0);
+	sys_add_tpo_mod_func_name("libcon", "clear_con_error", (void_func_ptr)clear_con_error, 0);
+	sys_add_tpo_mod_func_name("libcon", "set_non_blocking", (void_func_ptr)set_non_blocking, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_write_set", (void_func_ptr)get_write_set, 0);
+	sys_add_tpo_mod_func_name("libcon", "add_to_set", (void_func_ptr)add_to_set, 0);
+	sys_add_tpo_mod_func_name("libcon", "create_set", (void_func_ptr)create_set, 0);
+	sys_add_tpo_mod_func_name("libcon", "is_write_set", (void_func_ptr)is_write_set, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_read_set", (void_func_ptr)get_read_set, 0);
+	sys_add_tpo_mod_func_name("libcon", "is_error_set", (void_func_ptr)is_error_set, 0);
+	sys_add_tpo_mod_func_name("libcon", "is_read_set", (void_func_ptr)is_read_set, 0);
 	
 	
 
