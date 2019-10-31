@@ -579,7 +579,7 @@ OS_API_C_FUNC(int) send_upnpbroadcast(struct con *Con, struct string *data)
 }
 
 
-OS_API_C_FUNC(char *)readline(struct con *Con, time_t timeout)
+OS_API_C_FUNC(char *)readline(struct con *Con, ctime_t timeout)
 {
 	char			 line[1024];
 	size_t			 n_char;

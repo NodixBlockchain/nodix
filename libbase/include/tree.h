@@ -374,6 +374,8 @@ LIBBASE_API  int	C_API_FUNC	tree_manager_map_tree							(mem_zone_ref_ptr tree, 
 LIBBASE_API  int			C_API_FUNC	tree_manager_free_node(mem_zone_ref_ptr p_node_ref, unsigned int scan_id);
 LIBBASE_API  int			C_API_FUNC	tree_manager_mark_zones(mem_zone_ref_ptr node_ref, unsigned int scan_id);
 
+LIBBASE_API void			C_API_FUNC qsort_c(mem_ptr base, mem_size num, mem_size width, int(*comp)(const_mem_ptr, const_mem_ptr));
+
 #define NODE_HASH(name) calc_crc32_c(name,32)
 
 

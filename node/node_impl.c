@@ -107,4 +107,10 @@ NODE_API const struct http_hdr *	C_API_FUNC		find_key(const struct http_hdr *hdr
 NODE_API struct http_hdr *			C_API_FUNC		add_key(struct http_hdr *hdrs, const char *key, size_t key_len, const char *data, size_t data_len) { return PTR_NULL; }
 
 OS_API_C_FUNC(void) free_http_infos(struct http_infos *infos) {}
+#ifdef _WIN32
+unsigned int C_API_FUNC _DllMainCRTStartup(unsigned int *prev, unsigned int *cur, unsigned int *xx)
+{
 
+	return 1;
+}
+#endif

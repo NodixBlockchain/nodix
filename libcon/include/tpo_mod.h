@@ -32,6 +32,7 @@ typedef struct
 typedef struct
 {
 	unsigned int			mod_idx;
+	unsigned int			filetime;
 	mod_name_decoration_t	deco_type;
 	char					name[64];
 	unsigned int			name_hash;
@@ -61,11 +62,10 @@ struct kern_mod_t
 
 typedef const tpo_mod_file *const_tpo_mod_file_ptr ;
 
-
+LIBC_API int			C_API_FUNC tpo_free_mod_c(tpo_mod_file *tpo_mod);
 
 LIBC_API void			C_API_FUNC tpo_mod_init(tpo_mod_file *driver);
 
-LIBC_API int			C_API_FUNC tpo_mod_load_tpo(mem_stream *file_stream, tpo_mod_file *tpo_file, unsigned int flags);
 LIBC_API tpo_mod_file *  C_API_FUNC find_mod_ptr(unsigned int name_hash);
 
 LIBC_API void_func_ptr	C_API_FUNC tpo_mod_get_exp_addr(mem_stream *file_stream, const char *sym);
@@ -73,11 +73,11 @@ LIBC_API void_func_ptr	C_API_FUNC get_tpo_mod_exp_addr_name(const tpo_mod_file *
 LIBC_API int			C_API_FUNC set_tpo_mod_exp_value32_name(const tpo_mod_file *tpo_mod, const char *name, unsigned int value);
 LIBC_API void			C_API_FUNC register_tpo_exports(tpo_mod_file *tpo_mod, const char *mod_name);
 
-LIBC_API int				C_API_FUNC load_module(const char *file, const char *mod_name, tpo_mod_file *mod,unsigned int flags);
+LIBC_API int				C_API_FUNC load_module(const char *file, const char *mod_name, tpo_mod_file *mod,unsigned int flags, tpo_mod_file *impmod);
 /*LIBC_API struct kern_mod_t	*C_API_FUNC tpo_mod_find(const char *name);*/
 
 
-
+LIBC_API int C_API_FUNC	swap_mod_ptr(tpo_mod_file *old_mod, tpo_mod_file *mod);
 
 LIBC_API int C_API_FUNC execute_script_mod_call(tpo_mod_file		*tpo_mod, const char *method);
 LIBC_API int C_API_FUNC execute_script_mod_rcall(tpo_mod_file		*tpo_mod, const char *method, mem_zone_ref_ptr input);

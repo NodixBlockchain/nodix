@@ -1191,13 +1191,14 @@ OS_API_C_FUNC(int) getwav(const char *params, const struct http_req *req, mem_zo
 	{
 		float f;
 		int ret;
-		uint64_t ival;
+		int64_t output;
 		tree_manager_set_child_value_i32(&t_var, "value", t);
 
 		ret = eval_tree_to_float(&tree, &inputs, &f, 0);
-		dtoll_c(f * 32767.0f, &ival);
 
-		finalPtr[t+22] = ival;
+		dtoll_c(f * 32767.0f,&output);
+
+		finalPtr[t+22] = output;
 
 		if (!ret)
 			break;

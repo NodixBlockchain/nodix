@@ -3,6 +3,7 @@
 #endif
 
 LIBBASE_API int	C_API_FUNC load_script				(const char *file,const char *name, mem_zone_ref_ptr script_vars,unsigned int opts);
+LIBBASE_API int	C_API_FUNC find_script_mod			(mem_zone_ref_ptr script_vars, const char *modfile, mem_zone_ref_ptr mod_def);
 LIBBASE_API int	C_API_FUNC get_script_var_value_str (mem_zone_ref_ptr global_vars, const char *var_path, struct string *out, unsigned int radix);
 LIBBASE_API int	C_API_FUNC get_script_var_value_i32 (mem_zone_ref_ptr global_vars, const char *var_path, unsigned int *out);
 LIBBASE_API int	C_API_FUNC get_script_var_value_ptr	(mem_zone_ref_ptr global_vars, const char *var_path, mem_ptr *out);

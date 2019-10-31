@@ -80,7 +80,8 @@
  * The history for versions after 1.2.0 are in ChangeLog in zlib distribution.
  */
 #define LIBC_API C_EXPORT
-#include "../../base/std_base.h"
+#include "../../base/std_def.h"
+#include "../../base/std_mem.h"
 #include "zutil.h"
 #include "inftrees.h"
 #include "inflate.h"

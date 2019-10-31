@@ -349,14 +349,12 @@ int do_staking()
 	if (!has_peers())
 		return 0;
 
-	if (!node_aquire_mempool_lock(&mempool))
-		return 0;
+
 
 	make_string							(&username, "anonymous");
-	newblkret = generate_staking_block	(&username, 4, &mempool, &newblk);
+	newblkret = generate_staking_block	(&username, 4, &newblk);
 	
-	release_zone_ref			(&mempool);
-	node_release_mempool_lock	();
+
 
 	if (newblkret)
 	{
@@ -1519,7 +1517,7 @@ int process_nodes()
 		unsigned int		test, synching;
 		unsigned int		last_msg_time,status, rc;
 		uint64_t			block_height;
-		ctime_t				ping_delay, last_ping, next_pong;
+		int64_t				ping_delay, last_ping, next_pong;
 
 		if (!tree_manager_get_child_value_i32(node, NODE_HASH("p2p_status"), &status))status = 0;
 		if (!tree_manager_get_child_value_i32(node, NODE_HASH("need_recon"), &rc))rc  = 0;
@@ -1598,7 +1596,7 @@ int process_nodes()
 
 int load_pos_module(const char *mod_name,const char *mod_file,tpo_mod_file *tpomod)
 {
-	if (!load_module(mod_file, mod_name, tpomod,0))return 0;
+	if (!load_module(mod_file, mod_name, tpomod,0,PTR_NULL))return 0;
 
 #ifndef _NATIVE_LINK_
 	init_pos					= (init_pos_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "init_pos", 0);
@@ -1726,9 +1724,8 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	{
 		mem_zone_ref			service_mod = { PTR_NULL };
 #ifndef _NATIVE_LINK_
-		init_service_fn_ptr		init_service;
+		init_service_fn_ptr init_service;
 #endif
-		
 		log_output("loading http service \n");
 		
 		if (tree_manager_find_child_node(&service, NODE_HASH("module"), NODE_MODULE_DEF, &service_mod))
@@ -1744,6 +1741,7 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 #ifdef _NATIVE_LINK_
 			init_service(&service, &pos_kernel_def);
 #else
+			
 			init_service = (init_service_fn_ptr)get_tpo_mod_exp_addr_name(mod, "init_service", 0);
 				
 			if (init_service != PTR_NULL)
@@ -1761,15 +1759,16 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	if (node_get_script_var("stratum_service", NODE_SERVICE, &service))
 	{
 		mem_zone_ref			service_mod = { PTR_NULL };
-#ifndef _NATIVE_LINK_
-		init_service_fn_ptr		init_service;
-#endif
-		
+
 		log_output("loading stratum service \n");
 
 		if (tree_manager_find_child_node(&service, NODE_HASH("module"), NODE_MODULE_DEF, &service_mod))
 		{
 			tpo_mod_file			*mod;
+#ifndef _NATIVE_LINK_
+			init_service_fn_ptr init_service;
+#endif
+
 			if (!tree_manager_get_child_value_ptr(&service_mod, NODE_HASH("mod_ptr"), 0, (mem_ptr *)&mod))
 			{
 				load_mod_def(&service_mod,0);
@@ -1779,6 +1778,7 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 #ifdef _NATIVE_LINK_
 			stratum_init_service(&service, &pos_kernel_def);
 #else
+
 			init_service = (init_service_fn_ptr)get_tpo_mod_exp_addr_name(mod, "init_service", 0);
 
 			if (init_service != PTR_NULL)

@@ -392,7 +392,7 @@ typedef uLong FAR uLongf;
 #endif
 
 #if !defined(Z_U4) && !defined(Z_SOLO) && defined(STDC)
-#  include <limits.h>
+/* #  include <limits.h> */
 #  if (UINT_MAX == 0xffffffffUL)
 #    define Z_U4 unsigned
 #  elif (ULONG_MAX == 0xffffffffUL)
@@ -430,7 +430,7 @@ typedef uLong FAR uLongf;
 
 #ifdef _WIN32
 #  ifndef Z_SOLO
-#    include <stddef.h>         /* for wchar_t */
+/*#    include <stddef.h>         /* for wchar_t */
 #  endif
 #endif
 

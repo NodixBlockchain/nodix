@@ -52,6 +52,7 @@ let NODE_BITCORE_NODE SelfNode = `
 	(NODE_GFX_BOOL)"uPnP":true,
 	(NODE_GFX_INT)"bestChainDepth":2,
 	(NODE_GFX_INT)"maxMsgSize":1024,
+	(NODE_GFX_INT)"maxFileSize":4096,
 	(NODE_GFX_INT)"checktxsign"  : 0,
 	(NODE_GFX_INT)"next_check"  : 0,
 	(NODE_GFX_INT)"scriptBlock" : 0,
@@ -60,7 +61,7 @@ let NODE_BITCORE_NODE SelfNode = `
 	(NODE_GFX_BINT)"pos_reward" : 0,
 	(NODE_GFX_BINT)"pow_reward" : 0,
 	(NODE_GFX_BINT)"n_pow_blocks" : 0,
-	
+	(NODE_GFX_INT)"mempool_lck" : 0,
 	(NODE_GFX_SIGNED_BINT)"ping_delay" : 0,
 	(NODE_GFX_INT)"last_block_time" : 0,
 	(NODE_BITCORE_BLK_HDR) "last_block" : {},
@@ -71,7 +72,7 @@ let NODE_BITCORE_NODE SelfNode = `
 	{
 		"services": 0,
 		(NODE_NET_IP)"addr" : "127.0.0.1",
-		(NODE_GFX_SHORT)"port" : 16819
+		(NODE_GFX_SHORT)"port" : 8000
 	},
 	(NODE_BITCORE_NODE_LIST) "peer_nodes" : [],
 	(NODE_BITCORE_WALLET_ADDR_LIST) "addr scan list" : null,
@@ -93,9 +94,10 @@ let NODE_SERVICE stratum_service = `
 	(NODE_MODULE_DEF) "module" : {"file":"modz/stratum_service.tpo"}
 } `
 
+
 let NODE_SERVICE http_service = `
 {
-	"port"		: 16820,
+	"port"		: 8001,
 	(NODE_NET_IP)"addr" : "127.0.0.1",
 	"docroot"   : "web",
 	"apppath"   : "/app/",

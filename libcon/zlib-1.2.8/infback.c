@@ -10,7 +10,8 @@
    inflate_fast() can be used with either inflate.c or infback.c.
  */
 #define LIBC_API C_EXPORT
-#include "../../base/std_base.h"
+#include "../../base/std_def.h"
+#include "../../base/std_mem.h"
 #include "zutil.h"
 #include "inftrees.h"
 #include "inflate.h"

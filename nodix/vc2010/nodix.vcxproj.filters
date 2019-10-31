@@ -20,5 +20,8 @@
     <None Include="..\..\export\nodix.node">
       <Filter>Fichiers Sources</Filter>
     </None>
+    <None Include="..\..\export\web\nodix.site">
+      <Filter>Fichiers Sources</Filter>
+    </None>
   </ItemGroup>
 </Project>

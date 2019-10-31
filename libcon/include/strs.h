@@ -19,7 +19,7 @@ struct host_def
 };
 
 
-const enum op_type { CMP_E, CMP_L, CMP_G, CMPL_E, CMPL_L, CMPL_G, CMPL_N, CMP_N };
+enum op_type { CMP_E, CMP_L, CMP_G, CMP_N, CMPL_E, CMPL_L, CMPL_G, CMPL_N };
 
 struct key_val
 {

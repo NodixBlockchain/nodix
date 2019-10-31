@@ -1176,7 +1176,9 @@ AccountList.prototype.fetch_staking_unspents = function  () {
     if (this.staketimer != null)
         clearTimeout(this.staketimer);
 
-    rpc_call('liststaking', [0, 9999999, this.SelectedAddrs], function (data) {
+    rpc_call('liststaking', [0, 9999999, this.SelectedAddrs],
+
+    function (data) {
         var     n;
 
         self.staking_unspents               = data.result.unspents;
@@ -1196,7 +1198,19 @@ AccountList.prototype.fetch_staking_unspents = function  () {
 
         self.stakeUpdateTimer = setTimeout(function () { self.fetch_unspents(); }, 60000);
 
-    }, function () { self.staketimer = setTimeout(function () { self.check_all_staking(); }, 1000); });
+    },
+    function ()
+    {
+        if (self.staketimer != null)
+            clearTimeout(self.staketimer);
+
+        self.staketimer = setTimeout(function () { self.check_all_staking(); }, 1000);
+
+        if (self.stakeUpdateTimer != null)
+            clearTimeout(self.stakeUpdateTimer);
+
+        self.stakeUpdateTimer = setTimeout(function () { self.fetch_unspents(); }, 1000);
+    });
 }
 
 AccountList.prototype.fetch_unspents = function () {

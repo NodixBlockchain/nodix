@@ -125,7 +125,7 @@ int load_sign_module(mem_zone_ref_ptr mod_def, tpo_mod_file *tpo_mod)
 
 	strcpy_cs							(name, 64, tree_mamanger_get_node_name(mod_def));
 	tree_manager_get_child_value_str	(mod_def, NODE_HASH("file"), file, 256, 0);
-	ret=load_module						(file, name, tpo_mod,0);
+	ret=load_module						(file, name, tpo_mod,0,PTR_NULL);
 	if(ret)
 	{
 
@@ -1499,7 +1499,7 @@ int BN_bn2mpi(const BIGNUM *a, unsigned char *d)
 OS_API_C_FUNC(unsigned int) GetCompact(const hash_t in,unsigned int *bits)
 {
 	int n;
-	unsigned int pos, val;
+	unsigned int pos;
 	
 	for (n = 0; n <32; n++)
 	{
@@ -3386,7 +3386,7 @@ OS_API_C_FUNC(int) find_obj_ptxfr(mem_zone_ref_const_ptr tx, hash_t objHash, mem
 	return ret;
 }
 
-OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, mem_zone_ref_ptr inobjs,unsigned int *is_coinbase,unsigned int check_sig, mem_zone_ref_ptr mempool)
+OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, mem_zone_ref_ptr inobjs,unsigned int *is_coinbase,unsigned int check_sig, mem_zone_ref_ptr mempool, node **blk_tree)
 {
 	mem_zone_ref		txin_list = { PTR_NULL }, my_list = { PTR_NULL };
 	mem_zone_ref_ptr	input = PTR_NULL;
@@ -4009,7 +4009,7 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, mem_
 
 				if ((ret) && (check_sig & 2))
 				{
-					ret = bt_insert(&blk_root, et);
+					ret = bt_insert(blk_tree, et);
 					if(!ret) log_output("double spent found \n");
 				}
 			}
@@ -4513,35 +4513,6 @@ OS_API_C_FUNC(int) find_inner_inputs(mem_zone_ref_ptr txin_list, hash_t txid, un
 	return ret;
 }
 
-OS_API_C_FUNC(int) find_inputs(mem_zone_ref_ptr tx_list, hash_t txid,unsigned int oidx)
-{
-	mem_zone_ref my_txlist = { PTR_NULL };
-	mem_zone_ref_ptr tx = PTR_NULL;
-	int ret=0;
-
-	if (tx_list == PTR_NULL)return 0;
-	if (tx_list->zone == PTR_NULL)return 0;
-
-	for (tree_manager_get_first_child(tx_list, &my_txlist, &tx); ((tx != PTR_NULL) && (tx->zone != PTR_NULL)); tree_manager_get_next_child(&my_txlist, &tx))
-	{
-		mem_zone_ref		txin_list = { PTR_NULL }, my_ilist = { PTR_NULL };
-		mem_zone_ref_ptr	input = PTR_NULL;
-
-		if (!tree_manager_find_child_node(tx, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list))
-			continue;
-
-		ret = find_inner_inputs(&txin_list, txid, oidx);
-		
-		release_zone_ref(&txin_list);
-		if (ret == 1)
-		{
-			dec_zone_ref(tx);
-			release_zone_ref(&my_txlist);
-			break;
-		}
-	}
-	return ret;
-}
 
 int check_object_balance(mem_zone_ref_const_ptr inobjs, mem_zone_ref_const_ptr outobjs)
 {
@@ -4675,7 +4646,7 @@ OS_API_C_FUNC(int) check_tx_list(mem_zone_ref_ptr tx_list,uint64_t block_reward,
 		if (ret)
 		{
 			tree_manager_create_node("inobjs", NODE_BITCORE_HASH_LIST, &inobjs);
-			ret = check_tx_inputs(tx, &total_in, &inobjs, &is_coinbase, check_sig | 2,PTR_NULL);
+			ret = check_tx_inputs(tx, &total_in, &inobjs, &is_coinbase, check_sig | 2,PTR_NULL, &blk_root);
 			if(!ret)log_output("invalid inputs \n");
 
 		}

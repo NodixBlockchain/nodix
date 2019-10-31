@@ -68,6 +68,7 @@
     <None Include="..\..\export\nodix.node" />
     <None Include="..\..\export\web\assets\js\custom.js" />
     <None Include="..\..\export\web\assets\js\keys.js" />
+    <None Include="..\..\export\web\nodix.site" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\libbaseimpl\vc2010\libbase.vcxproj">

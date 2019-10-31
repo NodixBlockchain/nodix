@@ -132,7 +132,7 @@ OS_API_C_FUNC(int) sendfrom(mem_zone_ref_const_ptr params, unsigned int rpc_mode
 	btc_addr_t		 dstAddr,changeAddr;
 	struct string	 oScript = { 0 };
 	mem_zone_ref	 param = { PTR_NULL };
-	mem_zone_ref	 account_name = { PTR_NULL }, mempool = { PTR_NULL }, new_tx = { PTR_NULL }, addrs = { PTR_NULL }, my_list = { PTR_NULL }, script_node = { PTR_NULL }, etx = { PTR_NULL };
+	mem_zone_ref	 account_name = { PTR_NULL }, new_tx = { PTR_NULL }, addrs = { PTR_NULL }, my_list = { PTR_NULL }, script_node = { PTR_NULL }, etx = { PTR_NULL };
 	mem_zone_ref_ptr addr=PTR_NULL;
 	int				 ret;
 	
@@ -165,10 +165,10 @@ OS_API_C_FUNC(int) sendfrom(mem_zone_ref_const_ptr params, unsigned int rpc_mode
 
 	tree_manager_create_node		("addrs", NODE_BITCORE_WALLET_ADDR_LIST, &addrs);
 
-	wallet_list_addrs				(&account_name,&addrs,0,0,PTR_NULL);
+	wallet_list_addrs				(&account_name,&addrs,0,0);
 	release_zone_ref				(&account_name);
 
-	node_aquire_mempool_lock		(&mempool);
+	
 	new_transaction					(&new_tx, get_time_c());
 
 	total_unspent = 0;
@@ -177,7 +177,7 @@ OS_API_C_FUNC(int) sendfrom(mem_zone_ref_const_ptr params, unsigned int rpc_mode
 		btc_addr_t						my_addr;
 
 		tree_manager_get_child_value_btcaddr(addr, NODE_HASH("address"), my_addr);
-		get_tx_inputs_from_addr				(my_addr, &mempool, &total_unspent, nAmount + paytxfee, min_conf, 9999999, &new_tx);
+		get_tx_inputs_from_addr				(my_addr, &total_unspent, nAmount + paytxfee, min_conf, 9999999, &new_tx);
 
 		if (changeAddr[0] == 0)
 			memcpy_c (changeAddr, my_addr, sizeof(btc_addr_t));
@@ -192,8 +192,7 @@ OS_API_C_FUNC(int) sendfrom(mem_zone_ref_const_ptr params, unsigned int rpc_mode
 		
 	}
 	
-	release_zone_ref			(&mempool);
-	node_release_mempool_lock	();
+
 	release_zone_ref			(&addrs);
 
 	if (total_unspent < nAmount)

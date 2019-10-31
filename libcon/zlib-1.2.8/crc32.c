@@ -21,7 +21,8 @@
   DYNAMIC_CRC_TABLE and MAKECRCH can be #defined to write out crc32.h.
  */
 #define LIBC_API C_EXPORT
-#include "../../base/std_base.h"
+#include "../../base/std_def.h"
+#include "../../base/std_mem.h"
 #ifdef MAKECRCH
 #  include <stdio.h>
 #  ifndef DYNAMIC_CRC_TABLE

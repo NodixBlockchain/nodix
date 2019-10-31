@@ -634,6 +634,38 @@ OS_API_C_FUNC(int)  strncat_c(char *string,const char *src_string,size_t max)
 	}
 	return 0;
 }
+
+ OS_API_C_FUNC(int)  pathcmp_c(const char *string1, const char *string2)
+ {
+	 int		n;
+	 char	c1 = '0', c2 = '0';
+
+	 if (string1 == PTR_NULL)return -1;
+	 n = strlen_c(string1);
+
+	 if (string2 == PTR_NULL) {
+		 if (n == 0)
+			 return 0;
+		 else
+			 return -1;
+	 }
+
+	 
+	 for (n = 0; ((c1 != 0) && (c2 != 0)); n++)
+	 {
+		 c1 = string1[n];
+		 c2 = string2[n];
+
+		 if ((c1 == '\\') && (c2 == '/'))continue;
+		 if ((c1 == '/') && (c2 == '\\'))continue;
+
+		 if (c1 < c2)return -1;
+		 if (c1 > c2)return 1;
+		 
+	 }
+	 return 0;
+ }
+
  OS_API_C_FUNC(int)  stricmp_c(const char *string1,const char *string2)
 {
 	int		n;
@@ -1382,7 +1414,7 @@ OS_API_C_FUNC(void) store_bigendian(unsigned char *x, uint64_t u)
 	x[0] = u;
 }
 
-OS_API_C_FUNC(void) dtoll_c(double dAmount, uint64_t *nAmount)
+OS_API_C_FUNC(void) dtoll_c(double dAmount, int64_t *nAmount)
 {
 	(*nAmount) = dAmount;
 }

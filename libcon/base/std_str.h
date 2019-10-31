@@ -15,6 +15,7 @@ LIBC_API char *			C_API_FUNC str_replace_char_c		(char *string, char c1, char c2
 LIBC_API int			C_API_FUNC strncat_c				(char *string,const char *src_string,size_t max);
 LIBC_API int			C_API_FUNC strcat_c					(char *string,const char *src_string);
 LIBC_API int			C_API_FUNC strcmp_c					(const char *string1,const char *string2);
+LIBC_API int			C_API_FUNC pathcmp_c				(const char *string1, const char *string2);
 LIBC_API int			C_API_FUNC strncmp_c				(const char *string1,const char *string2,size_t len);
 LIBC_API int			C_API_FUNC strincmp_c				(const char *string1,const char *string2,size_t len);
 LIBC_API int			C_API_FUNC stricmp_c				(const char *string1,const char *string2);
@@ -35,7 +36,7 @@ LIBC_API int64_t		C_API_FUNC strtoll_c				(const char *nptr, char **endptr, int 
 LIBC_API unsigned long	C_API_FUNC strtoul_c				(const char *nptr, char **endptr, int base);
 LIBC_API short			C_API_FUNC strtos_c					(const char *nptr, char **endptr, int base);
 LIBC_API long			C_API_FUNC atol_c					(const char *str ); 
-LIBC_API void			C_API_FUNC dtoll_c					(double dAmount, uint64_t *nAmount);
+LIBC_API void			C_API_FUNC dtoll_c					(double dAmount, int64_t *nAmount);
 LIBC_API const char *	C_API_FUNC strstr_c					(const char *buf, const char *sub);
 LIBC_API int			C_API_FUNC tolower_c				(int _c);
 LIBC_API int			C_API_FUNC toupper_c				(int _c);
@@ -48,7 +49,7 @@ LIBC_API int			C_API_FUNC isspace_c				(int _c);
 LIBC_API void			C_API_FUNC snooze_c					(size_t micro_sec);
 LIBC_API void			C_API_FUNC dtoa_c					(char *buff, char conv, int bsize, int dplace, double value);
 LIBC_API unsigned int	C_API_FUNC parseDate				(const char *date);
-LIBC_API int			C_API_FUNC time_to_date				(ctime_t time, char *date, size_t date_len);
+LIBC_API int			C_API_FUNC time_to_date				(const ctime_t time, char *date, size_t date_len);
 LIBC_API void			C_API_FUNC store_bigendian			(unsigned char *x, uint64_t u);
 LIBC_API uint64_t		C_API_FUNC load_bigendian			(const unsigned char *x);
 

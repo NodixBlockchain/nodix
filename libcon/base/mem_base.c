@@ -471,6 +471,8 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "parseDate",(void_func_ptr)parseDate, 0);
 	sys_add_tpo_mod_func_name("libcon", "strtoul_c",(void_func_ptr)strtoul_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "stricmp_c",(void_func_ptr)stricmp_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "pathcmp_c", (void_func_ptr)pathcmp_c, 0);
+	
 	sys_add_tpo_mod_func_name("libcon", "uitoa_s",(void_func_ptr)uitoa_s, 0);
 
 	sys_add_tpo_mod_func_name("libcon", "luitoa_s",(void_func_ptr)luitoa_s, 0);
@@ -555,9 +557,10 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "mem_stream_get_pos", (void_func_ptr)mem_stream_get_pos, 0);
 	sys_add_tpo_mod_func_name("libcon", "mem_stream_close",(void_func_ptr)mem_stream_close, 0);
 
-	sys_add_tpo_mod_func_name("libcon", "tpo_mod_load_tpo",(void_func_ptr)tpo_mod_load_tpo, 0);
+	sys_add_tpo_mod_func_name("libcon", "tpo_free_mod_c",(void_func_ptr)tpo_free_mod_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "tpo_mod_init",(void_func_ptr)tpo_mod_init, 0);
-	/*sys_add_tpo_mod_func_name("libcon", "tpo_mod_find", (void_func_ptr)tpo_mod_find, 0);*/
+	sys_add_tpo_mod_func_name("libcon", "swap_mod_ptr", (void_func_ptr)swap_mod_ptr, 0);
+
 
 	sys_add_tpo_mod_func_name("libcon", "execute_script_mod_call", (void_func_ptr)execute_script_mod_call, 0);
 	sys_add_tpo_mod_func_name("libcon", "execute_script_mod_rcall", (void_func_ptr)execute_script_mod_rcall, 0);
@@ -659,17 +662,14 @@ OS_API_C_FUNC(unsigned int) init_new_mem_area(mem_ptr phys_start,mem_ptr phys_en
 			__global_mem_areas[n].last_gc_time		= 0;
 			__global_mem_areas[n].last_used_zone	= 0;
 
-			__global_mem_areas[n].zones_buffer_ptr	= kernel_memory_map_c	(nzones * zone_alignement + zone_alignement);
+			__global_mem_areas[n].zones_buffer_ptr	= kernel_memory_map_c	(nzones * zone_alignement + 64);
+			memset_c(__global_mem_areas[n].zones_buffer_ptr, 0, nzones * zone_alignement + 64);
 
 			if((mem_to_uint(__global_mem_areas[n].zones_buffer_ptr) & (zone_alignement-1)) == 0)
 				__global_mem_areas[n].zones_buffer	= __global_mem_areas[n].zones_buffer_ptr;
 			else
 				__global_mem_areas[n].zones_buffer	= uint_to_mem((mem_to_uint( __global_mem_areas[n].zones_buffer_ptr )  &  (~(zone_alignement - 1))) + zone_alignement);
 			
-			memset_c(__global_mem_areas[n].zones_buffer, 0, nzones * zone_alignement);
-
-
-
 #ifndef NATIVE_ALLOC
 			__global_mem_areas[n].area_start = phys_start;
 			__global_mem_areas[n].area_end = phys_end;
@@ -1731,7 +1731,64 @@ OS_API_C_FUNC(unsigned int) allocate_new_empty_zone(unsigned int area_id, mem_zo
 	return ret;
 }
 
+/*
+#include <xmmintrin.h>
+#include <smmintrin.h>
 
+#ifdef _MSC_VER
+#include <intrin.h>
+
+int __builtin_ctz(unsigned int x) {
+	unsigned long ret;
+	_BitScanForward(&ret, x);
+	return (int)ret;
+}
+
+#endif
+
+
+mem_size  find_null_ptr_sse2(mem_zone_ptr zones_buffer, mem_size  nzones)
+{
+	__m128i key4 = _mm_set1_epi32(0);
+	int res;
+	mem_size i;
+
+	for (i = 0; i < nzones; i += 16)
+	{
+		__m128i v1 = _mm_set_epi32(zones_buffer[i + 0 + 3].mem.ptr, zones_buffer[i + 0 + 2].mem.ptr, zones_buffer[i + 0 + 1].mem.ptr, zones_buffer[i + 0 + 0].mem.ptr);
+		__m128i v2 = _mm_set_epi32(zones_buffer[i + 4 + 3].mem.ptr, zones_buffer[i + 4 + 2].mem.ptr, zones_buffer[i + 4 + 1].mem.ptr, zones_buffer[i + 4 + 0].mem.ptr);
+		__m128i v3 = _mm_set_epi32(zones_buffer[i + 8 + 3].mem.ptr, zones_buffer[i + 8 + 2].mem.ptr, zones_buffer[i + 8 + 1].mem.ptr, zones_buffer[i + 8 + 0].mem.ptr);
+		__m128i v4 = _mm_set_epi32(zones_buffer[i + 12 + 3].mem.ptr,zones_buffer[i + 12 + 2].mem.ptr,zones_buffer[i + 12 + 1].mem.ptr,zones_buffer[i + 12 + 0].mem.ptr);
+
+		__m128i cmp0 = _mm_cmpeq_epi32(key4, v1);
+		__m128i cmp1 = _mm_cmpeq_epi32(key4, v2);
+		__m128i cmp2 = _mm_cmpeq_epi32(key4, v3);
+		__m128i cmp3 = _mm_cmpeq_epi32(key4, v4);
+
+		__m128i pack01 = _mm_packs_epi32(cmp0, cmp1);
+		__m128i pack23 = _mm_packs_epi32(cmp2, cmp3);
+		__m128i pack0123 = _mm_packs_epi16(pack01, pack23);
+
+		res = _mm_movemask_epi8(pack0123);
+		if (res > 0)
+			break;
+	}
+
+	return i + __builtin_ctz(res);
+}
+*/
+
+mem_size  find_null_ptr(mem_zone_ptr zones_buffer, mem_size  nzones)
+{
+	mem_size n;
+	for (n = 0; n < nzones; n++)
+	{
+		mem_zone		*nzone = mem_add(zones_buffer, n * zone_alignement);
+		if (nzone->mem.ptr == PTR_NULL)return n;
+	}
+
+	return 0xFFFFFFFF;
+}
 
 OS_API_C_FUNC(unsigned int) allocate_new_zone(unsigned int area_id,mem_size zone_size,mem_zone_ref *zone_ref)
 {
@@ -1752,13 +1809,19 @@ OS_API_C_FUNC(unsigned int) allocate_new_zone(unsigned int area_id,mem_size zone
 
 	while (ret == 0)
 	{
+		mem_zone		*nzone;
 		ezone.zone = zone_ref->zone;
 		zone_size  = ((zone_size & 0xFFFFFFF0) + 16);
 
+		n		= find_null_ptr(area_ptr->zones_buffer, area_ptr->nzones);
+		nzone	= mem_add(area_ptr->zones_buffer, n * zone_alignement);
+
+		/*
 		for(n = 0; n < area_ptr->nzones;n++)
 		{
 			mem_zone		*nzone = mem_add(area_ptr->zones_buffer, n * zone_alignement);
 			if (nzone->mem.ptr != PTR_NULL)continue;
+		*/
 
 			if(do_allocate(area_ptr, zone_size, &nzone->mem)==1)
 			{
@@ -1784,34 +1847,25 @@ OS_API_C_FUNC(unsigned int) allocate_new_zone(unsigned int area_id,mem_size zone
 				release_zone_ref(&ezone);
 
 				/* task_manager_release_semaphore(area_ptr->lock_sema,0); */
-
-				ret = 1;
-				break;
+				return 1;
 			}
 			else
 			{
 				/*task_manager_release_semaphore(area_ptr->lock_sema,0);*/
-				ret = 0;
-				break;
-			}
-		}
+				
+				if (gc == 0)
+					return 0;
 
-		if (ret == 0)
-		{
-			if(gc == 0)break;
-			if ((area_ptr->type & 0x10) == 0)
-				break;
-			
-			if (do_mark_sweep(area_id, 0))
-			{
-				gc = 0;
+				if ((area_ptr->type & 0x10) == 0)
+					return 0;
+
+				if (do_mark_sweep(area_id, 0))
+					gc = 0;
 			}
-		}
+		/*}*/
 	}
-
 	/*task_manager_release_semaphore(area_ptr->lock_sema,0);*/
-	
-	return ret;
+	return 1;
 }
 
 

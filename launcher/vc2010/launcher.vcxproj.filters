@@ -30,7 +30,10 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\iadix.ico">
+    <None Include="..\logo_icon.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="icon1.ico">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

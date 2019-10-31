@@ -35,7 +35,7 @@
 #else
 	
 	typedef unsigned int	size_t;
-	typedef int64_t			ctime_t;
+	typedef long int		ctime_t;
 
 
 

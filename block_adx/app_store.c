@@ -5,6 +5,7 @@
 #include <base/std_str.h>
 
 #include <mem_stream.h>
+#include <tpo_mod.h>
 
 #include <sha256.h>
 #define FORWARD_CRYPTO
@@ -750,7 +751,8 @@ int blk_load_app_scripts(mem_zone_ref_ptr app)
 
 				clone_string(&path, &script_path);
 				cat_ncstring_p(&path, optr, sz);
-				if (load_script(path.str, script_name, &script_var, 1))
+
+				if (load_script(path.str, script_name, &script_var, 1 | 4))
 					add_app_script	(app, &script_var);
 				
 				free_string(&path);
@@ -2390,16 +2392,17 @@ int store_app_item(mem_zone_ref_const_ptr tx, unsigned int app_item, unsigned in
 				cat_cstring_p	(&app_path, app_name.str);
 				cat_cstring_p	(&app_path, "modz");
 				cat_cstring_p	(&app_path, filename.str);
+
 				put_file		(app_path.str, fileData.str, fileData.len);
 				set_ftime		(app_path.str, txtime);
 				
 				if (tree_manager_find_child_node(&apps, NODE_HASH(app_name.str), NODE_BITCORE_TX, &app))
 				{
-					if ((filename.len >= 5) && (!strncmp_c(&filename.str[filename.len - 5], ".site", 5)))
+					if (str_end_with(&filename, ".site"))
 					{
 						mem_zone_ref new_script = { PTR_NULL };
 
-						if (load_script(app_path.str, filename.str, &new_script, 1))
+						if (load_script(app_path.str, filename.str, &new_script, 1 | 4))
 						{
 							mem_zone_ref scripts = { PTR_NULL };
 							tree_manager_set_child_value_i32	(&new_script, "scriptTime", txtime);
@@ -2407,40 +2410,58 @@ int store_app_item(mem_zone_ref_const_ptr tx, unsigned int app_item, unsigned in
 							get_app_scripts						(&app, &scripts);
 
 							if (!tree_manager_swap_child_ref(&scripts, NODE_HASH(filename.str), NODE_SCRIPT, &new_script)) {
-								
-								if (load_script(app_path.str, filename.str, &new_script, 1))
-								{
-									tree_manager_set_child_value_i32	(&new_script, "scriptTime", txtime);
-									add_app_script						(&app, &new_script);
-								}
+								add_app_script						(&app, &new_script);
 							}
 							release_zone_ref					(&new_script);
 							release_zone_ref					(&scripts);
-							
 						}
+					}
+					else if (str_end_with(&filename, ".tpo"))
+					{
+						mem_zone_ref scripts = { PTR_NULL }, my_list = { PTR_NULL };
+						mem_zone_ref_ptr script = PTR_NULL;
 
-						/*
-						mem_zone_ref scripts = { PTR_NULL }, script = { PTR_NULL };
+						get_app_scripts(&app, &scripts);
 
-						get_app_scripts				(&app, &scripts);
-						tree_remove_child_by_name	(&scripts, NODE_HASH(filename.str));
-						release_zone_ref			(&scripts);
-
-						
-
-						if (load_script(app_path.str, filename.str, &script, 1))
+						for (tree_manager_get_first_child(&scripts, &my_list, &script); ((script != NULL) && (script->zone != NULL)); tree_manager_get_next_child(&my_list, &script))
 						{
-							tree_manager_set_child_value_i32(&script, "scriptTime", txtime);
-							add_app_script					(&app, &script);
-							release_zone_ref				(&script);
+							mem_zone_ref						mod_def_var = { PTR_NULL };
+
+							if(find_script_mod(script, app_path.str, &mod_def_var))
+							{
+								char			name[32];
+								tpo_mod_file	*tpo_mod, *cur_mod = PTR_NULL;
+
+								strcpy_cs(name, 32, tree_mamanger_get_node_name(&mod_def_var));
+								
+								tpo_mod = malloc_c(sizeof(tpo_mod_file));
+								if (load_module(app_path.str, name, tpo_mod, 0, PTR_NULL))
+								{
+									if (tree_manager_get_child_value_ptr(&mod_def_var, NODE_HASH("mod_ptr"), 0, &cur_mod))
+									{
+										swap_mod_ptr(cur_mod, tpo_mod);
+										/*tpo_free_mod_c(cur_mod);*/
+									}
+
+									tree_manager_set_child_value_ptr(&mod_def_var, "mod_ptr", tpo_mod);
+									tree_manager_set_child_value_i32(&mod_def_var, "mod_time", txtime);
+								}
+								else
+									tpo_free_mod_c(tpo_mod);
+
+								release_zone_ref(&mod_def_var);
+							}
 						}
-						*/
 					}
 					release_zone_ref(&app);
 				}
-				
+
 				free_string(&app_path);
 			}
+
+			free_string(&app_name);
+			free_string(&fileData);
+			free_string(&filename);
 			release_zone_ref(&file);
 		}
 		break;

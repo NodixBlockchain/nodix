@@ -158,3 +158,12 @@ export/2015bins/launcher.exe
 nodix.VC.VC.opendb
 .vs/config/applicationhost.config
 export/web/keys.js
+*.cod
+enekio.odt
+enekio.pdf
+enekio_diag.ods
+enekio_diag.pdf
+libbase/include/lang.h
+*.db-shm
+*.db-wal
+launcher/vc2010/icon1.ico

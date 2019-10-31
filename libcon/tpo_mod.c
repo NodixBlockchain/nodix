@@ -66,6 +66,22 @@ OS_API_C_FUNC(void) tpo_mod_init			(tpo_mod_file *tpo_mod)
 	}
 }
 
+OS_API_C_FUNC(int) tpo_free_mod_c(tpo_mod_file *tpo_mod)
+{
+	unsigned int n = 0;
+	while (n < 16)
+	{
+		release_zone_ref(&tpo_mod->sections[n].exports_fnc);
+		release_zone_ref(&tpo_mod->sections[n].imports_fnc);
+		n++;
+	}
+	release_zone_ref(&tpo_mod->data_sections);
+	release_zone_ref(&tpo_mod->string_buffer_ref);
+
+	free_c(tpo_mod);
+
+	return 1;
+}
 
 struct kern_mod_fn_t *find_sym(unsigned int mod_idx,size_t sym_ofset, unsigned int deco_type)
 {
@@ -402,6 +418,7 @@ OS_API_C_FUNC(int)	set_tpo_mod_exp_value32_name(const tpo_mod_file *tpo_mod,cons
 }
 
 
+
 OS_API_C_FUNC(void_func_ptr)	get_tpo_mod_exp_addr_name(const tpo_mod_file *tpo_mod, const char *name, unsigned int deco_type)
 {
 	tpo_export			*exports;
@@ -418,8 +435,21 @@ OS_API_C_FUNC(void_func_ptr)	get_tpo_mod_exp_addr_name(const tpo_mod_file *tpo_m
 	switch (tpo_mod->deco_type)
 	{
 		case MSVC_STDCALL_32:
-			strcpy_cs(func_name,256,"_");
-			strcat_cs(func_name,256,name);
+			if (deco_type == 0)
+			{
+				strcpy_cs(func_name, 256, "_");
+				strcat_cs(func_name, 256, name);
+			}
+			else if (deco_type == 1)
+			{
+				n = 0;
+				while ((name[n] != '@') && (name[n] != 0))
+				{
+					func_name[n] = name[n];
+					n++;
+				}
+				func_name[n] = 0;
+			}
 		break;
 		/*
 		case GCC_STDCALL_32:
@@ -647,7 +677,7 @@ int generate_export_stub(struct sandbox_t *sand_box,mem_ptr sec_ptr,size_t func_
  }
  */
 
-OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_file,unsigned int flags)
+int tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_file,unsigned int flags, const tpo_mod_file *tpo_mod_import)
 {
 	char			mod_name[128] = { 0 };
 	
@@ -768,7 +798,7 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 			char					sym_name[256];
 			unsigned int			fn_crc,dll_crc,ofs_addr,new_addr;
 			unsigned int			imp_ofs,str_n;
-			
+			void_func_ptr			my_func_ptr = PTR_NULL;
 			struct kern_mod_fn_t	*func_ptr;
 
 			memset_c(dll_name, 0, 64);
@@ -842,6 +872,7 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 				}
 
 
+
 				if (func_ptr == uint_to_mem(0xFFFFFFFF))
 				{
 					if (flags & 1)
@@ -865,11 +896,24 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 						}
 					}
 				}
+
+	
+
 			}
 			ofs_addr	=	mem_stream_read_32(file_stream);
+
+			if ((func_ptr == uint_to_mem(0xFFFFFFFF)) && (tpo_mod_import != PTR_NULL))
+			{
+				my_func_ptr = get_tpo_mod_exp_addr_name(tpo_mod_import, sym_name, tpo_mod_import->deco_type);
+			}
+
 			if(func_ptr	!= uint_to_mem(0xFFFFFFFF))
 			{
 				tpo_mod_write_import(tpo_file, sec_idx, ofs_addr, uint_to_mem(func_ptr->func_addr));
+			}
+			else if (my_func_ptr != PTR_NULL)
+			{
+				tpo_mod_write_import(tpo_file, sec_idx, ofs_addr, my_func_ptr);
 			}
 			else
 			{
@@ -1197,6 +1241,29 @@ OS_API_C_FUNC(tpo_mod_file *) find_mod_ptr(unsigned int name_hash)
 	return my_mod;
 }
 
+OS_API_C_FUNC(int) swap_mod_ptr(tpo_mod_file *old_mod,tpo_mod_file *mod)
+{
+	short n;
+	tpo_mod_file *my_mod = PTR_NULL;
+
+	if (old_mod == PTR_NULL)
+		return 0;
+
+	while (!compare_z_exchange_c(&module_registry_lock, 1)) {}
+
+	for (n = 0; n < n_modz; n++)
+	{
+		if (modz[n] == old_mod) {
+			modz[n]= mod;
+			break;
+		}
+	}
+
+	mfence_c();
+	module_registry_lock = 0;
+
+	return 1;
+}
 
 #ifdef _NATIVE_LINK_
 
@@ -1337,10 +1404,11 @@ void mark_modz_zones(mem_ptr lower_bound, mem_ptr higher_bound)
 }
 #endif
 
-OS_API_C_FUNC(int) load_module(const char *file, const char *mod_name, tpo_mod_file *mod, unsigned int flags)
+OS_API_C_FUNC(int) load_module(const char *file, const char *mod_name, tpo_mod_file *mod, unsigned int flags, tpo_mod_file *impmod)
 {
 	char				mod_addr[16];
 	mem_stream			mod_file = { 0 };
+	ctime_t				ftime;
 
 	while (!compare_z_exchange_c(&module_registry_lock, 1))
 	{
@@ -1365,9 +1433,10 @@ OS_API_C_FUNC(int) load_module(const char *file, const char *mod_name, tpo_mod_f
 	log_output			("'\n");
 
 	tpo_mod_init		(mod);
-	tpo_mod_load_tpo	(&mod_file, mod, flags);
+	tpo_mod_load_tpo	(&mod_file, mod, flags, impmod);
+	get_ftime			(file,&ftime);
 
-
+	mod->filetime = ftime;
 #ifdef _DEBUG
 	uitoa_s				(mem_to_uint(get_zone_ptr(&mod->data_sections, 0)), mod_addr, 16, 16);
 	log_output			("mod addr ");

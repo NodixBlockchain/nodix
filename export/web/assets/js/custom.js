@@ -67,7 +67,7 @@ function encryptNodeKey(msg)
 }
 
 
-function rpc_call(in_method, in_params, in_success) {
+function rpc_call(in_method, in_params, in_success, in_error) {
 
     var encMsg = encryptNodeKey(JSON.stringify(in_params));
 
@@ -84,7 +84,7 @@ function rpc_call(in_method, in_params, in_success) {
         type: "POST",
         dataType: "json",
         success: in_success,
-        error: function (err) { /*alert("Error");*/ }
+        error: in_error
     });
 }
 
@@ -442,9 +442,16 @@ function check_hash(twit_id, parent) {
 
 
 
-function make_var_html(label,val, val_class)
+function make_var_html(label,val, val_class,label_id)
 {
-    return '<div class="row"><div class="col-sm-2"><label>' + label + '</label></div><div class="col-md" style="text-align:left"><span class="' + val_class + '" >' + val + '</span></div></div>';
+    var html = '<div class="row"><div class="col-sm-2">';
+
+    html +='<label ';
+
+    if((typeof label_id!='undefined'))
+       html +='id="' + label_id + '" ';
+    html += '>' + label + '</label></div><div class="col-md" style="text-align:left"><span class="' + val_class + '" >' + val + '</span></div></div>';
+    return html;
 }
 
 function get_tx_html(tx, n) {

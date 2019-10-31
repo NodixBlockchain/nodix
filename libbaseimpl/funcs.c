@@ -26,7 +26,6 @@ OS_API_C_FUNC(int)				tree_manager_get_first_child_shared(mem_zone_ref_const_ptr
 
 OS_API_C_FUNC(  int	)			tree_manager_get_last_child(mem_zone_ref_const_ptr p_node_ref, mem_zone_ref_ptr child_list, mem_zone_ref_ptr *p_node_out_ref){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_get_prev_child(mem_zone_ref_ptr child_list, mem_zone_ref_ptr *p_node_out_ref){return 0;}
-OS_API_C_FUNC(int)				ripemd160(const void* in, unsigned long length, void* out){ return 0; }
 OS_API_C_FUNC(int)				tree_manager_get_child_value_btcaddr(const mem_zone_ref	*p_node_ref, unsigned int crc_name, btc_addr_t addr){ return 0; }
 
 OS_API_C_FUNC(  unsigned int	)	and_node_type(unsigned int type1, unsigned int type2){return 0;}
@@ -212,14 +211,14 @@ OS_API_C_FUNC(int) RC4(char *key, char *plaintext, size_t len, unsigned char *ci
 OS_API_C_FUNC(int) mod_add_event_handler(mem_zone_ref_const_ptr mod_def, mem_zone_ref_ptr handlers, const struct string *eval, const char *msg_handler_str, mem_zone_ref_ptr handler) { return 0; }
 OS_API_C_FUNC(int) load_mod_def(mem_zone_ref_ptr mod_def, unsigned int flags) { return 0; }
 
-/*OS_API_C_FUNC(void) qsort_c(mem_ptr base, mem_size num, mem_size width, int(*comp)(const_mem_ptr, const_mem_ptr)) { return ; }*/
-
 OS_API_C_FUNC(mem_ptr) tree_manager_expand_node_data_ptr(mem_zone_ref_ptr node_ref, mem_size ofset, mem_size size) { return 0; }
 
 OS_API_C_FUNC(int) parse_expression(const struct string *str, mem_zone_ref_ptr inputs, mem_zone_ref_ptr parse_tree) { return 0; }
 OS_API_C_FUNC(int) eval_tree_to_float(mem_zone_ref_ptr tree, mem_zone_ref_ptr inputs, float *fOutput, size_t offset) { return 0; }
 
-OS_API_C_FUNC(void) qsort_c(mem_ptr base, mem_size num, mem_size width, int(*comp)(const_mem_ptr, const_mem_ptr)) { return 0; }
+OS_API_C_FUNC(void) qsort_c(mem_ptr base, mem_size num, mem_size width, int(*comp)(const_mem_ptr, const_mem_ptr)) { return ; }
+
+OS_API_C_FUNC(int) find_script_mod(mem_zone_ref_ptr script_vars,const char *modfile, mem_zone_ref_ptr mod_def){ return 0; }
 
 #ifdef _WIN32
 C_EXPORT int _fltused = 0;

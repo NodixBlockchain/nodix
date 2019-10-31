@@ -99,7 +99,7 @@ BLOCK_API  int	C_API_FUNC	check_tx_input_sig			(mem_zone_ref_const_ptr tx, unsig
 BLOCK_API  int	C_API_FUNC	check_tx_outputs			(mem_zone_ref_ptr tx,uint64_t *total, mem_zone_ref_ptr outobjs, unsigned int *is_staking, unsigned int flags);
 
 /* check tx outputs */
-BLOCK_API  int	C_API_FUNC	check_tx_inputs				(mem_zone_ref_ptr tx, uint64_t *total_in, mem_zone_ref_ptr inobjs, unsigned int *is_coinbase,unsigned int check_sig,mem_zone_ref_ptr mempool);
+BLOCK_API  int	C_API_FUNC	check_tx_inputs				(mem_zone_ref_ptr tx, uint64_t *total_in, mem_zone_ref_ptr inobjs, unsigned int *is_coinbase,unsigned int check_sig,mem_zone_ref_ptr mempool, node **blk_tree);
 
 /*check block pow */
 BLOCK_API  int	C_API_FUNC check_block_pow				(mem_zone_ref_ptr hdr, hash_t diff_hash);
@@ -140,10 +140,6 @@ BLOCK_API  int	C_API_FUNC check_tx_list				(mem_zone_ref_ptr tx_list, uint64_t b
 BLOCK_API  int	C_API_FUNC compute_txlist_size			(mem_zone_ref_const_ptr tx_list, size_t *totalSize);
 
 BLOCK_API  int	C_API_FUNC is_opfn_script				(const struct string *script, struct string *fn_name);
-
-/* find input in tx list */
-BLOCK_API  int	C_API_FUNC find_inputs					(mem_zone_ref_ptr tx_list, hash_t txid, unsigned int oidx);
-
 
 /* find input in list */
 BLOCK_API  int	C_API_FUNC find_inner_inputs			(mem_zone_ref_ptr txin_list, hash_t txid, unsigned int oidx);

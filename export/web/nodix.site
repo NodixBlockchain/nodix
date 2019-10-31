@@ -127,7 +127,7 @@ page services = `
 
 	push scripts, "/assets/js/node.js"
 	
-	html_head  "NodiX SERVICE INFO ( SERVICES )" 
+	html_head  "NodiX SERVICE INFO" 
 	
 	html_block "templates/menu.html"
 	html_block "templates/services.html"

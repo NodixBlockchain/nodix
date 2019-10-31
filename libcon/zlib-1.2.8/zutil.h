@@ -21,6 +21,7 @@
 
 #include "zlib.h"
 
+/*
 #if defined(STDC) && !defined(Z_SOLO)
 #  if !(defined(_WIN32_WCE) && defined(_MSC_VER))
 #    include <stddef.h>
@@ -28,6 +29,7 @@
 #  include <string.h>
 #  include <stdlib.h>
 #endif
+*/
 
 #ifdef Z_SOLO
    typedef long ptrdiff_t;  /* guess -- will be caught if guess is wrong */
@@ -205,9 +207,9 @@ extern z_const char * const z_errmsg[10]; /* indexed by 2-zlib_error */
 #    define zmemcmp _fmemcmp
 #    define zmemzero(dest, len) _fmemset(dest, 0, len)
 #  else
-#    define zmemcpy memcpy
-#    define zmemcmp memcmp
-#    define zmemzero(dest, len) memset(dest, 0, len)
+#    define zmemcpy memcpy_c
+#    define zmemcmp memcmp_c
+#    define zmemzero(dest, len) memset_c(dest, 0, len)
 #  endif
 #else
    void ZLIB_INTERNAL zmemcpy OF((Bytef* dest, const Bytef* source, uInt len));
