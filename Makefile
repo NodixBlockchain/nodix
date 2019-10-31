@@ -6,7 +6,7 @@ LIBBASESRC=libbaseimpl/funcs.c
 
 CFLAGS = -m32 -msse  #-O2 -msse -pedantic -std=c89 -D_DEFAULT_SOURCE
 COMMON_INCS = -Ilibcon -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8
-MODFLAGS = -nostdlib -ffreestanding -fno-stack-protector -Wl,-melf_i386,--export-dynamic -shared
+MODFLAGS = -fvisibility=hidden -nostdlib -ffreestanding -fno-stack-protector -Wl,-melf_i386,--export-dynamic -shared
 CC=gcc
 
 default: export/libcon.a export/launcher
@@ -91,7 +91,7 @@ export/modz/nodix.tpo:export/mod_maker export/libnodix.so
 
 export/modz/block_adx.tpo:export/mod_maker export/libblock_adx.so
 	export/mod_maker ./export/libblock_adx.so ./export/modz
-	#mv export/modz/libblock_adx.tpo export/modz/block_adx.tpo
+	mv export/modz/libblock_adx.tpo export/modz/block_adx.tpo
 
 export/modz/protocol_adx.tpo:export/mod_maker export/libprotocol_adx.so
 	export/mod_maker ./export/libprotocol_adx.so ./export/modz
