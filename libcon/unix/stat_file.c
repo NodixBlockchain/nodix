@@ -25,7 +25,7 @@ struct string exe_path			= { PTR_INVALID,0,0 };
 unsigned int running			= 1;
 FILE	*log_file				= PTR_INVALID ;
 int		lock_file				= 0xFFFFFFFF;
-
+unsigned int log_lck = 0xFFFFFFFF;
 
 struct thread
 {
@@ -964,44 +964,43 @@ OS_API_C_FUNC(int) aquire_lock_file(const char *name)
 
 OS_API_C_FUNC(void) console_print(const char *msg)
 {
+	unsigned int tid = get_thread_id();
+
+	if (tid != log_lck)
+	{
+		while (!compare_z_exchange_c(&log_lck, tid)) {}
+	}
+
 	printf("%s",msg);
 
+	if (strlpos_c(msg, 0, '\n') != INVALID_SIZE)
+		log_lck = 0;
 }
-
-
-/*
-OS_API_C_FUNC(int) get_hash_idx(const char *path, size_t idx, hash_t hash)
-{
-	FILE		*f;
-	size_t		len = 0;
-	int			ret;
-
-	f = fopen( path, "rb");
-	if (f == NULL){ return -1; }
-	fseek(f, 0, SEEK_END);
-	len = ftell(f);
-	if ((idx * 32 + 32) <= len)
-	{
-		fseek(f, idx*sizeof(hash_t), SEEK_SET);
-		len = fread(hash, sizeof(hash_t), 1, f);
-	}
-	else
-		len = 0;
-
-	fclose(f);
-	return len;
-}
-*/
 
 OS_API_C_FUNC(int) log_output(const char *data)
 {
-	if ((log_file_name.str == PTR_NULL) || (log_file_name.str == PTR_INVALID))
+	if ((log_file_name.str != PTR_NULL) && (log_file_name.str != PTR_INVALID))
 	{
-		console_print(data);
-		return 1;
+		int ret;
+		unsigned int tid = get_thread_id();
+
+		if (tid != log_lck)
+		{
+			while (!compare_z_exchange_c(&log_lck, tid)) {}
+		}
+
+		ret = append_file(log_file_name.str, data, strlen_c(data));
+
+		if (strlpos_c(data, 0, '\n') != INVALID_SIZE)
+			log_lck = 0;
+
+		return ret;
 	}
-	else
-		return append_file(log_file_name.str, data, strlen_c(data));
+
+	console_print(data);
+	return 1;
+	
+	
 	
 }
 

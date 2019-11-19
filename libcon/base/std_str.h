@@ -61,7 +61,7 @@ LIBC_API int			C_API_FUNC b58tobin					(void *bin, size_t *binszp, const char *b
 
 static const char		hex_chars[]		=	{'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
-static INLINE_C_FUNC void bin_2_hex(const unsigned char *bin, size_t len, char *hex)
+INLINE_C_FUNC void bin_2_hex(const unsigned char *bin, size_t len, char *hex)
 {
 	unsigned int b2hn, b2hnn;
 	for(b2hn = 0, b2hnn = 0; b2hn < len; b2hn++, b2hnn += 2)
@@ -72,7 +72,7 @@ static INLINE_C_FUNC void bin_2_hex(const unsigned char *bin, size_t len, char *
 	hex[b2hnn] = 0;
 }
 
-static INLINE_C_FUNC void bin_2_hex_r(const unsigned char *bin, size_t len, char *hex)
+INLINE_C_FUNC void bin_2_hex_r(const unsigned char *bin, size_t len, char *hex)
 {
 	unsigned int b2hn, b2hnn;
 	for (b2hn = 0, b2hnn = (len - 1) * 2; b2hn < len; b2hn++, b2hnn -= 2)
@@ -83,7 +83,7 @@ static INLINE_C_FUNC void bin_2_hex_r(const unsigned char *bin, size_t len, char
 	hex[len * 2] = 0;
 }
 
-static INLINE_C_FUNC void hex_2_bin(const char *chex, unsigned char *bin,size_t len)
+INLINE_C_FUNC void hex_2_bin(const char *chex, unsigned char *bin,size_t len)
 {
 	unsigned int b2hn, b2hnn;
 	char         hex[3];
@@ -96,7 +96,7 @@ static INLINE_C_FUNC void hex_2_bin(const char *chex, unsigned char *bin,size_t 
 	}
 }
 
-static INLINE_C_FUNC void hex_2_bin_r(const char *chex, unsigned char *bin, size_t len)
+INLINE_C_FUNC void hex_2_bin_r(const char *chex, unsigned char *bin, size_t len)
 {
 	unsigned int b2hn, b2hnn;
 	char         hex[3];

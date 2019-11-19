@@ -28,7 +28,7 @@
 	#define C_IMPORT __attribute__ ((visibility ("default"))) 
 	#define struct_packed			__attribute__((packed))
 	#define _CRT_ALIGN(x)			__attribute__((aligned(x)))
-	#define INLINE_C_FUNC			inline
+	#define INLINE_C_FUNC			static inline
 
 	#if defined(_M_X64) || defined(__amd64__)
 
