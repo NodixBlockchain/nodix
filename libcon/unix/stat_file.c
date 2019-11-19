@@ -257,7 +257,12 @@ OS_API_C_FUNC(int) background_func(thread_func_ptr func, mem_zone_ref_ptr params
 	{
 		while (threads[cur].status == 0)
 		{
-			usleep(1000);
+			struct timespec tim;
+
+			tim.tv_sec = 0;
+			tim.tv_nsec = 1000000L;
+
+			nanosleep(&tim,NULL);
 		}
 	}
 
@@ -1077,7 +1082,12 @@ OS_API_C_FUNC(void) strtod_c(const char *str, double *d)
 }
 OS_API_C_FUNC(void) snooze_c(size_t n)
 {
-	usleep(n);
+	struct timespec tim;
+
+	tim.tv_sec = 0;
+	tim.tv_nsec = n;
+
+	nanosleep(&tim, NULL);
 }
 
 /*
