@@ -799,7 +799,7 @@ int tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_file,unsigned int
 			unsigned int			fn_crc,dll_crc,ofs_addr,new_addr;
 			unsigned int			imp_ofs,str_n;
 			void_func_ptr			my_func_ptr = PTR_NULL;
-			struct kern_mod_fn_t	*func_ptr;
+			struct kern_mod_fn_t	*func_ptr = uint_to_mem(0xFFFFFFFF);
 
 			memset_c(dll_name, 0, 64);
 			memset_c(dll_imp_name, 0, 64);
@@ -824,8 +824,7 @@ int tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_file,unsigned int
 				strcpy_cs		(sym_name,256,get_zone_ptr(&tpo_file->string_buffer_ref,ofset));
 	
 				imp_ofs		=	0;
-				func_ptr	=	uint_to_mem(0xFFFFFFFF);
-
+				
 				while(func_ptr	== uint_to_mem(0xFFFFFFFF))
 				{
 					str_n		=	0;
@@ -964,6 +963,7 @@ int tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_file,unsigned int
 				{
 					crc_dll	=mem_stream_read_32(file_stream);
 					crc_func=mem_stream_read_32(file_stream);
+					fn_str_ofs = 0;
 				}
 				else
 				{

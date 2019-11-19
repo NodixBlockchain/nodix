@@ -136,13 +136,7 @@ function anon_rpc_call(in_method, in_params, in_success,in_error) {
 }
 
 function api_call(in_method, in_params, in_success) {
-    $.ajax({
-        url: api_base_url + cgi_base + in_method + in_params,
-        type: "GET",
-        dataType: "json",
-        success: in_success,
-        error: function (err) { /*alert("Error");*/ }
-    });
+    $.get(api_base_url + cgi_base + in_method + in_params,in_success,"json");
 }
 
 function reverse(s) {

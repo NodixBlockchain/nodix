@@ -12,11 +12,8 @@ mem_ptr		zlib_alloc	(mem_ptr q,unsigned int n,unsigned int s)
 {
 	mem_zone_ref	pouet={PTR_NULL};
 
-	/*kernel_log		(kernel_log_id,"zlib alloc called \n");*/
 	allocate_new_zone	(0x0,n*s,&pouet);
 	
-	q	=	pouet.zone;
-
 	return get_zone_ptr(&pouet,0);
 }
 

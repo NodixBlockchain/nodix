@@ -2024,7 +2024,7 @@ OS_API_C_FUNC(int) unserialize_message(mem_zone_ref_ptr msg, const_mem_ptr paylo
 	mem_zone_ref		my_list = { PTR_NULL };
 	mem_zone_ref_ptr	key;
 	size_t				szData,read,rd;
-	int					created=0;
+	int					error=0,created=0;
 	
 	if (payload == PTR_NULL)return 0;
 	if (len == 0)return 0;
@@ -2040,9 +2040,21 @@ OS_API_C_FUNC(int) unserialize_message(mem_zone_ref_ptr msg, const_mem_ptr paylo
 	}
 
 	read = 0;
-	
+	error = 0;
 	for (tree_manager_get_first_child(&payload_node, &my_list, &key); ((key != NULL) && (key->zone != NULL)); tree_manager_get_next_child(&my_list, &key))
 	{
+		if ((rd = read_node(key, mem_add(payload, read), len - read)) == INVALID_SIZE)
+		{
+			log_output("read_node error \n");
+
+			dec_zone_ref(key);
+			release_zone_ref(&my_list);
+
+			error = 1;
+			break;
+		}
+
+		/*
 		if ((rd = read_node(key, mem_add(payload, read), len - read)) == INVALID_SIZE)
 		{
 			log_output("read_node error \n");
@@ -2053,8 +2065,27 @@ OS_API_C_FUNC(int) unserialize_message(mem_zone_ref_ptr msg, const_mem_ptr paylo
 			release_zone_ref(&payload_node);
 			return 0;
 		}
+		*/
 		read += rd;
 	}
+
+	if (error == 1)
+	{
+		read = 0;
+		for (tree_manager_get_first_child(&payload_node, &my_list, &key); ((key != NULL) && (key->zone != NULL)); tree_manager_get_next_child(&my_list, &key))
+		{
+			if ((rd = read_node(key, mem_add(payload, read), len - read)) == INVALID_SIZE)
+			{
+				log_output("read_node error \n");
+				dec_zone_ref(key);
+				release_zone_ref(&my_list);
+				break;
+			}
+		}
+
+		return 0;
+	}
+
 	if (created==1)
 		tree_manager_node_add_child		(msg, &payload_node);
 

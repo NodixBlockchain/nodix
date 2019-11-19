@@ -41,6 +41,7 @@ extern void init_funcs(void);
 extern void resume_threads();
 extern void init_exit();
 extern unsigned int	module_registry_lock;
+extern unsigned int log_lck;
 extern int get_my_thread_flag(unsigned int *flag);
 
 
@@ -142,12 +143,14 @@ OS_API_C_FUNC(size_t) memchr_32_c(const_mem_ptr ptr,unsigned int value,mem_size 
 
 OS_API_C_FUNC(const_mem_ptr) memchr_c(const_mem_ptr ptr,int value,mem_size size)
 {
-	unsigned int n;
-	const unsigned char *uchar;
+	mem_size n;
+	const unsigned char *uchar = ptr;
 
-	uchar	=ptr;
-	n		=0;
-	while(n<size){ if(uchar[n]==value)return &uchar[n]; n++;}
+	for(n=0; n < size; n++)
+	{ 
+		if(uchar[n]==value)
+			return &uchar[n]; 
+	}
 
 	return PTR_NULL;
 
@@ -200,7 +203,7 @@ OS_API_C_FUNC(mem_ptr) memcpy_c(mem_ptr dst_ptr,const_mem_ptr src_ptr,mem_size s
 	
 }
 
-OS_API_C_FUNC(mem_area *) get_area(unsigned int area_id)
+INLINE_C_FUNC mem_area *get_area(unsigned int area_id)
 {
 	int n = 0;
 	
@@ -210,32 +213,13 @@ OS_API_C_FUNC(mem_area *) get_area(unsigned int area_id)
 	if(area_id==0)
 	{
 		unsigned int m_area_id = get_mem_area_id();
-
 		return &__global_mem_areas[m_area_id-1];
-		
-		/*
-		while(n<MAX_MEM_AREAS)
-		{
-			if (__global_mem_areas[n].area_id == m_area_id)
-				return &__global_mem_areas[n];
-			n++;
-		}
-		return PTR_NULL;
-		*/
 	}
 
 	if (area_id > MAX_MEM_AREAS)
 		return PTR_NULL;
 
 	return &__global_mem_areas[area_id - 1];
-
-	while(n<MAX_MEM_AREAS)
-	{
-		if(__global_mem_areas[n].area_id == area_id)
-			return &__global_mem_areas[n];
-		n++;
-	}
-	return PTR_NULL;
 }
 
 
@@ -368,6 +352,7 @@ OS_API_C_FUNC(void) init_mem_system()
 	area_lock =	0;
 	gc_lock = 0;
 	module_registry_lock = 0;
+	log_lck = 0;
 
 #ifndef _NATIVE_LINK_
 	sys_add_tpo_mod_func_name("libcon", "init_new_mem_area",(void_func_ptr)init_new_mem_area, 0);
@@ -1453,12 +1438,12 @@ OS_API_C_FUNC(void) copy_zone_ref(mem_zone_ref_ptr dest_zone_ref,const mem_zone_
 
 	if (zone != PTR_NULL)
 	{
-		if (fetch_add_c(&zone->n_refs, -1) <= 1)
+		if (fetch_add_c(&zone->n_refs, -1) == 1)
 		{
 			if (zone->mem.ptr != PTR_NULL)
 			{
 				mfence_c();
-				if (zone->n_refs <= 0)
+				if (zone->n_refs == 0)
 				{
 					if ((zone->area_id != get_tree_mem_area_id()) && (zone->area_id != get_mem_area_id()))
 					{
@@ -2074,7 +2059,7 @@ OS_API_C_FUNC(float) libc_powf(float a, float b)
 #ifdef _DEBUG
 OS_API_C_FUNC(size_t) dump_mem_used_after(unsigned int area_id, unsigned int time, mem_zone_ref *outs, size_t nOuts)
 {
-	int						n;
+	unsigned int			n;
 	size_t					mem_size;
 	size_t					n_zones;
 	mem_area				*area_ptr;

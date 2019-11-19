@@ -1269,7 +1269,8 @@ doContent(XML_Parser parser,
 	  return XML_ERROR_RECURSIVE_ENTITY_REF;
 	if (entity->notation)
 	  return XML_ERROR_BINARY_ENTITY_REF;
-	if (entity) {
+	/*if (entity) */
+	{
 	  if (entity->textPtr) {
 	    enum XML_Error result;
 	    OPEN_INTERNAL_ENTITY openEntity;

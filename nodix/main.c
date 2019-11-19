@@ -1274,7 +1274,7 @@ OS_API_C_FUNC(int) handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 	}
 
 	if (ret)
-		broadcast_block_inv(node,&header);
+		broadcast_block_inv(node,&header);	
 
 	if (ret)
 		fetch_app_files(node, &tx_list);
@@ -1354,7 +1354,7 @@ int process_node_messages(mem_zone_ref_ptr node)
 	mem_zone_ref		msg_list = { PTR_NULL }, handler_list = { PTR_NULL };
 	mem_zone_ref_ptr	msg = PTR_NULL;
 	mem_zone_ref		my_list = { PTR_NULL };
-	unsigned int		now;
+	unsigned int		now,gmsg=0;
 
 
 	if (!tree_manager_find_child_node(node, NODE_HASH("emitted_queue"), NODE_BITCORE_MSG_LIST, &msg_list))return 0;
@@ -1384,13 +1384,19 @@ int process_node_messages(mem_zone_ref_ptr node)
 		if (ret < 0)ret = 1;
 		tree_manager_set_child_value_si32(msg , "handled"		, ret);
 		tree_manager_set_child_value_si32(node, "last_msg_time"	, now);
+
+		gmsg = 1;
 	}
 	tree_remove_child_by_member_value_dword			(&msg_list, NODE_BITCORE_MSG, "handled" , 1);
 	tree_remove_child_by_member_value_lt_dword		(&msg_list, NODE_BITCORE_MSG, "recvtime", now-30);
 
 	release_zone_ref(&msg_list);
 	release_zone_ref(&handler_list);
-	
+
+#ifdef _DEBUG
+	if(gmsg)
+		node_dump_memory(0);
+#endif	
 	return 1;
 }
 

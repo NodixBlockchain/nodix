@@ -927,8 +927,11 @@ void ReadElfSegment(PEFile *PE,unsigned int sec_idx)
 
 	}
 
-	if(sec_idx >= PE->num_section)
+	if (sec_idx >= PE->num_section)
+	{
+		fclose(in);
 		return;
+	}
 
 	secid = sec_idx;
 	Sec = PE->Sections[secid];
@@ -937,6 +940,7 @@ void ReadElfSegment(PEFile *PE,unsigned int sec_idx)
 
 	fseek		(in,Sec->phdr.p_offset,SEEK_SET);
 	fread		(Sec->Data,Sec->phdr.p_filesz,1,in);
+	fclose		(in);
 }
 
 

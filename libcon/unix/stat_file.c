@@ -549,7 +549,7 @@ OS_API_C_FUNC(int) get_file_range(const char *path, size_t ofset, size_t last, u
 {
 	struct string	cpath = { PTR_NULL };
 	FILE			*f;
-	size_t			filesize, len;
+	size_t			filesize, len=0;
 	uint64_t		start, end;
 	int				ret;
 
