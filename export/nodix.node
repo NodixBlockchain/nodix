@@ -94,10 +94,9 @@ let NODE_SERVICE stratum_service = `
 	(NODE_MODULE_DEF) "module" : {"file":"modz/stratum_service.tpo"}
 } `
 
-
 let NODE_SERVICE http_service = `
 {
-	"port"		: 8001,
+	"ports"		: [{"port" : 16820, "data": {}}],
 	(NODE_NET_IP)"addr" : "127.0.0.1",
 	"docroot"   : "web",
 	"apppath"   : "/app/",

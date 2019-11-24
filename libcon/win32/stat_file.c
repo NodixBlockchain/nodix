@@ -30,7 +30,7 @@ struct string exe_path		= { PTR_INVALID,0,0};
 HANDLE		  lockFile		= PTR_INVALID;
 unsigned int running		= 1;
 struct tm tmtime			= { 0xCD };
-
+unsigned int log_lck		= 0xFFFFFFFF;
 
 struct thread
 {
@@ -911,16 +911,7 @@ OS_API_C_FUNC(int) background_func(thread_func_ptr func,mem_zone_ref_ptr params)
 	return 1;
 }
 
-OS_API_C_FUNC(void) console_print(const char *msg)
-{
-	HANDLE OUTPUT_HANDLE;
-	size_t wrote;
-	/* OutputDebugString(msg); */
 
-	OUTPUT_HANDLE = GetStdHandle(STD_OUTPUT_HANDLE);
-	WriteConsole(OUTPUT_HANDLE, msg, strlen_c(msg), &wrote, NULL);
-
-}
 OS_API_C_FUNC(void	*)kernel_memory_map_c(unsigned int size)
 {
 	return HeapAlloc(GetProcessHeap(),0,size);
@@ -950,13 +941,45 @@ OS_API_C_FUNC(void) get_system_time_c(ctime_t *time)
  {
 	 return SetCurrentDirectory(path);
  }
+ 
+ 
+ OS_API_C_FUNC(void) console_print(const char *msg)
+ {
+	 HANDLE OUTPUT_HANDLE;
+	 size_t wrote;
+	 /* OutputDebugString(msg); */
+
+	 unsigned int tid = get_thread_id();
+
+	 if (tid != log_lck)
+	 {
+		 while (!compare_z_exchange_c(&log_lck, tid)) {}
+	 }
+
+	 OUTPUT_HANDLE = GetStdHandle(STD_OUTPUT_HANDLE);
+	 WriteConsole(OUTPUT_HANDLE, msg, strlen_c(msg), &wrote, NULL);
+
+	 if (strlpos_c(msg, 0, '\n') != INVALID_SIZE)
+		 log_lck = 0;
+ }
 
  OS_API_C_FUNC(int) log_output(const char *data)
  {
+	 unsigned int tid=get_thread_id();
+
+	 if (tid != log_lck)
+	 {
+		 while (!compare_z_exchange_c(&log_lck, tid)) {}
+	 }
+
 	console_print(data);
 	if ((log_file_name.str != PTR_NULL) && (log_file_name.str!=PTR_INVALID))
 		append_file(log_file_name.str, data, strlen_c(data));
-	 return 1;
+
+	if (strlpos_c(data, 0, '\n') != INVALID_SIZE)
+		log_lck = 0;
+
+	return 1;
  }
 
  OS_API_C_FUNC(int) rm_dir(const char *dir)

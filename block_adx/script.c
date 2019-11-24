@@ -693,6 +693,75 @@ OS_API_C_FUNC(int) make_script_file(mem_zone_ref_ptr file,struct string *pKey,st
 	free_string		(&mime);
 	return 1;
 }
+
+
+OS_API_C_FUNC(int) encode_DER_sig(const struct string *sig, struct string *sigseq, unsigned int rev, unsigned char hash_type)
+{
+	unsigned char S[32], R[32];
+	unsigned char *sig_data;
+	size_t		  slen, rlen, siglen;
+	unsigned int	n;
+
+	if (sig->len < 64)
+		return 0;
+
+	rlen = 32;
+	slen = 32;
+
+	if (rev)
+	{
+		for (n = 0; n < 32; n++)
+		{
+			R[31 - n] = sig->str[n];
+			S[31 - n] = sig->str[n + 32];
+		}
+	}
+	else
+	{
+		memcpy_c(R, sig->str, 32);
+		memcpy_c(S, sig->str + 32, 32);
+	}
+
+	while ((R[0] == 0) && (rlen > 0))
+	{
+		memcpy_c(R, R + 1, --rlen);
+	}
+
+	while ((S[0] == 0) && (slen > 0))
+	{
+		memcpy_c(S, S + 1, --slen);
+	}
+
+	if (slen == 0)return 0;
+	if (rlen == 0)return 0;
+
+	siglen = slen + rlen + 4;
+
+	sigseq->len = siglen + 2 + 1;
+	sigseq->size = sigseq->len + 1;
+	sigseq->str = malloc_c(sigseq->size);
+
+	sig_data = (unsigned char *)sigseq->str;
+
+	sig_data[0] = 0x30;
+	sig_data[1] = siglen;
+
+	sig_data[2] = 0x02;
+	sig_data[3] = rlen;
+	sig_data[4 + rlen] = 0x02;
+	sig_data[4 + rlen + 1] = slen;
+
+	memcpy_c(&sig_data[4], R, rlen);
+	memcpy_c(&sig_data[4 + rlen + 2], S, slen);
+	sig_data[siglen + 2] = hash_type;
+
+	sigseq->str[sigseq->len] = 0;
+
+	return 1;
+
+
+}
+
 int get_script_file(struct string *script,mem_zone_ref_ptr file)
 {
 	hash_t		  hash;
@@ -741,12 +810,28 @@ int get_script_file(struct string *script,mem_zone_ref_ptr file)
 
 	if (ret)
 	{
-		mem_zone_ref sig = { PTR_NULL };
+		mem_zone_ref sigN = { PTR_NULL }, PubKey = { PTR_NULL };
+		struct string sig_seq = { 0};
 
 		tree_manager_set_child_value_vstr(file, "filename", &fileName);
 		tree_manager_set_child_value_vstr(file, "mime", &mime);
 		tree_manager_set_child_value_i32(file, "size", size);
 		tree_manager_set_child_value_hash(file, "dataHash", (unsigned char *)hashStr.str);
+
+		encode_DER_sig(&sign, &sig_seq, 1, 1);
+
+		if (tree_manager_add_child_node(file, "signature", NODE_BITCORE_ECDSA_SIG, &sigN))
+		{
+			tree_manager_write_node_sig	(&sigN, 0, sig_seq.str, sig_seq.len);
+			release_zone_ref			(&sigN);
+		}
+
+		if (tree_manager_add_child_node(file, "pubkey", NODE_BITCORE_PUBKEY, &PubKey))
+		{
+			tree_manager_write_node_data(&PubKey, pKey.str, 0, 33);
+			release_zone_ref			(&PubKey);
+		}
+		free_string(&sig_seq);
 	}
 	
 	free_string(&hashStr);

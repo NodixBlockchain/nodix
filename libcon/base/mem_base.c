@@ -41,7 +41,6 @@ extern void init_funcs(void);
 extern void resume_threads();
 extern void init_exit();
 extern unsigned int	module_registry_lock;
-extern unsigned int log_lck;
 extern int get_my_thread_flag(unsigned int *flag);
 
 

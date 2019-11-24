@@ -405,7 +405,7 @@ BLOCK_API  int	C_API_FUNC get_app_files(struct string *app_name, size_t first, s
 BLOCK_API  int	C_API_FUNC get_app_missing_files(struct string *app_name, mem_zone_ref_ptr pending, mem_zone_ref_ptr files);
 
 BLOCK_API  int	C_API_FUNC tx_is_app_item(const hash_t txh, unsigned int oidx, mem_zone_ref_ptr app_tx, unsigned char *val);
-
+BLOCK_API int C_API_FUNC encode_DER_sig(const struct string *sig, struct string *sigseq, unsigned int rev, unsigned char hash_type);
 /* staking API definition */
 
 typedef int C_API_FUNC get_blk_staking_infos_func	(mem_zone_ref_ptr blk, mem_zone_ref_ptr infos);
