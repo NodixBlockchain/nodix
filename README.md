@@ -1,6 +1,6 @@
 More informations at
 
-http://nodix.eu:16820/index.site
+http://nodix.eu
 
 
 Prerequisites:
@@ -36,6 +36,7 @@ Running:
 
 	cd export
 	./launcher (use ~/nodix)
+	(-gc to enable mark & sweep garbage collection)
 
 
 No dependencies, all is included.
